@@ -365,27 +365,58 @@ function verifyScaffold() {
     record("worker backend scaffold", true);
   }
 
-  const frontendCandidates = [
-    join(ROOT, "frontend", "package.json"),
-    join(ROOT, "web", "package.json"),
-    join(ROOT, "apps", "web", "package.json"),
-  ];
-  const pkgPath = frontendCandidates.find((p) => {
-    if (!existsSync(p)) return false;
-    if (p === join(ROOT, "package.json")) {
-      try {
-        const pkg = JSON.parse(readFileSync(p, "utf8"));
-        return Boolean(pkg.dependencies?.react || pkg.devDependencies?.vite);
-      } catch {
-        return false;
-      }
+  const viteConfig = join(ROOT, "vite.config.ts");
+  const mainTsx = join(ROOT, "src", "main.tsx");
+  const routerTsx = join(ROOT, "src", "app", "router.tsx");
+  const supabaseClient = join(ROOT, "src", "lib", "supabaseClient.ts");
+  const apiClient = join(ROOT, "src", "lib", "apiClient.ts");
+
+  record("vite.config.ts exists", existsSync(viteConfig));
+  record("src/main.tsx exists", existsSync(mainTsx));
+  record("src/app/router.tsx exists", existsSync(routerTsx));
+  record("src/lib/supabaseClient.ts exists", existsSync(supabaseClient));
+  record("src/lib/apiClient.ts exists", existsSync(apiClient));
+
+  let hasReact = false;
+  const rootPkg = join(ROOT, "package.json");
+  if (existsSync(rootPkg)) {
+    try {
+      const pkg = JSON.parse(readFileSync(rootPkg, "utf8"));
+      hasReact = Boolean(pkg.dependencies?.react);
+    } catch {
+      hasReact = false;
     }
-    return true;
-  });
+  }
+  record("root: react dependency", hasReact, hasReact ? "" : "run: npm run setup:frontend");
+
+  const shadcnUi = join(ROOT, "src", "components", "ui", "button.tsx");
+  record("shadcn/ui base (Button)", existsSync(shadcnUi));
+
+  const pages = [
+    "LoginPage.tsx",
+    "DashboardPage.tsx",
+    "ClientsPage.tsx",
+    "ClientDetailPage.tsx",
+    "ConversationPage.tsx",
+    "PipelinePage.tsx",
+    "DealDetailPage.tsx",
+  ];
+  const missingPage = pages.find((p) => !existsSync(join(ROOT, "src", "pages", p)));
   record(
-    "frontend/ package (Phase 3 — optional for now)",
-    Boolean(pkgPath),
-    pkgPath || "not scaffolded yet — Phase 3",
+    "architecture pages scaffold",
+    !missingPage,
+    missingPage ? `missing src/pages/${missingPage}` : "all 7 pages present",
+  );
+
+  const hasFrontend =
+    existsSync(viteConfig) &&
+    existsSync(mainTsx) &&
+    existsSync(routerTsx) &&
+    hasReact;
+  record(
+    "frontend SPA scaffold (root src/)",
+    hasFrontend,
+    hasFrontend ? "" : "complete Phase 3",
   );
 }
 

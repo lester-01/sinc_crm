@@ -8,7 +8,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PHASES="${INSTALL_PROJECT_PHASES:-local,worker}"
+PHASES="${INSTALL_PROJECT_PHASES:-local,worker,frontend}"
 
 log() { printf '\n%s\n' "$*"; }
 step() { printf '>>> %s\n' "$*"; }
@@ -24,6 +24,10 @@ run_phase() {
 phase_enabled() {
   local key="$1"
   [[ ",${PHASES}," == *",${key},"* ]]
+}
+
+scaffold_present_frontend() {
+  [[ -f "$ROOT/vite.config.ts" && -f "$ROOT/src/main.tsx" ]]
 }
 
 main() {
@@ -47,10 +51,15 @@ main() {
   fi
 
   if phase_enabled "frontend"; then
-    if [[ -f "$ROOT/scripts/install-frontend-deps.sh" ]]; then
-      run_phase "frontend — Vite, React, shadcn" bash "$ROOT/scripts/install-frontend-deps.sh"
+    if scaffold_present_frontend; then
+      if [[ -d "$ROOT/node_modules/react" ]]; then
+        step "Phase: frontend (skipped — deps installed; running typecheck)"
+        (cd "$ROOT" && npm run typecheck) || true
+      else
+        run_phase "frontend — Vite, React, shadcn" bash "$ROOT/scripts/install-frontend-deps.sh"
+      fi
     else
-      step "Phase: frontend (not yet — run after Phase 3 scaffold is added)"
+      step "Phase: frontend (skipped — scaffold not in repo yet)"
     fi
   fi
 
