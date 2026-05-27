@@ -33,28 +33,30 @@ After `install:linux`, **restart the terminal** or run `source ~/.bashrc` — se
 - [x] `npm run dev` — Vite on `http://localhost:5173`
 - [x] `npm run verify:stack:scaffold` — frontend checks pass
 
-### Phase 4 — Cloud accounts
+### Phase 4 — Cloud accounts + credentials (in progress)
+
+Merged former phases 4 and 5. **Installers do not copy env files** — you copy examples and paste keys first.
 
 - [ ] **GitHub** public repo; remote `origin` configured
-- [ ] **Supabase** project created
+- [ ] **Supabase** project created ([dashboard](https://supabase.com/dashboard))
 - [ ] **Cloudflare** account created
-- [ ] `cd worker && npx wrangler login`
-- [ ] Run: `npm run verify:stack:cloudflare`
+- [ ] Copy env examples (see [quick-start.md](./quick-start.md) — Environment files):
+  - [ ] `.env.example` → `.env`
+  - [ ] `worker/.dev.vars.example` → `worker/.dev.vars`
+  - [ ] `worker/.cloudflare.env.example` → `worker/.cloudflare.env`
+- [ ] Paste Supabase + Cloudflare keys into those files
+- [ ] Run **`npm run setup:cloud`** (Cloudflare auth + connectivity verify)
+- [ ] Or verify only: **`npm run verify:stack:cloud`**
 
-### Phase 5 — Environment files
+Mark this phase complete in the checklist only after **`verify:stack:cloud`** passes.
 
-- [ ] Copy [.env.example](../.env.example) → `.env`
-- [ ] Copy [worker/.dev.vars.example](../worker/.dev.vars.example) → `worker/.dev.vars`
-- [ ] Fill Supabase URL and keys
-- [ ] Run: `npm run verify:stack:env`
-
-### Phase 6 — Supabase database
+### Phase 5 — Supabase database
 
 - [ ] SQL schema + indexes ([database.md](../project_requirements/database.md))
 - [ ] Auth, Realtime, profiles bootstrap, seeds
 - [ ] Run: `npm run verify:stack:supabase`
 
-### Phase 7 — Deploy & submission
+### Phase 6 — Deploy & submission
 
 - [ ] Worker + Pages deployed; README lists URLs
 - [ ] Video demo + Google Form + review meeting
@@ -70,9 +72,12 @@ After `install:linux`, **restart the terminal** or run `source ~/.bashrc` — se
 | `npm run setup:local` | Phase 1 CLIs only |
 | `npm run setup:worker` | Phase 2: Worker runtime packages |
 | `npm run setup:frontend` | Phase 3: Vite/React packages at repo root |
-| `npm run install:project` | **Master** — `local`, `worker`, `frontend` (default) |
+| `npm run setup:cloud` | **Phase 4:** env check, Cloudflare auth, `verify:stack:cloud` |
+| `npm run install:project` | Master — `local`, `worker`, `frontend` (default; no env copy) |
 
 Override phases: `INSTALL_PROJECT_PHASES=local,worker npm run install:project`
+
+Skip cloud verify while filling keys: `SKIP_CLOUD_VERIFY=1 npm run setup:cloud`
 
 ---
 
@@ -101,11 +106,12 @@ worker/                    # Phase 2 — Hono API at /api
 ```bash
 npm run verify:stack:scaffold
 npm run verify:stack:local
-npm run dev                  # frontend :5173
-cd worker && npm run dev     # API :8787
+npm run verify:stack:cloud      # Phase 4 — env + GitHub + Cloudflare + Supabase keys
+npm run dev                   # frontend :5173
+cd worker && npm run dev      # API :8787
 ```
 
-**Phases 1–3 complete.** **Next:** Phase 4 cloud accounts.
+**Phases 1–3 complete.** **Current:** Phase 4 — copy env files, paste keys, run `setup:cloud`.
 
 ---
 

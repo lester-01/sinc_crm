@@ -66,6 +66,7 @@ main() {
   log "=========================================="
   log "Master installer finished."
   log "  npm run verify:stack:scaffold  — backend/frontend structure"
+  log "  npm run setup:cloud            — Phase 4 (after env files + keys)"
   log "  docs/stack-setup.md            — phase checklist"
   log "=========================================="
 }
