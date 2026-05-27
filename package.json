@@ -7,7 +7,9 @@
   },
   "scripts": {
     "install:linux": "bash scripts/install.sh",
+    "install:project": "bash scripts/install-project.sh",
     "setup:local": "bash scripts/install-local-deps.sh",
+    "setup:worker": "bash scripts/install-worker-deps.sh",
     "verify:stack": "node scripts/verify-stack-setup.mjs",
     "verify:stack:full": "node scripts/verify-stack-setup.mjs --phase=full",
     "verify:stack:local": "node scripts/verify-stack-setup.mjs --phase=local",
