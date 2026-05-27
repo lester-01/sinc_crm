@@ -1,0 +1,22 @@
+{
+  "name": "sinc-student-crm",
+  "private": true,
+  "description": "Student CRM + Chat + Deal Pipeline — stack setup verification",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "verify:stack": "node scripts/verify-stack-setup.mjs",
+    "verify:stack:full": "node scripts/verify-stack-setup.mjs --phase=full",
+    "verify:stack:local": "node scripts/verify-stack-setup.mjs --phase=local",
+    "verify:stack:cloudflare": "node scripts/verify-stack-setup.mjs --phase=cloudflare",
+    "verify:stack:env": "node scripts/verify-stack-setup.mjs --phase=env",
+    "verify:stack:supabase": "node scripts/verify-stack-setup.mjs --phase=supabase",
+    "verify:stack:github": "node scripts/verify-stack-setup.mjs --phase=github",
+    "verify:stack:scaffold": "node scripts/verify-stack-setup.mjs --phase=scaffold",
+    "verify:stack:deploy": "node scripts/verify-stack-setup.mjs --phase=deploy"
+  },
+  "devDependencies": {
+    "supabase": "2.101.0"
+  }
+}
