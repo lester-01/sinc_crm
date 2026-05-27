@@ -1,2 +1,10 @@
 project_requirements/
 my project summary.md
+
+# Secrets and local env
+.env
+.env.local
+worker/.dev.vars
+
+# Dependencies
+node_modules/
