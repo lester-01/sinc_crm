@@ -324,25 +324,49 @@ function verifyGithub() {
 function verifyScaffold() {
   const workerToml = join(ROOT, "worker", "wrangler.toml");
   const workerIndex = join(ROOT, "worker", "src", "index.ts");
+  const workerPkgPath = join(ROOT, "worker", "package.json");
   const hasWorker = existsSync(workerToml) && existsSync(workerIndex);
   record(
     "worker/wrangler.toml exists",
     existsSync(workerToml),
-    existsSync(workerToml) ? "" : "create when scaffolding worker/",
+    existsSync(workerToml) ? "" : "run Phase 2 backend scaffold",
   );
   record(
     "worker/src/index.ts exists",
     existsSync(workerIndex),
-    existsSync(workerIndex) ? "" : "create when scaffolding worker/",
+    existsSync(workerIndex) ? "" : "run Phase 2 backend scaffold",
   );
-  if (!hasWorker) {
-    record("worker scaffold complete", false, "run Phase 5 scaffold first");
+
+  let hasHono = false;
+  if (existsSync(workerPkgPath)) {
+    try {
+      const pkg = JSON.parse(readFileSync(workerPkgPath, "utf8"));
+      hasHono = Boolean(pkg.dependencies?.hono);
+    } catch {
+      hasHono = false;
+    }
+  }
+  record(
+    "worker: hono dependency",
+    hasHono,
+    hasHono ? "" : "run: npm run setup:worker",
+  );
+
+  const middlewareAuth = join(ROOT, "worker", "src", "middleware", "auth.ts");
+  record(
+    "worker: auth middleware",
+    existsSync(middlewareAuth),
+    existsSync(middlewareAuth) ? "" : "missing middleware/auth.ts",
+  );
+
+  if (!hasWorker || !hasHono) {
+    record("worker backend scaffold", false, "complete Phase 2");
   } else {
-    record("worker scaffold complete", true);
+    record("worker backend scaffold", true);
   }
 
   const frontendCandidates = [
-    join(ROOT, "package.json"),
+    join(ROOT, "frontend", "package.json"),
     join(ROOT, "web", "package.json"),
     join(ROOT, "apps", "web", "package.json"),
   ];
@@ -359,9 +383,9 @@ function verifyScaffold() {
     return true;
   });
   record(
-    "Frontend package (react/vite) detected",
+    "frontend/ package (Phase 3 — optional for now)",
     Boolean(pkgPath),
-    pkgPath || "scaffold Vite app — not required for Phase 1–4",
+    pkgPath || "not scaffolded yet — Phase 3",
   );
 }
 

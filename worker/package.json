@@ -8,9 +8,19 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "whoami": "wrangler whoami"
+    "whoami": "wrangler whoami",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.4.3",
+    "@supabase/supabase-js": "^2.49.8",
+    "hono": "^4.7.10",
+    "jose": "^6.0.11",
+    "zod": "^3.24.4"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250417.0",
+    "typescript": "^5.8.3",
     "wrangler": "4.95.0"
   }
 }

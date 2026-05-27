@@ -5,6 +5,7 @@ my project summary.md
 .env
 .env.local
 worker/.dev.vars
+worker/.wrangler/
 
 # Dependencies
 node_modules/
