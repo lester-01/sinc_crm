@@ -1,4 +1,5 @@
-# Copy to worker/.dev.vars when the Worker package exists (never commit .dev.vars)
+# Copy to worker/.dev.vars yourself (never commit .dev.vars). Installers do NOT copy this.
+# Cloudflare scoped token: worker/.cloudflare.env (see worker/.cloudflare.env.example)
 
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
