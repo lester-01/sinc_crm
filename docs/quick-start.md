@@ -143,14 +143,14 @@ Then paste keys from each provider dashboard (tables below). **Do not run `npm r
 
 ### Supabase keys → where to paste
 
-In [Supabase Dashboard](https://supabase.com/dashboard) → your project → **Project Settings → API**:
+In [Supabase Dashboard](https://supabase.com/dashboard) → your project → **Project Settings → API** (or **API Keys**):
 
 | Dashboard field | File | Variable |
 |-----------------|------|----------|
 | Project URL | `.env` | `VITE_SUPABASE_URL` |
 | Project URL | `worker/.dev.vars` | `SUPABASE_URL` |
-| `anon` public key **or** `publishable` key | `.env` | `VITE_SUPABASE_ANON_KEY` or `VITE_SUPABASE_PUBLISHABLE_KEY` |
-| `service_role` secret key | `worker/.dev.vars` only | `SUPABASE_SERVICE_ROLE_KEY` |
+| **Publishable** key (public) | `.env` | `VITE_SUPABASE_PUBLISHABLE_KEY` |
+| **Secret** key | `worker/.dev.vars` only | `SUPABASE_SECRET_KEY` |
 
 Also in `.env`:
 
@@ -158,11 +158,13 @@ Also in `.env`:
 VITE_API_BASE_URL=http://localhost:8787
 ```
 
-**Never** put `service_role` in `.env` (Vite must not see it).
+**Never** put the secret key in `.env` (Vite must not see it).
 
-### Cloudflare scoped API token (recommended)
+### Cloudflare scoped API token (required)
 
-We do **not** use the legacy Global API Key + email. Use a **scoped API token** instead.
+We do **not** use the legacy Global API Key + email. Use a **scoped API token** in `worker/.cloudflare.env`.
+
+Browser OAuth (`wrangler login`) is **deprecated** in this repo: still present behind `ALLOW_WRANGLER_LOGIN=1` for local experiments only, **not tested** in `verify:stack:cloud`, and **will be removed** next release (Worker/CI runs headless). See [cloudflare-auth.md](./cloudflare-auth.md).
 
 1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/).
 2. **My Profile → API Tokens → Create Token**.
@@ -180,19 +182,21 @@ CLOUDFLARE_API_TOKEN=your-token-here
 CLOUDFLARE_ACCOUNT_ID=your-account-id
 ```
 
-**Account ID:** Cloudflare dashboard → any zone or Workers overview → right sidebar **Account ID**.
+**Account ID:** Fastest path — open the Cloudflare dashboard **search bar** (top), type **account id**, and use the **Copy account ID** action. Alternatively: any zone or Workers overview → right sidebar **Account ID**.
 
-Leave both empty if you prefer browser login only; `setup:cloud` will fall back to `wrangler login` with a warning.
+Both `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are required for `npm run setup:cloud` and `npm run verify:stack:cloud`.
 
-### Cloudflare authentication order
+### Cloudflare authentication (token only)
 
-`npm run setup:cloud` and `scripts/ensure-cloudflare-auth.sh` use this order:
+`npm run setup:cloud` and `scripts/ensure-cloudflare-auth.sh`:
 
-1. **Existing wrangler session** (`wrangler whoami` succeeds)
-2. **Scoped API token** from `worker/.cloudflare.env`
-3. **Browser OAuth** (`wrangler login`) — last resort; script warns that a scoped token is better
+1. Require `worker/.cloudflare.env`
+2. Require `CLOUDFLARE_API_TOKEN` (fail fast if missing)
+3. Run `wrangler whoami` with that token
 
-Verification (`npm run verify:stack:cloudflare`) checks (1) and (2) only — it does not open a browser. Use `npm run setup:cloud` for interactive login.
+`npm run verify:stack:cloudflare` uses the same token-only path (no browser, no OAuth session check).
+
+**Deprecated:** `ALLOW_WRANGLER_LOGIN=1` enables untested `wrangler login` — see [cloudflare-auth.md](./cloudflare-auth.md).
 
 ### Phase 4 commands
 
@@ -200,7 +204,6 @@ Verification (`npm run verify:stack:cloudflare`) checks (1) and (2) only — it 
 # After env files exist and keys are pasted:
 npm run setup:cloud
 
-# Or verify without browser login attempt:
 npm run verify:stack:cloud
 ```
 
