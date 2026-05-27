@@ -1,15 +1,21 @@
 {
   "name": "sinc-student-crm",
   "private": true,
-  "description": "Student CRM + Chat + Deal Pipeline — stack setup verification",
+  "type": "module",
+  "description": "Student CRM + Chat + Deal Pipeline",
   "engines": {
     "node": ">=22.0.0"
   },
   "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit",
     "install:linux": "bash scripts/install.sh",
     "install:project": "bash scripts/install-project.sh",
     "setup:local": "bash scripts/install-local-deps.sh",
     "setup:worker": "bash scripts/install-worker-deps.sh",
+    "setup:frontend": "bash scripts/install-frontend-deps.sh",
     "verify:stack": "node scripts/verify-stack-setup.mjs",
     "verify:stack:full": "node scripts/verify-stack-setup.mjs --phase=full",
     "verify:stack:local": "node scripts/verify-stack-setup.mjs --phase=local",
@@ -20,7 +26,29 @@
     "verify:stack:scaffold": "node scripts/verify-stack-setup.mjs --phase=scaffold",
     "verify:stack:deploy": "node scripts/verify-stack-setup.mjs --phase=deploy"
   },
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.2.3",
+    "@supabase/supabase-js": "^2.49.8",
+    "@tanstack/react-query": "^5.74.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.511.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.0",
+    "tailwind-merge": "^3.3.0"
+  },
   "devDependencies": {
-    "supabase": "2.101.0"
+    "@types/node": "^22.19.19",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "supabase": "2.101.0",
+    "tailwindcss": "^3.4.17",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
   }
 }

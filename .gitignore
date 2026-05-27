@@ -9,3 +9,7 @@ worker/.wrangler/
 
 # Dependencies
 node_modules/
+dist/
+
+# Vite
+*.local
