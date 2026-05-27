@@ -6,6 +6,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
+    "setup:local": "bash scripts/install-local-deps.sh",
     "verify:stack": "node scripts/verify-stack-setup.mjs",
     "verify:stack:full": "node scripts/verify-stack-setup.mjs --phase=full",
     "verify:stack:local": "node scripts/verify-stack-setup.mjs --phase=local",
