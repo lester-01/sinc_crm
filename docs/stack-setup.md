@@ -33,22 +33,21 @@ After `install:linux`, **restart the terminal** or run `source ~/.bashrc` — se
 - [x] `npm run dev` — Vite on `http://localhost:5173`
 - [x] `npm run verify:stack:scaffold` — frontend checks pass
 
-### Phase 4 — Cloud accounts + credentials (in progress)
+### Phase 4 — Cloud accounts + credentials (complete)
 
 Merged former phases 4 and 5. **Installers do not copy env files** — you copy examples and paste keys first.
 
-- [ ] **GitHub** public repo; remote `origin` configured
-- [ ] **Supabase** project created ([dashboard](https://supabase.com/dashboard))
-- [ ] **Cloudflare** account created
-- [ ] Copy env examples (see [quick-start.md](./quick-start.md) — Environment files):
-  - [ ] `.env.example` → `.env`
-  - [ ] `worker/.dev.vars.example` → `worker/.dev.vars`
-  - [ ] `worker/.cloudflare.env.example` → `worker/.cloudflare.env`
-- [ ] Paste Supabase + Cloudflare keys into those files
-- [ ] Run **`npm run setup:cloud`** (Cloudflare auth + connectivity verify)
-- [ ] Or verify only: **`npm run verify:stack:cloud`**
+- [x] **GitHub** public repo; remote `origin` configured
+- [x] **Supabase** project created ([dashboard](https://supabase.com/dashboard))
+- [x] **Cloudflare** account created; scoped API token in `worker/.cloudflare.env`
+- [x] Copy env examples (see [quick-start.md](./quick-start.md) — Environment files):
+  - [x] `.env.example` → `.env` (`VITE_SUPABASE_PUBLISHABLE_KEY`)
+  - [x] `worker/.dev.vars.example` → `worker/.dev.vars` (`SUPABASE_SECRET_KEY`)
+  - [x] `worker/.cloudflare.env.example` → `worker/.cloudflare.env`
+- [x] Paste Supabase + Cloudflare keys into those files
+- [x] Run **`npm run verify:stack:cloud`** — all checks pass
 
-Mark this phase complete in the checklist only after **`verify:stack:cloud`** passes.
+Cloudflare: **scoped API token only** for setup/verify. OAuth/`wrangler login` is deprecated ([cloudflare-auth.md](./cloudflare-auth.md)).
 
 ### Phase 5 — Supabase database
 
@@ -111,7 +110,7 @@ npm run dev                   # frontend :5173
 cd worker && npm run dev      # API :8787
 ```
 
-**Phases 1–3 complete.** **Current:** Phase 4 — copy env files, paste keys, run `setup:cloud`.
+**Phases 1–4 complete.** **Current:** Phase 5 — Supabase database schema and seeds.
 
 ---
 
