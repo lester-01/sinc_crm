@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Stack setup verification for Student CRM assessment.
- * Run: npm run verify:stack [-- --phase=all|local|cloudflare|env|supabase|github|scaffold|deploy]
+ * Run: npm run verify:stack [-- --phase=all|local|cloud|cloudflare|env|supabase|supabase-connect|github|scaffold|deploy]
  */
 
 import { spawnSync } from "node:child_process";
@@ -51,6 +51,9 @@ function parseArgs(argv) {
       "github",
     ]);
   }
+  if (out.has("cloud")) {
+    return new Set(["env", "cloudflare", "github", "supabase-connect"]);
+  }
   if (out.has("full")) {
     return new Set([
       "local",
@@ -76,10 +79,11 @@ function record(name, ok, detail = "") {
   console.log(`[${mark}] ${name}${suffix}`);
 }
 
-function run(command, args = []) {
+function run(command, args = [], options = {}) {
   return spawnSync(command, args, {
     encoding: "utf8",
     shell: false,
+    ...options,
   });
 }
 
@@ -119,6 +123,41 @@ function loadEnv() {
   const rootEnv = parseEnvFile(join(ROOT, ".env"));
   const workerVars = parseEnvFile(join(ROOT, "worker", ".dev.vars"));
   return { ...rootEnv, ...workerVars };
+}
+
+function loadCloudflareEnv() {
+  return parseEnvFile(join(ROOT, "worker", ".cloudflare.env"));
+}
+
+function wranglerWhoami(extraEnv = {}) {
+  if (!existsSync(WRANGLER_BIN)) {
+    return { ok: false, out: "wrangler not installed" };
+  }
+  const r = run(WRANGLER_BIN, ["whoami"], {
+    env: { ...process.env, ...extraEnv },
+  });
+  const out = `${r.stdout || ""}${r.stderr || ""}`.trim();
+  const ok =
+    r.status === 0 && !out.toLowerCase().includes("not authenticated");
+  return { ok, out };
+}
+
+function isPlaceholder(val) {
+  return (
+    !val ||
+    val.length < 10 ||
+    val.includes("your-") ||
+    val === "..." ||
+    /^=+$/.test(val)
+  );
+}
+
+function supabasePublicKey(env) {
+  return (
+    env.VITE_SUPABASE_ANON_KEY ||
+    env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    env.SUPABASE_ANON_KEY
+  );
 }
 
 function majorNodeVersion() {
@@ -161,68 +200,243 @@ function verifyLocal() {
 // --- Phase: cloudflare ---
 function verifyCloudflare() {
   if (!localCli(WRANGLER_BIN)) {
-    record("wrangler logged in", false, "run: npm run setup:local");
+    record("wrangler CLI available", false, "run: npm run setup:local");
     return;
   }
-  const r = run(WRANGLER_BIN, ["whoami"]);
-  const ok = r.status === 0 && !(r.stdout || "").toLowerCase().includes("not authenticated");
+
+  const cloudflareEnvPath = join(ROOT, "worker", ".cloudflare.env");
   record(
-    "wrangler logged in (wrangler whoami)",
-    ok,
-    ok ? (r.stdout || "").trim().split("\n")[0] : "run: wrangler login",
+    "worker/.cloudflare.env exists",
+    existsSync(cloudflareEnvPath),
+    existsSync(cloudflareEnvPath)
+      ? cloudflareEnvPath
+      : "copy worker/.cloudflare.env.example → worker/.cloudflare.env",
+  );
+
+  const oauth = wranglerWhoami();
+  if (oauth.ok) {
+    record(
+      "Cloudflare: wrangler whoami (existing session)",
+      true,
+      oauth.out.split("\n")[0] || "authenticated",
+    );
+    return;
+  }
+
+  const cf = loadCloudflareEnv();
+  const token = cf.CLOUDFLARE_API_TOKEN;
+  if (token && !isPlaceholder(token)) {
+    const tokenEnv = { CLOUDFLARE_API_TOKEN: token };
+    if (cf.CLOUDFLARE_ACCOUNT_ID && !isPlaceholder(cf.CLOUDFLARE_ACCOUNT_ID)) {
+      tokenEnv.CLOUDFLARE_ACCOUNT_ID = cf.CLOUDFLARE_ACCOUNT_ID;
+    }
+    const withToken = wranglerWhoami(tokenEnv);
+    record(
+      "Cloudflare: wrangler whoami (scoped API token)",
+      withToken.ok,
+      withToken.ok
+        ? withToken.out.split("\n")[0] || "authenticated via token"
+        : "token set but whoami failed — check permissions and CLOUDFLARE_ACCOUNT_ID",
+    );
+    if (!withToken.ok) {
+      record(
+        "Cloudflare: auth hint",
+        false,
+        "run: npm run setup:cloud (or fix token in worker/.cloudflare.env)",
+      );
+    }
+    return;
+  }
+
+  record(
+    "Cloudflare: wrangler whoami (existing session)",
+    false,
+    "not authenticated",
+  );
+  record(
+    "Cloudflare: scoped API token",
+    false,
+    "set CLOUDFLARE_API_TOKEN in worker/.cloudflare.env (see quick-start.md)",
+  );
+  record(
+    "Cloudflare: browser OAuth (fallback)",
+    false,
+    "run: npm run setup:cloud — scoped API token is recommended over browser login",
   );
 }
 
 // --- Phase: env ---
 function verifyEnv() {
   const envPath = join(ROOT, ".env");
-  const exists = existsSync(envPath);
-  record(".env file exists", exists, exists ? envPath : "copy .env.example to .env");
-
-  const env = loadEnv();
-  const required = ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"];
-  for (const key of required) {
-    const val = env[key];
-    record(
-      `env: ${key}`,
-      Boolean(val && val.length > 10 && !val.includes("your-")),
-      val ? "set" : "missing or placeholder",
-    );
-  }
-
-  const apiUrl = env.VITE_API_BASE_URL;
+  const envExists = existsSync(envPath);
   record(
-    "env: VITE_API_BASE_URL (optional until worker runs)",
-    true,
-    apiUrl || "not set — OK for Phase 1–4",
+    ".env file exists",
+    envExists,
+    envExists ? envPath : "copy .env.example → .env (installer does not copy)",
   );
 
   const workerVarsPath = join(ROOT, "worker", ".dev.vars");
-  if (existsSync(workerVarsPath)) {
-    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  const workerVarsExists = existsSync(workerVarsPath);
+  record(
+    "worker/.dev.vars exists",
+    workerVarsExists,
+    workerVarsExists
+      ? workerVarsPath
+      : "copy worker/.dev.vars.example → worker/.dev.vars",
+  );
+
+  const cloudflareEnvPath = join(ROOT, "worker", ".cloudflare.env");
+  record(
+    "worker/.cloudflare.env exists",
+    existsSync(cloudflareEnvPath),
+    existsSync(cloudflareEnvPath)
+      ? cloudflareEnvPath
+      : "copy worker/.cloudflare.env.example → worker/.cloudflare.env",
+  );
+
+  if (!envExists) return;
+
+  const env = loadEnv();
+  const supabaseUrl = env.VITE_SUPABASE_URL;
+  record(
+    "env: VITE_SUPABASE_URL",
+    Boolean(supabaseUrl && !isPlaceholder(supabaseUrl)),
+    supabaseUrl ? "set" : "missing or placeholder",
+  );
+
+  const publicKey = supabasePublicKey(env);
+  record(
+    "env: Supabase public key (anon or publishable)",
+    Boolean(publicKey && !isPlaceholder(publicKey)),
+    publicKey
+      ? "set"
+      : "set VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY",
+  );
+
+  const apiUrl = env.VITE_API_BASE_URL;
+  record(
+    "env: VITE_API_BASE_URL",
+    Boolean(apiUrl && !isPlaceholder(apiUrl)),
+    apiUrl || "missing — use http://localhost:8787 for local dev",
+  );
+
+  if (env.SUPABASE_SERVICE_ROLE_KEY && !isPlaceholder(env.SUPABASE_SERVICE_ROLE_KEY)) {
     record(
-      "worker/.dev.vars: SUPABASE_SERVICE_ROLE_KEY",
-      Boolean(serviceKey && !serviceKey.includes("your-")),
-      serviceKey ? "set" : "missing",
+      "env: service role not in .env (security)",
+      false,
+      "move SUPABASE_SERVICE_ROLE_KEY to worker/.dev.vars only",
     );
   } else {
+    record("env: service role not in .env (security)", true, "OK");
+  }
+
+  if (workerVarsExists) {
     record(
-      "worker/.dev.vars (optional until worker scaffold)",
-      true,
-      "not created yet — OK before Phase 5",
+      "worker/.dev.vars: SUPABASE_URL",
+      Boolean(env.SUPABASE_URL && !isPlaceholder(env.SUPABASE_URL)),
+      env.SUPABASE_URL ? "set" : "missing or placeholder",
+    );
+    record(
+      "worker/.dev.vars: SUPABASE_SERVICE_ROLE_KEY",
+      Boolean(
+        env.SUPABASE_SERVICE_ROLE_KEY &&
+          !isPlaceholder(env.SUPABASE_SERVICE_ROLE_KEY),
+      ),
+      env.SUPABASE_SERVICE_ROLE_KEY ? "set" : "missing or placeholder",
     );
   }
 }
 
-// --- Phase: supabase ---
+// --- Phase: supabase-connect (Phase 4 — keys only, no schema) ---
+async function verifySupabaseConnect() {
+  const env = loadEnv();
+  const url = (env.VITE_SUPABASE_URL || env.SUPABASE_URL || "").replace(/\/$/, "");
+  const anonKey = supabasePublicKey(env);
+
+  if (!url || isPlaceholder(url)) {
+    record("Supabase URL configured", false, "set VITE_SUPABASE_URL in .env");
+    return;
+  }
+  if (!anonKey || isPlaceholder(anonKey)) {
+    record(
+      "Supabase public key configured",
+      false,
+      "set VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY in .env",
+    );
+    return;
+  }
+
+  record("Supabase URL configured", true, url);
+  record("Supabase public key configured", true);
+
+  try {
+    const authRes = await fetch(`${url}/auth/v1/health`, {
+      headers: { apikey: anonKey },
+    });
+    const authOk = authRes.ok || authRes.status === 401;
+    record(
+      "Supabase Auth reachable",
+      authOk,
+      authOk
+        ? `HTTP ${authRes.status}`
+        : `HTTP ${authRes.status} — check URL and public key`,
+    );
+    if (!authOk) return;
+  } catch (e) {
+    record("Supabase Auth reachable", false, e.message);
+    return;
+  }
+
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey || isPlaceholder(serviceKey)) {
+    record(
+      "Supabase service role key",
+      false,
+      "set SUPABASE_SERVICE_ROLE_KEY in worker/.dev.vars",
+    );
+    return;
+  }
+
+  try {
+    const res = await fetch(`${url}/rest/v1/profiles?select=id&limit=1`, {
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+      },
+    });
+    const body = await res.text();
+    const missing = body.includes("PGRST205") || body.includes("does not exist");
+    if (missing) {
+      record(
+        "Supabase service role (API reachable)",
+        true,
+        "schema not applied yet — expected before Phase 5 (database)",
+      );
+      return;
+    }
+    record(
+      "Supabase service role (profiles read)",
+      res.ok,
+      res.ok ? "OK" : `HTTP ${res.status} — check service role key`,
+    );
+  } catch (e) {
+    record("Supabase service role (API reachable)", false, e.message);
+  }
+}
+
+// --- Phase: supabase (full — includes schema tables) ---
 async function verifySupabase() {
   const env = loadEnv();
   const url = (env.VITE_SUPABASE_URL || env.SUPABASE_URL || "").replace(/\/$/, "");
-  const anonKey = env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY;
+  const anonKey = supabasePublicKey(env);
 
   if (!url || !anonKey) {
     record("Supabase URL configured", false, "set VITE_SUPABASE_URL in .env");
-    record("Supabase anon key configured", false, "set VITE_SUPABASE_ANON_KEY in .env");
+    record(
+      "Supabase public key configured",
+      false,
+      "set VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY",
+    );
     return;
   }
 
@@ -316,6 +530,16 @@ function verifyGithub() {
       "git origin URL (heuristic)",
       true,
       url || "verify this is your public fork/repo",
+    );
+
+    const fetch = run("git", ["fetch", "origin", "--dry-run"]);
+    const fetchOk = fetch.status === 0;
+    record(
+      "git fetch origin (dry-run)",
+      fetchOk,
+      fetchOk
+        ? "remote reachable"
+        : (fetch.stderr || fetch.stdout || "fetch failed").trim().split("\n")[0],
     );
   }
 }
@@ -476,6 +700,7 @@ async function main() {
   if (shouldRun("local")) verifyLocal();
   if (shouldRun("cloudflare")) verifyCloudflare();
   if (shouldRun("env")) verifyEnv();
+  if (shouldRun("supabase-connect")) await verifySupabaseConnect();
   if (shouldRun("supabase")) await verifySupabase();
   if (shouldRun("github")) verifyGithub();
   if (shouldRun("scaffold")) verifyScaffold();
