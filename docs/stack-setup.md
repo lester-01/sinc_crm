@@ -18,24 +18,20 @@ Related: [project_requirements/README.md](../project_requirements/README.md), [p
 
 After `install:linux`, **restart the terminal** or run `source ~/.bashrc` — see [quick-start.md](./quick-start.md).
 
-### Phase 2 — Backend scaffold (`worker/`)
+### Phase 2 — Backend scaffold (`worker/`) (complete)
 
-- [x] Run **`npm run setup:worker`** — Hono, Supabase JS, jose, zod, `@hono/zod-validator`
-- [x] **Hono API** scaffolded per [architecture.md](../project_requirements/architecture.md) (`src/index.ts`, routes, middleware, services)
-- [x] `worker/wrangler.toml` and `worker/tsconfig.json` present
-- [x] `cd worker && npm run dev` — `GET http://localhost:8787/api/health` returns JSON
-- [x] Run: `npm run verify:stack:scaffold` — worker checks pass
+- [x] Run **`npm run setup:worker`**
+- [x] Hono API per [architecture.md](../project_requirements/architecture.md)
+- [x] `cd worker && npm run dev` — `GET http://localhost:8787/api/health`
+- [x] `npm run verify:stack:scaffold` — worker checks pass
 
-Installer: `npm run setup:worker`  
-Master installer (local + worker): `npm run install:project`
+### Phase 3 — Frontend scaffold (root `src/`) (complete)
 
-### Phase 3 — Frontend scaffold (`frontend/`)
-
-- [ ] Run **`npm run setup:frontend`** (when added) — Vite, React, TypeScript
-- [ ] Tailwind + **shadcn/ui** initialized (not Supabase registry — manual `supabaseClient.ts`)
-- [ ] React Router + TanStack Query installed
-- [ ] Layout mirrors `frontend/src/` structure in [architecture.md](../project_requirements/architecture.md)
-- [ ] Run: `npm run verify:stack:scaffold` — frontend package detected
+- [x] Run **`npm run setup:frontend`** — Vite, React, TypeScript, Router, TanStack Query, Tailwind, shadcn base
+- [x] Layout matches [architecture.md](../project_requirements/architecture.md) (`src/app`, `src/pages`, `src/lib`, `src/features`, `src/components`)
+- [x] Manual **`supabaseClient.ts`** + **`apiClient.ts`** (no Supabase shadcn registry)
+- [x] `npm run dev` — Vite on `http://localhost:5173`
+- [x] `npm run verify:stack:scaffold` — frontend checks pass
 
 ### Phase 4 — Cloud accounts
 
@@ -49,15 +45,13 @@ Master installer (local + worker): `npm run install:project`
 
 - [ ] Copy [.env.example](../.env.example) → `.env`
 - [ ] Copy [worker/.dev.vars.example](../worker/.dev.vars.example) → `worker/.dev.vars`
-- [ ] Fill Supabase URL and keys (anon/publishable in `.env`, service role in `.dev.vars` only)
+- [ ] Fill Supabase URL and keys
 - [ ] Run: `npm run verify:stack:env`
 
 ### Phase 6 — Supabase database
 
 - [ ] SQL schema + indexes ([database.md](../project_requirements/database.md))
-- [ ] Auth email provider; redirect URLs for `http://localhost:5173`
-- [ ] Realtime enabled on CRM tables
-- [ ] Profiles bootstrap + seed data + demo users
+- [ ] Auth, Realtime, profiles bootstrap, seeds
 - [ ] Run: `npm run verify:stack:supabase`
 
 ### Phase 7 — Deploy & submission
@@ -73,78 +67,49 @@ Master installer (local + worker): `npm run install:project`
 | Command | Purpose |
 |---------|---------|
 | `npm run install:linux` | Phase 1: nvm, Node 22, wrangler + supabase CLI |
-| `npm run setup:local` | Phase 1 deps only (wrangler + supabase CLI) |
-| `npm run setup:worker` | Phase 2: Worker runtime npm packages |
-| `npm run install:project` | **Master** — runs enabled phase installers with progress |
-| `npm run install:project` + `INSTALL_PROJECT_PHASES=local,worker` | Same (default phases) |
+| `npm run setup:local` | Phase 1 CLIs only |
+| `npm run setup:worker` | Phase 2: Worker runtime packages |
+| `npm run setup:frontend` | Phase 3: Vite/React packages at repo root |
+| `npm run install:project` | **Master** — `local`, `worker`, `frontend` (default) |
 
-Future: `setup:frontend` will be called from `install:project` when Phase 3 exists.
+Override phases: `INSTALL_PROJECT_PHASES=local,worker npm run install:project`
 
 ---
 
 ## Architecture (repo layout)
 
-```txt
-worker/                    # Phase 2 — Cloudflare Worker + Hono (/api)
-  src/
-    index.ts
-    middleware/            auth.ts, requireRole.ts
-    routes/                clients, conversations, messages, deals, dashboard, users, me
-    services/              *Service.ts
-    lib/                   supabaseAdmin.ts
+Per [architecture.md](../project_requirements/architecture.md) — **no `frontend/` wrapper**:
 
-frontend/                  # Phase 3 — Vite + React (mirrors architecture src/ tree)
-  src/
-    app/, components/, features/, lib/, pages/
+```txt
+src/                       # Phase 3 — Vite + React SPA
+  app/                     router.tsx, queryClient.ts
+  components/              layout/, ui/
+  features/                auth/, clients/, conversations/, deals/, dashboard/
+  lib/                     apiClient.ts, supabaseClient.ts, realtime.ts
+  pages/                   LoginPage, DashboardPage, …
+
+worker/                    # Phase 2 — Hono API at /api
+  src/                     …
 ```
 
-**Data flow:** CRM mutations and reads via **Worker**; Supabase client in browser for **Auth + Realtime** only ([architecture.md](../project_requirements/architecture.md)).
-
----
-
-## Backend packages (`worker/`)
-
-| Package | Purpose |
-|---------|---------|
-| hono | HTTP router on Workers |
-| @supabase/supabase-js | Service-role DB + `auth.getUser(token)` |
-| jose | JWT utilities (available for stricter validation later) |
-| zod + @hono/zod-validator | Request body validation (use when implementing routes) |
-| wrangler | Dev/deploy (devDependency) |
-
----
-
-## Frontend packages (`frontend/` — Phase 3)
-
-Vite, React, TypeScript, React Router, TanStack Query, Tailwind, shadcn/ui, `@supabase/supabase-js` (Auth + Realtime only).
-
----
-
-## Environment variables
-
-| Variable | Where |
-|----------|-------|
-| `VITE_SUPABASE_URL` | `.env` |
-| `VITE_SUPABASE_ANON_KEY` | `.env` (or publishable key from dashboard) |
-| `VITE_API_BASE_URL` | `.env` — `http://localhost:8787` in dev |
-| `SUPABASE_URL` | `worker/.dev.vars` |
-| `SUPABASE_SERVICE_ROLE_KEY` | `worker/.dev.vars` |
+**Data flow:** CRM HTTP via **Worker** + TanStack Query; **Supabase client** for Auth + Realtime only.
 
 ---
 
 ## Verification tests
 
 ```bash
-npm run verify:stack:scaffold   # Phase 2+ worker/frontend structure
-npm run verify:stack:local      # Phase 1
-npm run verify:stack            # Phases applicable before deploy
+npm run verify:stack:scaffold
+npm run verify:stack:local
+npm run dev                  # frontend :5173
+cd worker && npm run dev     # API :8787
 ```
 
-**Phase 1 complete.** **Phase 2 complete** when scaffold verify passes. **Next:** Phase 3 frontend, then Phase 4 cloud accounts.
+**Phases 1–3 complete.** **Next:** Phase 4 cloud accounts.
 
 ---
 
-## 8. Cost
+## Cost
 
 | Provider | MVP |
 |----------|-----|

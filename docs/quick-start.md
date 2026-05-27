@@ -127,12 +127,13 @@ Follow [stack-setup.md](./stack-setup.md) for Supabase, Cloudflare, and environm
 npm run install:project
 ```
 
-Runs Phase 1 local CLIs (skip if already installed) and Phase 2 worker dependencies, printing progress for each step.
+Runs Phase 1 local CLIs, Phase 2 worker deps, and Phase 3 frontend deps (with progress output).
 
-Only worker:
+Individual phases:
 
 ```bash
 npm run setup:worker
+npm run setup:frontend
 ```
 
 ## After install
@@ -142,7 +143,9 @@ npm run setup:worker
 | Full stack checklist | [stack-setup.md](./stack-setup.md) |
 | Master installer | `npm run install:project` |
 | Worker API deps | `npm run setup:worker` |
-| Worker dev server | `cd worker && npm run dev` |
+| Frontend deps | `npm run setup:frontend` |
+| Frontend dev | `npm run dev` (port 5173) |
+| Worker dev server | `cd worker && npm run dev` (port 8787) |
 | Verify scaffold | `npm run verify:stack:scaffold` |
 | Verify local tools | `npm run verify:stack:local` |
 | Wrangler (project-local) | `cd worker && npx wrangler --version` |
