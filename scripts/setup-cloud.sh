@@ -25,7 +25,7 @@ require_env_files() {
     missing=1
   fi
   if [[ ! -f "$ROOT/worker/.cloudflare.env" ]]; then
-    err "Missing worker/.cloudflare.env — copy worker/.cloudflare.env.example (token optional until Cloudflare verify)."
+    err "Missing worker/.cloudflare.env — copy worker/.cloudflare.env.example and set CLOUDFLARE_API_TOKEN."
     missing=1
   fi
   if [[ "$missing" -ne 0 ]]; then
@@ -43,8 +43,8 @@ main() {
   step "Check env files exist (you copy examples; installer does not)"
   require_env_files
 
-  step "Cloudflare authentication (OAuth → token → browser fallback)"
-  ALLOW_WRANGLER_LOGIN=1 bash "$ROOT/scripts/ensure-cloudflare-auth.sh"
+  step "Cloudflare authentication (scoped API token required)"
+  bash "$ROOT/scripts/ensure-cloudflare-auth.sh"
 
   if [[ "$SKIP_CLOUD_VERIFY" == "1" ]]; then
     log "SKIP_CLOUD_VERIFY=1 — skipping verify:stack:cloud"
@@ -56,7 +56,7 @@ main() {
   (cd "$ROOT" && npm run verify:stack:cloud)
 
   log "=========================================="
-  log "Phase 4 setup finished (mark checklist complete after verify passes)."
+  log "Phase 4 setup finished."
   log "  docs/stack-setup.md — Phase 4"
   log "=========================================="
 }

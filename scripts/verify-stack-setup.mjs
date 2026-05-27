@@ -153,11 +153,11 @@ function isPlaceholder(val) {
 }
 
 function supabasePublicKey(env) {
-  return (
-    env.VITE_SUPABASE_ANON_KEY ||
-    env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    env.SUPABASE_ANON_KEY
-  );
+  return env.VITE_SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_PUBLISHABLE_KEY;
+}
+
+function supabaseSecretKey(env) {
+  return env.SUPABASE_SECRET_KEY;
 }
 
 function majorNodeVersion() {
@@ -213,55 +213,40 @@ function verifyCloudflare() {
       : "copy worker/.cloudflare.env.example → worker/.cloudflare.env",
   );
 
-  const oauth = wranglerWhoami();
-  if (oauth.ok) {
-    record(
-      "Cloudflare: wrangler whoami (existing session)",
-      true,
-      oauth.out.split("\n")[0] || "authenticated",
-    );
+  if (!existsSync(cloudflareEnvPath)) {
     return;
   }
 
   const cf = loadCloudflareEnv();
   const token = cf.CLOUDFLARE_API_TOKEN;
-  if (token && !isPlaceholder(token)) {
-    const tokenEnv = { CLOUDFLARE_API_TOKEN: token };
-    if (cf.CLOUDFLARE_ACCOUNT_ID && !isPlaceholder(cf.CLOUDFLARE_ACCOUNT_ID)) {
-      tokenEnv.CLOUDFLARE_ACCOUNT_ID = cf.CLOUDFLARE_ACCOUNT_ID;
-    }
-    const withToken = wranglerWhoami(tokenEnv);
+  record(
+    "Cloudflare: CLOUDFLARE_API_TOKEN configured",
+    Boolean(token && !isPlaceholder(token)),
+    token && !isPlaceholder(token)
+      ? "set"
+      : "required in worker/.cloudflare.env — see docs/quick-start.md",
+  );
+
+  if (!token || isPlaceholder(token)) {
     record(
       "Cloudflare: wrangler whoami (scoped API token)",
-      withToken.ok,
-      withToken.ok
-        ? withToken.out.split("\n")[0] || "authenticated via token"
-        : "token set but whoami failed — check permissions and CLOUDFLARE_ACCOUNT_ID",
+      false,
+      "set CLOUDFLARE_API_TOKEN before verify (OAuth not used; see docs/cloudflare-auth.md)",
     );
-    if (!withToken.ok) {
-      record(
-        "Cloudflare: auth hint",
-        false,
-        "run: npm run setup:cloud (or fix token in worker/.cloudflare.env)",
-      );
-    }
     return;
   }
 
+  const tokenEnv = { CLOUDFLARE_API_TOKEN: token };
+  if (cf.CLOUDFLARE_ACCOUNT_ID && !isPlaceholder(cf.CLOUDFLARE_ACCOUNT_ID)) {
+    tokenEnv.CLOUDFLARE_ACCOUNT_ID = cf.CLOUDFLARE_ACCOUNT_ID;
+  }
+  const withToken = wranglerWhoami(tokenEnv);
   record(
-    "Cloudflare: wrangler whoami (existing session)",
-    false,
-    "not authenticated",
-  );
-  record(
-    "Cloudflare: scoped API token",
-    false,
-    "set CLOUDFLARE_API_TOKEN in worker/.cloudflare.env (see quick-start.md)",
-  );
-  record(
-    "Cloudflare: browser OAuth (fallback)",
-    false,
-    "run: npm run setup:cloud — scoped API token is recommended over browser login",
+    "Cloudflare: wrangler whoami (scoped API token)",
+    withToken.ok,
+    withToken.ok
+      ? withToken.out.split("\n")[0] || "authenticated via token"
+      : "whoami failed — check token permissions and CLOUDFLARE_ACCOUNT_ID",
   );
 }
 
@@ -296,6 +281,7 @@ function verifyEnv() {
 
   if (!envExists) return;
 
+  const rootEnvOnly = parseEnvFile(envPath);
   const env = loadEnv();
   const supabaseUrl = env.VITE_SUPABASE_URL;
   record(
@@ -306,11 +292,9 @@ function verifyEnv() {
 
   const publicKey = supabasePublicKey(env);
   record(
-    "env: Supabase public key (anon or publishable)",
+    "env: VITE_SUPABASE_PUBLISHABLE_KEY",
     Boolean(publicKey && !isPlaceholder(publicKey)),
-    publicKey
-      ? "set"
-      : "set VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY",
+    publicKey ? "set" : "missing or placeholder",
   );
 
   const apiUrl = env.VITE_API_BASE_URL;
@@ -320,14 +304,15 @@ function verifyEnv() {
     apiUrl || "missing — use http://localhost:8787 for local dev",
   );
 
-  if (env.SUPABASE_SERVICE_ROLE_KEY && !isPlaceholder(env.SUPABASE_SERVICE_ROLE_KEY)) {
+  const secretInRoot = rootEnvOnly.SUPABASE_SECRET_KEY;
+  if (secretInRoot && !isPlaceholder(secretInRoot)) {
     record(
-      "env: service role not in .env (security)",
+      "env: secret key not in .env (security)",
       false,
-      "move SUPABASE_SERVICE_ROLE_KEY to worker/.dev.vars only",
+      "move SUPABASE_SECRET_KEY to worker/.dev.vars only",
     );
   } else {
-    record("env: service role not in .env (security)", true, "OK");
+    record("env: secret key not in .env (security)", true, "OK");
   }
 
   if (workerVarsExists) {
@@ -336,14 +321,23 @@ function verifyEnv() {
       Boolean(env.SUPABASE_URL && !isPlaceholder(env.SUPABASE_URL)),
       env.SUPABASE_URL ? "set" : "missing or placeholder",
     );
-    record(
-      "worker/.dev.vars: SUPABASE_SERVICE_ROLE_KEY",
-      Boolean(
-        env.SUPABASE_SERVICE_ROLE_KEY &&
-          !isPlaceholder(env.SUPABASE_SERVICE_ROLE_KEY),
-      ),
-      env.SUPABASE_SERVICE_ROLE_KEY ? "set" : "missing or placeholder",
-    );
+    if (
+      env.SUPABASE_PUBLISHABLE_KEY &&
+      !isPlaceholder(env.SUPABASE_PUBLISHABLE_KEY)
+    ) {
+      record(
+        "worker/.dev.vars: SUPABASE_SECRET_KEY",
+        false,
+        "SUPABASE_PUBLISHABLE_KEY belongs in .env — use SUPABASE_SECRET_KEY here",
+      );
+    } else {
+      const secret = supabaseSecretKey(env);
+      record(
+        "worker/.dev.vars: SUPABASE_SECRET_KEY",
+        Boolean(secret && !isPlaceholder(secret)),
+        secret ? "set" : "missing or placeholder",
+      );
+    }
   }
 }
 
@@ -351,17 +345,17 @@ function verifyEnv() {
 async function verifySupabaseConnect() {
   const env = loadEnv();
   const url = (env.VITE_SUPABASE_URL || env.SUPABASE_URL || "").replace(/\/$/, "");
-  const anonKey = supabasePublicKey(env);
+  const publicKey = supabasePublicKey(env);
 
   if (!url || isPlaceholder(url)) {
     record("Supabase URL configured", false, "set VITE_SUPABASE_URL in .env");
     return;
   }
-  if (!anonKey || isPlaceholder(anonKey)) {
+  if (!publicKey || isPlaceholder(publicKey)) {
     record(
       "Supabase public key configured",
       false,
-      "set VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY in .env",
+      "set VITE_SUPABASE_PUBLISHABLE_KEY in .env",
     );
     return;
   }
@@ -371,7 +365,7 @@ async function verifySupabaseConnect() {
 
   try {
     const authRes = await fetch(`${url}/auth/v1/health`, {
-      headers: { apikey: anonKey },
+      headers: { apikey: publicKey },
     });
     const authOk = authRes.ok || authRes.status === 401;
     record(
@@ -379,7 +373,7 @@ async function verifySupabaseConnect() {
       authOk,
       authOk
         ? `HTTP ${authRes.status}`
-        : `HTTP ${authRes.status} — check URL and public key`,
+        : `HTTP ${authRes.status} — check URL and publishable key`,
     );
     if (!authOk) return;
   } catch (e) {
@@ -387,12 +381,12 @@ async function verifySupabaseConnect() {
     return;
   }
 
-  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = supabaseSecretKey(env);
   if (!serviceKey || isPlaceholder(serviceKey)) {
     record(
-      "Supabase service role key",
+      "Supabase secret key",
       false,
-      "set SUPABASE_SERVICE_ROLE_KEY in worker/.dev.vars",
+      "set SUPABASE_SECRET_KEY in worker/.dev.vars",
     );
     return;
   }
@@ -408,19 +402,19 @@ async function verifySupabaseConnect() {
     const missing = body.includes("PGRST205") || body.includes("does not exist");
     if (missing) {
       record(
-        "Supabase service role (API reachable)",
+        "Supabase secret key (API reachable)",
         true,
         "schema not applied yet — expected before Phase 5 (database)",
       );
       return;
     }
     record(
-      "Supabase service role (profiles read)",
+      "Supabase secret key (profiles read)",
       res.ok,
-      res.ok ? "OK" : `HTTP ${res.status} — check service role key`,
+      res.ok ? "OK" : `HTTP ${res.status} — check SUPABASE_SECRET_KEY`,
     );
   } catch (e) {
-    record("Supabase service role (API reachable)", false, e.message);
+    record("Supabase secret key (API reachable)", false, e.message);
   }
 }
 
@@ -428,14 +422,14 @@ async function verifySupabaseConnect() {
 async function verifySupabase() {
   const env = loadEnv();
   const url = (env.VITE_SUPABASE_URL || env.SUPABASE_URL || "").replace(/\/$/, "");
-  const anonKey = supabasePublicKey(env);
+  const publicKey = supabasePublicKey(env);
 
-  if (!url || !anonKey) {
+  if (!url || !publicKey) {
     record("Supabase URL configured", false, "set VITE_SUPABASE_URL in .env");
     record(
       "Supabase public key configured",
       false,
-      "set VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY",
+      "set VITE_SUPABASE_PUBLISHABLE_KEY in .env",
     );
     return;
   }
@@ -444,7 +438,7 @@ async function verifySupabase() {
 
   try {
     const authRes = await fetch(`${url}/auth/v1/health`, {
-      headers: { apikey: anonKey },
+      headers: { apikey: publicKey },
     });
     record(
       "Supabase Auth reachable",
@@ -461,8 +455,8 @@ async function verifySupabase() {
         `${url}/rest/v1/${table}?select=*&limit=1`,
         {
           headers: {
-            apikey: anonKey,
-            Authorization: `Bearer ${anonKey}`,
+            apikey: publicKey,
+            Authorization: `Bearer ${publicKey}`,
           },
         },
       );
@@ -480,15 +474,15 @@ async function verifySupabase() {
           ? "table missing — run schema SQL"
           : res.ok
             ? "OK"
-            : `HTTP ${res.status} (table may exist; RLS can block anon reads)`,
+            : `HTTP ${res.status} (table may exist; RLS can block publishable reads)`,
       );
     } catch (e) {
       record(`Supabase table: ${table}`, false, e.message);
     }
   }
 
-  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
-  if (serviceKey && !serviceKey.includes("your-")) {
+  const serviceKey = supabaseSecretKey(env);
+  if (serviceKey && !isPlaceholder(serviceKey)) {
     try {
       const res = await fetch(`${url}/rest/v1/profiles?select=id&limit=1`, {
         headers: {
@@ -497,18 +491,18 @@ async function verifySupabase() {
         },
       });
       record(
-        "Supabase service role (profiles read)",
+        "Supabase secret key (profiles read)",
         res.ok,
-        res.ok ? "OK" : `HTTP ${res.status} — check service role key`,
+        res.ok ? "OK" : `HTTP ${res.status} — check SUPABASE_SECRET_KEY`,
       );
     } catch (e) {
-      record("Supabase service role (profiles read)", false, e.message);
+      record("Supabase secret key (profiles read)", false, e.message);
     }
   } else {
     record(
-      "Supabase service role (optional until worker/.dev.vars)",
+      "Supabase secret key (optional until worker/.dev.vars)",
       true,
-      "SUPABASE_SERVICE_ROLE_KEY not in env — add to worker/.dev.vars later",
+      "SUPABASE_SECRET_KEY not in env — add to worker/.dev.vars later",
     );
   }
 }

@@ -292,7 +292,7 @@ main() {
   log "Install complete."
   log "Next steps:"
   log "  1. Continue stack setup: docs/stack-setup.md (Phase 2 — cloud accounts)"
-  log "  2. Cloudflare login:  cd worker && npx wrangler login"
+  log "  2. Cloudflare token:  worker/.cloudflare.env (see docs/quick-start.md)"
   log "  3. Supabase login:    npx supabase login"
   print_terminal_notice
 }
