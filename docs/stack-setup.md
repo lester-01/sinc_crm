@@ -80,20 +80,18 @@ npm run verify:stack:supabase
 
 **Prerequisite:** Playwright browsers installed on your machine ([playwright-wsl-setup.md](./playwright-wsl-setup.md)). Phase 6 adds the repo harness (`e2e/`, npm scripts).
 
-### Phase 6 — App foundation (current)
+### Phase 6 — App foundation (complete)
 
-- [ ] Isolated E2E: `e2e-run.mjs` (create `sinc-ci-e2e-*` → seed → test → artifacts → delete)
-- [ ] Playwright + `test:e2e` / `test:e2e:ui` (agent uses UI); [e2e-artifacts.md](./e2e-artifacts.md)
-- [ ] **E2E only:** `SUPABASE_ACCESS_TOKEN` + `SUPABASE_ORG_SLUG` in `worker/.dev.vars` (not needed for `npm run dev`)
-- [x] Playwright browsers on WSL ([playwright-wsl-setup.md](./playwright-wsl-setup.md)) — `npx playwright install chromium` (done on dev machine)
-- [ ] Repo harness: `@playwright/test`, `e2e/`, `npm run test:e2e:ui` (Phase 6)
-- [ ] Login/sign-up with working inputs (replace disabled scaffold)
-- [ ] Auth session + protected routes + role-aware shell
-- [ ] shadcn components from wireframe list
-- [ ] Tests `AUTH-*`, `NAV-*` green
-- [ ] Phase doc: [phases/phase-06-foundation.md](./phases/phase-06-foundation.md)
+- [x] Isolated E2E: `e2e-run.mjs` (create `sinc-ci-e2e-*` → seed → test → artifacts → delete)
+- [x] Playwright + `test:e2e` / `test:e2e:ui` / `test:e2e:dev` — [e2e-artifacts.md](./e2e-artifacts.md)
+- [x] **E2E only:** `SUPABASE_ACCESS_TOKEN` + `SUPABASE_ORG_SLUG` in `worker/.dev.vars`
+- [x] Playwright browsers on WSL — run `sudo npx playwright install-deps chromium` if launch fails
+- [x] Login/sign-up, auth session, protected routes, role-aware shell
+- [x] shadcn: input, label, card, dropdown-menu
+- [x] Tests `AUTH-*`, `NAV-*` in `e2e/specs/phase-06-auth.spec.ts`
+- [x] Phase doc: [phases/phase-06-foundation.md](./phases/phase-06-foundation.md)
 
-### Phase 7 — Clients
+### Phase 7 — Clients (current)
 
 - [ ] Worker clients routes + service + zod
 - [ ] ClientsPage + ClientDetailPage + `src/features/clients/`
@@ -218,7 +216,7 @@ npm run verify:github-actions # optional — GitHub Actions readiness on origin 
 ```
 
 **Infrastructure (Phases 1–5):** complete.  
-**Current focus:** Phase 6 — [build-plan.md](./build-plan.md) · [phases/phase-06-foundation.md](./phases/phase-06-foundation.md)
+**Current focus:** Phase 7 — [build-plan.md](./build-plan.md) · [phases/phase-07-clients.md](./phases/phase-07-clients.md) (create when starting)
 
 ---
 

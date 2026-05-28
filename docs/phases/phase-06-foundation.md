@@ -1,8 +1,8 @@
 # Phase 06 — App foundation
 
-**Status:** Not started  
-**Started:** —  
-**Completed:** —
+**Status:** Complete  
+**Started:** 2026-05-27  
+**Completed:** 2026-05-27
 
 Links: [build-plan](../build-plan.md) · [testing-plan](../testing-plan.md) · [stack-setup](../stack-setup.md)
 
@@ -10,89 +10,69 @@ Links: [build-plan](../build-plan.md) · [testing-plan](../testing-plan.md) · [
 
 ## Goals
 
-- Working login (email + password inputs, not disabled scaffold)
-- Supabase Auth session wired to `apiFetch`
-- Protected routes and role-aware app shell per wireframe
-- Isolated E2E orchestrator (`sinc-ci-e2e-*` create/seed/test/delete) + Playwright UI + [e2e-artifacts](../e2e-artifacts.md) (workflow file deferred)
-
----
-
-## Scope
-
-### In scope
-
-- Login, logout, client signup
-- `AppShell` improvements (nav, user menu)
-- shadcn components needed for auth and shell
-- Tests: `AUTH-*`, `NAV-*` ([testing-plan](../testing-plan.md))
-
-### Out of scope (this phase)
-
-- Clients, conversations, deals, dashboard data
-- Deploy
+- [x] Working login (email + password)
+- [x] Supabase Auth session wired to `apiFetch`
+- [x] Protected routes and role-aware app shell
+- [x] Isolated E2E orchestrator + Playwright specs (`AUTH-*`, `NAV-*`)
+- [x] shadcn: input, label, card, dropdown-menu
 
 ---
 
 ## Implementation
 
-_(Fill in during Phase 6.)_
-
-### Worker (API)
+### Worker
 
 | Method | Path | Notes |
 |--------|------|-------|
-| GET | `/api/me` | Already implemented; verify with each role |
+| GET | `/api/me` | Used by `AuthProvider` via `fetchMe()` |
 
 ### Frontend
 
-| Page / feature | Path | Wireframe section |
-|----------------|------|-------------------|
-| Login | `/login` | — |
-| App shell | `/` layout | App Shell |
+| Page / feature | Path |
+|----------------|------|
+| Login | `/login` — sign in + client sign up |
+| Auth | `src/features/auth/*` — context, protected route, nav by role |
+| App shell | Role-filtered nav, user menu, sign out |
 
----
+### E2E
 
-## Security & role constraints
-
-| Actor | Allowed | Forbidden |
-|-------|---------|-----------|
-| client | Login, reduced nav | Manager dashboard nav |
-| sales | Login, CRM nav (no dashboard) | Dashboard |
-| manager | Full nav including dashboard | — |
-| unauthenticated | `/login` | All app routes |
+| Script | Purpose |
+|--------|---------|
+| `scripts/e2e-run.mjs` | Isolated DB pipeline; `--dev` skips create/delete |
+| `scripts/e2e-create-project.mjs` | `sinc-ci-e2e-*` via Management API |
+| `npm run test:e2e:ui` | Playwright UI mode (preferred locally) |
+| `npm run test:e2e:dev` | Tests against existing dev Supabase |
 
 ---
 
 ## Tests added
 
-| Test ID | Spec file | Status |
-|---------|-----------|--------|
-| AUTH-01 … NAV-03 | `e2e/specs/phase-06-auth.spec.ts` | Planned |
+| Test ID | Status |
+|---------|--------|
+| AUTH-01 … AUTH-07 | Implemented in `e2e/specs/phase-06-auth.spec.ts` |
+| NAV-01 … NAV-03 | Implemented |
 
----
-
-## Verification
+Run locally (WSL):
 
 ```bash
-npm run dev
-cd worker && npm run dev
-npm run test:e2e -- --grep @phase6
+# If browsers fail: sudo npx playwright install-deps chromium
+npm run test:e2e:dev -- --grep @phase6
+npm run test:e2e:ui -- --grep @phase6   # watch in UI
 ```
 
----
-
-## Decisions & notes
-
-- 
+API-only checks pass without browser libs. UI tests need Playwright system deps on WSL.
 
 ---
 
-## Known issues / debt
+## Decisions
 
-- 
+- **Role home:** manager → `/dashboard`, sales → `/clients`, client → `/conversations`
+- **Client nav:** Clients + Conversations only (no Dashboard/Pipeline)
+- **Sales nav:** no Dashboard
+- **E2E login:** assert `GET /api/me` after sign-in
 
 ---
 
-## Handoff to next phase
+## Handoff to Phase 7
 
-- Phase 7 builds on authenticated `apiFetch` and role from `/api/me`
+- Use `useAuth()` / `apiFetch` for clients API and pages

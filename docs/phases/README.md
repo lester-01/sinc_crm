@@ -12,7 +12,7 @@ One markdown file per **build phase** (6–14). Written **during** implementatio
 
 | Phase | Doc | Status |
 |------:|-----|--------|
-| 6 | [phase-06-foundation.md](./phase-06-foundation.md) | Not started |
+| 6 | [phase-06-foundation.md](./phase-06-foundation.md) | Complete |
 | 7 | [phase-07-clients.md](./phase-07-clients.md) | Not started |
 | 8 | [phase-08-conversations.md](./phase-08-conversations.md) | Not started |
 | 9 | [phase-09-deals.md](./phase-09-deals.md) | Not started |
