@@ -60,7 +60,7 @@ Cloudflare: **scoped API token only** for setup/verify. OAuth/`wrangler login` i
 **Guide:** [database-setup.md](./database-setup.md) · **Future work:** [roadmap.md](./roadmap.md)
 
 ```bash
-npm run db:schema    # empty DB only — needs SUPABASE_DB_PASSWORD in worker/.dev.vars
+npm run db:schema    # empty DB only — needs SUPABASE_DB_URL (transaction pooler) in worker/.dev.vars
 npm run db:seed
 npm run verify:stack:supabase
 ```

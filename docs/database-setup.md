@@ -38,39 +38,59 @@ Use a **dedicated dev/demo** Supabase project — not production.
 | `VITE_API_BASE_URL` | Frontend | Local: `http://localhost:8787` | `.env` |
 | `SUPABASE_URL` | Worker, scripts | Same Project URL as above | `worker/.dev.vars` |
 | `SUPABASE_SECRET_KEY` | Worker, `db:seed`, verify | Same API page → **Secret** key (never commit) | `worker/.dev.vars` |
-| `SUPABASE_DB_PASSWORD` | `db:schema`, empty/seed preflight via CLI | Dashboard → **Project Settings** → **Database** → database password | `worker/.dev.vars` |
-| `SUPABASE_DB_URL` | Alternative to password | Database → **Connection string** (URI mode, port 5432) | `worker/.dev.vars` (optional) |
+| `SUPABASE_DB_URL` | **`db:schema`**, CLI preflight | Dashboard → **Connect** → **Transaction pooler** (port **6543**) | `worker/.dev.vars` |
+| `SUPABASE_DB_PASSWORD` | Only if URL uses `[YOUR-PASSWORD]` | Dashboard → search **`password`** → database password | `worker/.dev.vars` |
 | `SEED_DEMO_PASSWORD` | `db:seed` only | You choose (default `demo1234`) | Shell env / CI secret (optional) |
 
-**Not required for these scripts:** Cloudflare keys (Phase 4), Supabase personal access token (optional for `supabase link` only).
+**Not required:** Cloudflare keys (Phase 4). **Cannot be auto-fetched:** pooler host/region (see below).
 
-### How to get the database password
+### Transaction pooler (not direct connection)
 
-The database password is shown **only once** when you create the project. If you did not save it, you must **reset** it — you cannot view the old value again.
+For **serverless** (Cloudflare Workers), Supabase recommends the **Transaction pooler** (port **6543**), not the direct `db.<ref>.supabase.co` host.
 
-**Fastest path:** open your project in the [Supabase Dashboard](https://supabase.com/dashboard), use the top **search bar**, type **`password`**, and open the result that takes you to the database password / connection settings page.
+Scripts use **exactly** what you paste in `SUPABASE_DB_URL` — **no hardcoded region, host, or `aws-0` / `aws-1` guessing.**
 
-**Or manually:**
+1. Dashboard → **Connect** (or **Project Settings** → **Database** → connection strings)  
+2. Choose **Transaction pooler** (sometimes labeled for ORM / serverless)  
+3. Copy the **URI** — it looks like:
 
-1. **Project Settings** (gear) → **Database**  
-2. Under **Database password**, use **Reset database password** if you lost the original  
-3. Copy the new password immediately and store it in a password manager  
+```txt
+postgresql://postgres.<project-ref>:[YOUR-PASSWORD]@<pooler-host>:6543/postgres
+```
 
-Add to `worker/.dev.vars`:
+4. Paste into `worker/.dev.vars` as `SUPABASE_DB_URL=...`
+
+Your project’s values come **only from the dashboard** (example shape — yours may differ):
+
+| Field | Example (your project) |
+|-------|-------------------------|
+| Host | `aws-1-eu-central-1.pooler.supabase.com` |
+| Port | `6543` |
+| User | `postgres.fgoqijltbhkrztxjebjm` |
+| Database | `postgres` |
+
+### Do you still need `SUPABASE_DB_PASSWORD`?
+
+| `SUPABASE_DB_URL` | Also need password? |
+|-------------------|---------------------|
+| Full URI with password already in it | **No** |
+| URI with `[YOUR-PASSWORD]` placeholder | **Yes** — set `SUPABASE_DB_PASSWORD`; script substitutes it (URL-encodes special characters) |
+
+**CI tip:** store `SUPABASE_DB_URL` with `[YOUR-PASSWORD]` and `SUPABASE_DB_PASSWORD` as separate secrets so the URI is not committed.
+
+### Can `SUPABASE_SECRET_KEY` fetch the pooler URL?
+
+**No.** The secret key authenticates the **Supabase HTTP API** (Auth, REST, Realtime). It does **not** return Postgres pooler hostnames or connection strings.
+
+Users (and CI) must **copy `SUPABASE_DB_URL` from the dashboard**. The scripts never construct pooler URLs from region or project ref.
+
+### Database password (reset / search)
+
+The database password is shown **only once** at project creation. If you lost it, **reset** it in **Project Settings** → **Database**, or search **`password`** in the dashboard search bar.
 
 ```env
 SUPABASE_DB_PASSWORD=your-password-here
 ```
-
-**Recommended:** copy the **Session pooler** connection string from the same Database page into `SUPABASE_DB_URL` in `worker/.dev.vars` — that always matches your project’s host and username format.
-
-If you only set `SUPABASE_DB_PASSWORD`, the CLI builds a pooler URL automatically (see `scripts/lib/pg-exec.mjs`):
-
-```txt
-postgresql://postgres.<project-ref>:PASSWORD@aws-1-<region>.pooler.supabase.com:5432/postgres
-```
-
-Override with `SUPABASE_DB_HOST`, `SUPABASE_DB_USER`, or `SUPABASE_DB_REGION` if your dashboard shows a different pooler host (e.g. `aws-0-…` vs `aws-1-…`). Special characters in the password are URL-encoded automatically.
 
 ### How to get the secret key
 
@@ -86,6 +106,7 @@ Used for seeding (Auth Admin API) and the Worker at runtime. **Never** put it in
 
 Store secrets in the repo (or environment):
 
+- `SUPABASE_DB_URL` (transaction pooler URI with `[YOUR-PASSWORD]` placeholder)
 - `SUPABASE_DB_PASSWORD`
 - `SUPABASE_SECRET_KEY`
 - `SEED_DEMO_PASSWORD` (optional)
@@ -100,6 +121,7 @@ Check out repo, create env files from secrets, then:
     cat >> worker/.dev.vars <<EOF
     SUPABASE_URL=${{ secrets.SUPABASE_URL }}
     SUPABASE_SECRET_KEY=${{ secrets.SUPABASE_SECRET_KEY }}
+    SUPABASE_DB_URL=${{ secrets.SUPABASE_DB_URL }}
     SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }}
     EOF
 - name: Write .env
@@ -315,5 +337,5 @@ scripts/
   lib/load-stack-env.mjs
   lib/supabase-cli.mjs
   lib/supabase-db-check.mjs
-  lib/pg-exec.mjs          # builds --db-url connection string only
+  lib/resolve-db-url.mjs   # SUPABASE_DB_URL from dashboard only (no hardcoded host)
 ```

@@ -16,7 +16,7 @@ import {
   getSupabaseUrl,
   loadStackEnv,
 } from "./lib/load-stack-env.mjs";
-import { requireDbUrl } from "./lib/supabase-cli.mjs";
+import { resolveDbUrlOrExplain } from "./lib/resolve-db-url.mjs";
 import { supabaseDbQuery } from "./lib/supabase-cli.mjs";
 
 function fail(msg) {
@@ -39,18 +39,19 @@ async function main() {
     );
   }
 
-  const dbUrl = requireDbUrl(merged, ref);
-  if (!dbUrl) {
-    fail(
-      "Database connection required (Supabase CLI uses direct Postgres).\n" +
-        "Add to worker/.dev.vars:\n" +
-        "  SUPABASE_DB_PASSWORD=...  (Dashboard → Project Settings → Database)\n" +
-        "Or: SUPABASE_DB_URL=postgresql://... (full connection string)\n" +
-        "See docs/database-setup.md — How to get each credential",
-    );
+  const { url: dbUrl, error: dbUrlError } = resolveDbUrlOrExplain(merged);
+  if (dbUrlError || !dbUrl) {
+    fail(dbUrlError || "Missing SUPABASE_DB_URL");
   }
 
   const ctx = await getDbContext(merged, ref, root);
+  if (!ctx.dbUrl) {
+    fail(
+      "SUPABASE_DB_URL is required for CLI checks.\n" +
+        "Copy Transaction pooler URI from Dashboard → Connect (port 6543).\n" +
+        "See docs/database-setup.md",
+    );
+  }
 
   if (await checkSchemaExists(ctx, root)) {
     fail(

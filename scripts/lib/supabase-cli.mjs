@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildDbUrl } from "./pg-exec.mjs";
+import { resolveDbUrlOrExplain } from "./resolve-db-url.mjs";
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -11,10 +11,14 @@ export function getSupabaseCliBin(root = REPO_ROOT) {
   return existsSync(local) ? local : "supabase";
 }
 
-export function requireDbUrl(merged, projectRef) {
-  const dbUrl = buildDbUrl(merged, projectRef);
-  if (!dbUrl) return null;
-  return dbUrl;
+export function requireDbUrl(merged) {
+  const { url, error } = resolveDbUrlOrExplain(merged);
+  if (error) {
+    const err = new Error(error);
+    err.name = "DbUrlConfigError";
+    throw err;
+  }
+  return url;
 }
 
 /**

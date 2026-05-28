@@ -5,8 +5,10 @@ SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SECRET_KEY=your-secret-key
 
 # Required for npm run db:schema (Supabase CLI → Postgres)
-# Dashboard → search "password" → reset/copy database password (shown once at project creation)
-SUPABASE_DB_PASSWORD=your-database-password
+# Dashboard → Connect → ORM / Transaction pooler (port 6543, serverless-safe)
+# Paste the URI exactly as shown; use [YOUR-PASSWORD] placeholder or embed password.
+SUPABASE_DB_URL=postgresql://postgres.your-project-ref:[YOUR-PASSWORD]@aws-0-your-region.pooler.supabase.com:6543/postgres
 
-# Recommended: Session pooler URI from Database page (overrides host/user below)
-# SUPABASE_DB_URL=postgresql://postgres.your-project-ref:password@aws-1-eu-central-1.pooler.supabase.com:5432/postgres
+# Required only if SUPABASE_DB_URL contains [YOUR-PASSWORD]
+# Dashboard → search "password" → Database password (shown once; reset if lost)
+SUPABASE_DB_PASSWORD=your-database-password

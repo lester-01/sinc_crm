@@ -91,8 +91,13 @@ export async function databaseHasDataRest(admin) {
   return false;
 }
 
-export async function getDbContext(merged, projectRef, root) {
-  const dbUrl = requireDbUrl(merged, projectRef);
+export async function getDbContext(merged, _projectRef, root) {
+  let dbUrl = null;
+  try {
+    dbUrl = requireDbUrl(merged);
+  } catch {
+    dbUrl = null;
+  }
   const url = (merged.VITE_SUPABASE_URL || merged.SUPABASE_URL || "").replace(
     /\/$/,
     "",

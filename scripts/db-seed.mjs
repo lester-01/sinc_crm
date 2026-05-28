@@ -3,7 +3,7 @@
  * Seed demo users (Auth Admin API) and CRM rows (Supabase REST).
  * Empty database only. No Cursor/MCP — uses SUPABASE_SECRET_KEY from worker/.dev.vars.
  *
- * Preflight checks use Supabase CLI when SUPABASE_DB_PASSWORD / SUPABASE_DB_URL is set.
+ * Preflight checks use Supabase CLI when SUPABASE_DB_URL is set (transaction pooler).
  */
 
 import {
