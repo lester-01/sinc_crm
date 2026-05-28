@@ -49,11 +49,21 @@ Merged former phases 4 and 5. **Installers do not copy env files** — you copy 
 
 Cloudflare: **scoped API token only** for setup/verify. OAuth/`wrangler login` is deprecated ([cloudflare-auth.md](./cloudflare-auth.md)).
 
-### Phase 5 — Supabase database
+### Phase 5 — Supabase database (complete)
 
-- [ ] SQL schema + indexes ([database.md](../project_requirements/database.md))
-- [ ] Auth, Realtime, profiles bootstrap, seeds
-- [ ] Run: `npm run verify:stack:supabase`
+- [x] SQL schema + indexes — `supabase/schema/` ([database.md](../project_requirements/database.md))
+- [x] RLS + Realtime publication + profile bootstrap trigger
+- [x] Auth: disable email confirmation for demo ([database-setup.md](./database-setup.md))
+- [x] Seeds: 2 managers, 3 sales, 4 clients (`npm run db:seed`)
+- [x] Run: `npm run verify:stack:supabase`
+
+**Guide:** [database-setup.md](./database-setup.md) · **Future work:** [roadmap.md](./roadmap.md)
+
+```bash
+npm run db:schema    # empty DB only — needs SUPABASE_DB_PASSWORD in worker/.dev.vars
+npm run db:seed
+npm run verify:stack:supabase
+```
 
 ### Phase 6 — Deploy & submission
 
@@ -72,6 +82,8 @@ Cloudflare: **scoped API token only** for setup/verify. OAuth/`wrangler login` i
 | `npm run setup:worker` | Phase 2: Worker runtime packages |
 | `npm run setup:frontend` | Phase 3: Vite/React packages at repo root |
 | `npm run setup:cloud` | **Phase 4:** env check, Cloudflare auth, `verify:stack:cloud` |
+| `npm run db:schema` | **Phase 5:** apply schema SQL (empty DB) |
+| `npm run db:seed` | **Phase 5:** demo users + CRM data (empty DB) |
 | `npm run install:project` | Master — `local`, `worker`, `frontend` (default; no env copy) |
 
 Override phases: `INSTALL_PROJECT_PHASES=local,worker npm run install:project`
@@ -110,7 +122,7 @@ npm run dev                   # frontend :5173
 cd worker && npm run dev      # API :8787
 ```
 
-**Phases 1–4 complete.** **Current:** Phase 5 — Supabase database schema and seeds.
+**Phases 1–5 complete.** **Current:** Phase 6 — deploy Worker + Pages and submission.
 
 ---
 

@@ -213,7 +213,9 @@ Individual checks:
 npm run verify:stack:env
 npm run verify:stack:cloudflare
 npm run verify:stack:github
-npm run verify:stack:supabase   # full schema check — use after Phase 5 database
+npm run db:schema               # Phase 5 — empty DB only (see database-setup.md)
+npm run db:seed                 # Phase 5 — demo users (see database-setup.md)
+npm run verify:stack:supabase   # Phase 5 — tables + secret key
 ```
 
 While still copying keys (files exist but values empty):
