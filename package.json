@@ -32,10 +32,13 @@
     "verify:github-actions": "node scripts/verify-github-actions.mjs",
     "test:e2e": "node scripts/e2e-run.mjs",
     "test:e2e:ui": "node scripts/e2e-run.mjs --ui",
+    "test:e2e:ui:dev": "node scripts/e2e-run.mjs --dev --ui",
     "test:e2e:dev": "playwright test",
     "verify:playwright": "node scripts/verify-playwright.mjs",
+    "playwright:setup": "node scripts/install-playwright.mjs",
     "playwright:install": "npx playwright install chromium",
-    "playwright:install-deps": "npx playwright install-deps chromium"
+    "playwright:install-deps": "bash scripts/install-playwright-deps.sh",
+    "playwright:install-deps:debian": "bash scripts/install-playwright-deps-debian.sh"
   },
   "dependencies": {
     "@radix-ui/react-dropdown-menu": "^2.1.16",

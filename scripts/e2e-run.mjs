@@ -77,11 +77,21 @@ async function main() {
   }
 
   const playwrightArgs = ["playwright", "test", ...pwArgs];
-  if (uiMode) playwrightArgs.push("--ui");
+  if (uiMode) {
+    playwrightArgs.push("--ui");
+    // Bundled Chromium trace viewer often hangs on WSLg; explicit host uses a normal browser tab.
+    if (process.platform === "linux") {
+      playwrightArgs.push("--ui-host", "127.0.0.1");
+    }
+    log("[e2e] UI mode: start Vite (:5173) + Worker (:8787) if not already running (reuseExistingServer).");
+    log("[e2e] UI opens at http://127.0.0.1:<port> — pick tests and click Run (tests do not auto-start).");
+    log("[e2e] If no browser opens, copy the 'Listening on http://127.0.0.1:...' URL from this terminal.");
+  }
 
   const playwrightEnv = {
     ...e2eEnv,
     PLAYWRIGHT_BROWSERS_PATH: "",
+    ...(uiMode ? { E2E_UI_MODE: "1" } : {}),
   };
 
   log(`[e2e] playwright ${playwrightArgs.slice(1).join(" ")}`);
