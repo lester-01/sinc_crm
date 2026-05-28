@@ -46,16 +46,31 @@ Use a **dedicated dev/demo** Supabase project — not production.
 
 ### How to get the database password
 
-1. [Supabase Dashboard](https://supabase.com/dashboard) → your project  
-2. **Project Settings** (gear) → **Database**  
-3. Under **Database password**, copy or reset the password  
-4. Add to `worker/.dev.vars`:
+The database password is shown **only once** when you create the project. If you did not save it, you must **reset** it — you cannot view the old value again.
+
+**Fastest path:** open your project in the [Supabase Dashboard](https://supabase.com/dashboard), use the top **search bar**, type **`password`**, and open the result that takes you to the database password / connection settings page.
+
+**Or manually:**
+
+1. **Project Settings** (gear) → **Database**  
+2. Under **Database password**, use **Reset database password** if you lost the original  
+3. Copy the new password immediately and store it in a password manager  
+
+Add to `worker/.dev.vars`:
 
 ```env
 SUPABASE_DB_PASSWORD=your-password-here
 ```
 
-The CLI builds a URL like `postgresql://postgres:PASSWORD@db.<project-ref>.supabase.co:5432/postgres` (see `scripts/lib/pg-exec.mjs`).
+**Recommended:** copy the **Session pooler** connection string from the same Database page into `SUPABASE_DB_URL` in `worker/.dev.vars` — that always matches your project’s host and username format.
+
+If you only set `SUPABASE_DB_PASSWORD`, the CLI builds a pooler URL automatically (see `scripts/lib/pg-exec.mjs`):
+
+```txt
+postgresql://postgres.<project-ref>:PASSWORD@aws-1-<region>.pooler.supabase.com:5432/postgres
+```
+
+Override with `SUPABASE_DB_HOST`, `SUPABASE_DB_USER`, or `SUPABASE_DB_REGION` if your dashboard shows a different pooler host (e.g. `aws-0-…` vs `aws-1-…`). Special characters in the password are URL-encoded automatically.
 
 ### How to get the secret key
 

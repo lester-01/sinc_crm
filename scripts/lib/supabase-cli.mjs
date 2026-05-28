@@ -11,11 +11,6 @@ export function getSupabaseCliBin(root = REPO_ROOT) {
   return existsSync(local) ? local : "supabase";
 }
 
-/** Percent-encode for --db-url (Supabase CLI requirement). */
-export function encodeDbUrl(url) {
-  return encodeURIComponent(url);
-}
-
 export function requireDbUrl(merged, projectRef) {
   const dbUrl = buildDbUrl(merged, projectRef);
   if (!dbUrl) return null;
@@ -38,7 +33,8 @@ export function supabaseDbQuery({
   if (file) args.push("-f", file);
   else if (sql) args.push(sql);
   if (json) args.push("-o", "json");
-  if (dbUrl) args.push("--db-url", encodeDbUrl(dbUrl));
+  // buildDbUrl already encodes user/password; pass URI as-is (do not encode whole string)
+  if (dbUrl) args.push("--db-url", dbUrl);
 
   const r = spawnSync("npx", args, {
     encoding: "utf8",
