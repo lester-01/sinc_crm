@@ -12,3 +12,9 @@ SUPABASE_DB_URL=postgresql://postgres.your-project-ref:[YOUR-PASSWORD]@aws-0-you
 # Required only if SUPABASE_DB_URL contains [YOUR-PASSWORD]
 # Dashboard → search "password" → Database password (shown once; reset if lost)
 SUPABASE_DB_PASSWORD=your-database-password
+
+# --- E2E ONLY (optional) — NOT needed for npm run dev, db:schema, or db:seed on your dev project ---
+# Only required for isolated E2E: npm run test:e2e / test:e2e:ui (creates/deletes sinc-ci-e2e-* projects)
+# https://supabase.com/dashboard/account/tokens — never commit real values
+# SUPABASE_ACCESS_TOKEN=your-personal-access-token
+# SUPABASE_ORG_SLUG=your-org-slug   # from dashboard URL: …/org/<slug>/…

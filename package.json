@@ -28,7 +28,8 @@
     "verify:stack:supabase": "node scripts/verify-stack-setup.mjs --phase=supabase",
     "verify:stack:github": "node scripts/verify-stack-setup.mjs --phase=github",
     "verify:stack:scaffold": "node scripts/verify-stack-setup.mjs --phase=scaffold",
-    "verify:stack:deploy": "node scripts/verify-stack-setup.mjs --phase=deploy"
+    "verify:stack:deploy": "node scripts/verify-stack-setup.mjs --phase=deploy",
+    "verify:github-actions": "node scripts/verify-github-actions.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",
