@@ -1,11 +1,19 @@
 #!/usr/bin/env node
 /**
- * Seed demo users and CRM data (empty database only).
- * Aborts if auth users or public data already exist.
+ * Seed demo users (Auth Admin API) and CRM rows (Supabase REST).
+ * Empty database only. No Cursor/MCP — uses SUPABASE_SECRET_KEY from worker/.dev.vars.
+ *
+ * Preflight checks use Supabase CLI when SUPABASE_DB_PASSWORD / SUPABASE_DB_URL is set.
  */
 
-import { createAdminClient, databaseHasData, schemaExists } from "./lib/supabase-db-check.mjs";
 import {
+  checkDatabaseHasData,
+  checkSchemaExists,
+  createAdminClient,
+  getDbContext,
+} from "./lib/supabase-db-check.mjs";
+import {
+  getProjectRef,
   getSupabaseSecretKey,
   getSupabaseUrl,
   loadStackEnv,
@@ -83,46 +91,44 @@ async function createAuthUser(admin, { email, fullName, role }) {
 }
 
 async function main() {
-  const { merged } = loadStackEnv();
+  const { merged, root } = loadStackEnv();
   const url = getSupabaseUrl(merged);
   const secret = getSupabaseSecretKey(merged);
+  const ref = getProjectRef(merged);
 
   if (!url || !secret) {
-    fail("Missing SUPABASE_URL and SUPABASE_SECRET_KEY");
+    fail("Missing SUPABASE_URL and SUPABASE_SECRET_KEY in worker/.dev.vars");
   }
 
+  const ctx = await getDbContext(merged, ref, root);
   const admin = createAdminClient(url, secret);
 
-  if (!(await schemaExists(admin))) {
+  if (!(await checkSchemaExists(ctx, root))) {
     fail("Schema not found. Run: npm run db:schema");
   }
 
-  if (await databaseHasData(admin)) {
+  if (await checkDatabaseHasData(ctx, root)) {
     fail(
-      "Database is not empty (auth users or app rows already exist).\n\n" +
+      "Database is not empty (auth.users or public rows exist).\n\n" +
         "To re-seed:\n" +
-        "  1. Open Supabase Dashboard → Authentication (delete users) and Table Editor (truncate/delete rows)\n" +
-        "     OR drop schema and run npm run db:schema again on an empty project\n" +
-        "  2. Run: npm run db:seed\n\n" +
-        "Scripts never auto-delete data — this protects databases in use.",
+        "  1. Dashboard → Authentication: delete users\n" +
+        "  2. Table Editor: delete/truncate public tables\n" +
+        "  3. Run: npm run db:seed\n\n" +
+        "Scripts never auto-delete data.",
     );
   }
 
-  console.log("Seeding demo users and CRM data...\n");
+  console.log("Seeding via Supabase API (service role key)...\n");
   console.log(`Demo password (all accounts): ${PASSWORD}`);
-  console.log("(override with SEED_DEMO_PASSWORD env)\n");
-
-  const managerIds = [];
-  for (const m of MANAGERS) {
-    managerIds.push(
-      await createAuthUser(admin, { ...m, role: "manager", fullName: m.fullName }),
-    );
-  }
+  console.log("(override with SEED_DEMO_PASSWORD)\n");
 
   const salesIds = [];
+  for (const m of MANAGERS) {
+    await createAuthUser(admin, { ...m, role: "manager" });
+  }
   for (const s of SALES) {
     salesIds.push(
-      await createAuthUser(admin, { ...s, role: "sales", fullName: s.fullName }),
+      await createAuthUser(admin, { ...s, role: "sales" }),
     );
   }
 
@@ -138,9 +144,8 @@ async function main() {
   }
 
   const sales1 = salesIds[0];
-  const createdBy = sales1;
-
   const clientRows = [];
+
   for (let i = 0; i < CLIENTS.length; i++) {
     const c = CLIENTS[i];
     const { data, error } = await admin
@@ -152,53 +157,43 @@ async function main() {
         phone: "+1000000000" + String(i + 1),
         country: c.country,
         target_country: c.targetCountry,
-        created_by: createdBy,
+        created_by: sales1,
       })
       .select("id")
       .single();
-    if (error) throw new Error(`clients insert: ${error.message}`);
+    if (error) throw new Error(`clients: ${error.message}`);
     clientRows.push({ ...c, id: data.id, profileId: clientProfileIds[i] });
   }
 
-  const { data: prospect, error: prospectErr } = await admin
-    .from("clients")
-    .insert({
-      profile_id: null,
-      full_name: "Prospect No Login",
-      email: "prospect.no.login@example.com",
-      country: "Kazakhstan",
-      target_country: "Canada",
-      created_by: salesIds[1],
-    })
-    .select("id")
-    .single();
-  if (prospectErr) throw new Error(prospectErr.message);
+  await admin.from("clients").insert({
+    profile_id: null,
+    full_name: "Prospect No Login",
+    email: "prospect.no.login@example.com",
+    country: "Kazakhstan",
+    target_country: "Canada",
+    created_by: salesIds[1],
+  });
 
   for (const row of clientRows) {
-    const assignee =
-      row.unassigned ? null : salesIds[row.assignedSales ?? 0];
-
+    const assignee = row.unassigned ? null : salesIds[row.assignedSales ?? 0];
     const { data: thread, error: threadErr } = await admin
       .from("conversation_threads")
       .insert({
         client_id: row.id,
         assigned_to: assignee,
         subject: row.threadSubject,
-        status: row.unassigned ? "open" : "open",
-        last_message_at: new Date().toISOString(),
+        status: "open",
       })
       .select("id")
       .single();
     if (threadErr) throw new Error(threadErr.message);
 
-    const senderType = "client";
     await admin.from("conversation_messages").insert({
       thread_id: thread.id,
       sender_id: row.profileId,
-      sender_type: senderType,
+      sender_type: "client",
       body: `Hello, I need help with ${row.threadSubject}.`,
     });
-
     await admin.from("conversation_messages").insert({
       thread_id: thread.id,
       sender_id: assignee ?? sales1,
@@ -217,7 +212,7 @@ async function main() {
           owner_id: owner,
           title: `${row.targetCountry} application`,
           stage: row.dealStage,
-          value_amount: 1200 + row.assignedSales * 100,
+          value_amount: 1200 + (row.assignedSales ?? 0) * 100,
           value_currency: "USD",
           expected_intake: "Fall 2026",
         })
@@ -231,7 +226,6 @@ async function main() {
         to_stage: "new_lead",
         changed_by: owner,
       });
-
       if (row.dealStage !== "new_lead") {
         await admin.from("deal_stage_history").insert({
           deal_id: deal.id,
@@ -240,28 +234,16 @@ async function main() {
           changed_by: owner,
         });
       }
-
       await admin.from("deal_notes").insert({
         deal_id: deal.id,
         author_id: owner,
-        body: `Initial note for ${row.fullName} — stage ${row.dealStage}.`,
+        body: `Initial note for ${row.fullName}.`,
       });
     }
   }
 
-  await admin.from("conversation_threads").insert({
-    client_id: prospect.id,
-    assigned_to: null,
-    subject: "Inbound lead — no account yet",
-    status: "open",
-  });
-
-  console.log("Seed complete.");
-  console.log("  Managers: manager1@demo.local, manager2@demo.local");
-  console.log("  Sales:    sales1@demo.local … sales3@demo.local");
-  console.log("  Clients:  client1@demo.local … client4@demo.local (client4 unassigned)");
-  console.log("  Extra:    prospect.no.login@example.com (CRM only, no auth)");
-  console.log("\nRun: npm run verify:stack:supabase");
+  console.log("\nSeed complete.");
+  console.log("  npm run verify:stack:supabase");
 }
 
 main().catch((err) => {

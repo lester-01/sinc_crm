@@ -1,7 +1,4 @@
-import pg from "pg";
-
-const { Client } = pg;
-
+/** Build Postgres connection URL for Supabase CLI `--db-url` (no direct pg driver). */
 export function buildDbUrl(merged, projectRef) {
   if (merged.SUPABASE_DB_URL) return merged.SUPABASE_DB_URL;
   const password = merged.SUPABASE_DB_PASSWORD;
@@ -11,17 +8,4 @@ export function buildDbUrl(merged, projectRef) {
   const user = merged.SUPABASE_DB_USER || "postgres";
   const database = merged.SUPABASE_DB_NAME || "postgres";
   return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${database}`;
-}
-
-export async function executeSqlFile(connectionString, filePath, sql) {
-  const client = new Client({
-    connectionString,
-    ssl: { rejectUnauthorized: false },
-  });
-  await client.connect();
-  try {
-    await client.query(sql);
-  } finally {
-    await client.end();
-  }
 }

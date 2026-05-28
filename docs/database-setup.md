@@ -6,12 +6,109 @@ Related: [project_requirements/database.md](../project_requirements/database.md)
 
 ---
 
+## Run without Cursor or any AI agent
+
+**Yes.** Anyone with Node 22+, this repo, and the credentials below can run:
+
+```bash
+npm run setup:local    # installs Supabase CLI at repo root
+npm run db:schema      # Supabase CLI: db query --file (empty DB only)
+npm run db:seed        # Supabase HTTP API via service role key (empty DB only)
+npm run verify:stack:supabase
+```
+
+| Step | Tool | Needs Cursor/MCP? |
+|------|------|-------------------|
+| Schema + empty/exists checks | **Supabase CLI** (`npx supabase db query`) | **No** |
+| Seed demo users | **@supabase/supabase-js** + `SUPABASE_SECRET_KEY` | **No** |
+| Verify tables | `node scripts/verify-stack-setup.mjs` | **No** |
+
+MCP/skills in Cursor are for **development convenience only** — they are not required for install or CI.
+
+---
+
+## Credentials (what to get, where to paste)
+
+Use a **dedicated dev/demo** Supabase project — not production.
+
+| Variable | Required for | How to get it | Paste into |
+|----------|--------------|---------------|------------|
+| `VITE_SUPABASE_URL` | Frontend, verify | Dashboard → **Project Settings** → **API** → Project URL | `.env` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Frontend, verify | Same page → **Publishable** key (public) | `.env` |
+| `VITE_API_BASE_URL` | Frontend | Local: `http://localhost:8787` | `.env` |
+| `SUPABASE_URL` | Worker, scripts | Same Project URL as above | `worker/.dev.vars` |
+| `SUPABASE_SECRET_KEY` | Worker, `db:seed`, verify | Same API page → **Secret** key (never commit) | `worker/.dev.vars` |
+| `SUPABASE_DB_PASSWORD` | `db:schema`, empty/seed preflight via CLI | Dashboard → **Project Settings** → **Database** → database password | `worker/.dev.vars` |
+| `SUPABASE_DB_URL` | Alternative to password | Database → **Connection string** (URI mode, port 5432) | `worker/.dev.vars` (optional) |
+| `SEED_DEMO_PASSWORD` | `db:seed` only | You choose (default `demo1234`) | Shell env / CI secret (optional) |
+
+**Not required for these scripts:** Cloudflare keys (Phase 4), Supabase personal access token (optional for `supabase link` only).
+
+### How to get the database password
+
+1. [Supabase Dashboard](https://supabase.com/dashboard) → your project  
+2. **Project Settings** (gear) → **Database**  
+3. Under **Database password**, copy or reset the password  
+4. Add to `worker/.dev.vars`:
+
+```env
+SUPABASE_DB_PASSWORD=your-password-here
+```
+
+The CLI builds a URL like `postgresql://postgres:PASSWORD@db.<project-ref>.supabase.co:5432/postgres` (see `scripts/lib/pg-exec.mjs`).
+
+### How to get the secret key
+
+1. **Project Settings** → **API** (or **API Keys**)  
+2. Copy the **secret** key (`sb_secret_...`) — not the publishable key  
+3. Paste as `SUPABASE_SECRET_KEY` in `worker/.dev.vars` only  
+
+Used for seeding (Auth Admin API) and the Worker at runtime. **Never** put it in `.env` or commit it.
+
+---
+
+## CI example (GitHub Actions)
+
+Store secrets in the repo (or environment):
+
+- `SUPABASE_DB_PASSWORD`
+- `SUPABASE_SECRET_KEY`
+- `SEED_DEMO_PASSWORD` (optional)
+
+Check out repo, create env files from secrets, then:
+
+```yaml
+- run: npm ci
+- run: npm run setup:local
+- name: Write worker/.dev.vars
+  run: |
+    cat >> worker/.dev.vars <<EOF
+    SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+    SUPABASE_SECRET_KEY=${{ secrets.SUPABASE_SECRET_KEY }}
+    SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }}
+    EOF
+- name: Write .env
+  run: |
+    cat > .env <<EOF
+    VITE_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+    VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+    VITE_API_BASE_URL=http://localhost:8787
+    EOF
+- run: npm run db:schema
+- run: npm run db:seed
+- run: npm run verify:stack:supabase
+```
+
+Use a **throwaway Supabase project** for CI — schema/seed abort if the database is not empty.
+
+---
+
 ## What Phase 5 delivers
 
 | Piece | Location | Purpose |
 |-------|----------|---------|
 | Schema SQL (ordered) | `supabase/schema/01` … `05` | Types, tables, indexes, profile bootstrap, RLS + Realtime |
-| Apply schema | `npm run db:schema` | DDL on **empty** DB only |
+| Apply schema | `npm run db:schema` | Supabase CLI `db query` on **empty** DB only |
 | Seed data | `npm run db:seed` | Demo auth users + CRM rows on **empty** DB only |
 | Verify | `npm run verify:stack:supabase` | Tables exist + secret key can read `profiles` |
 
@@ -133,16 +230,8 @@ When you read up on migrations later, you can adopt `supabase/migrations/` and m
 ## Prerequisites
 
 - Phase 4 complete (`verify:stack:cloud` passed).
-- `.env` and `worker/.dev.vars` with Supabase URL, publishable + **secret** keys.
-- For `npm run db:schema` from your machine, add **database password** to `worker/.dev.vars`:
-
-```env
-SUPABASE_DB_PASSWORD=your-database-password
-```
-
-(Full string alternative: `SUPABASE_DB_URL=postgresql://...`)
-
-Find it: Dashboard → **Project Settings** → **Database** → database password.
+- `.env` and `worker/.dev.vars` filled per [Credentials](#credentials-what-to-get-where-to-paste) above.
+- Supabase CLI installed: `npm run setup:local`.
 
 ---
 
@@ -163,9 +252,9 @@ npm run verify:stack:supabase
 
 ---
 
-## Applying schema without local DB password
+## Manual fallback (no CLI password)
 
-You can run the same SQL in **Supabase Dashboard → SQL Editor** (paste files in order `01` → `05`), or use the Supabase MCP `execute_sql` tool. `npm run db:schema` is the repeatable path when `SUPABASE_DB_PASSWORD` is set.
+Paste `supabase/schema/01` … `05` in order in **Dashboard → SQL Editor**. Same SQL as `npm run db:schema`. You still need secret/publishable keys for seed and the app.
 
 ---
 
@@ -206,9 +295,10 @@ supabase/schema/
   04_profile_bootstrap.sql
   05_rls_realtime.sql
 scripts/
-  db-apply-schema.mjs
-  db-seed.mjs
+  db-apply-schema.mjs      # wraps: supabase db query -f ...
+  db-seed.mjs              # Auth Admin API + REST (secret key)
   lib/load-stack-env.mjs
+  lib/supabase-cli.mjs
   lib/supabase-db-check.mjs
-  lib/pg-exec.mjs
+  lib/pg-exec.mjs          # builds --db-url connection string only
 ```
