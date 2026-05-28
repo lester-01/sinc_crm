@@ -41,8 +41,10 @@ Use a **dedicated dev/demo** Supabase project — not production.
 | `SUPABASE_DB_URL` | **`db:schema`**, CLI preflight | Dashboard → **Connect** → **Transaction pooler** (port **6543**) | `worker/.dev.vars` |
 | `SUPABASE_DB_PASSWORD` | Only if URL uses `[YOUR-PASSWORD]` | Dashboard → search **`password`** → database password | `worker/.dev.vars` |
 | `SEED_DEMO_PASSWORD` | `db:seed` only | You choose (default `demo1234`) | Shell env / CI secret (optional) |
+| `SUPABASE_ACCESS_TOKEN` | **E2E only** (`test:e2e`) | [Account tokens](https://supabase.com/dashboard/account/tokens) | `worker/.dev.vars` — **not** needed for dev or `db:seed` |
+| `SUPABASE_ORG_SLUG` | **E2E only** | Org slug in dashboard URL (`…/org/<slug>/…`) | `worker/.dev.vars` — **not** needed for dev |
 
-**Not required:** Cloudflare keys (Phase 4). **Cannot be auto-fetched:** pooler host/region (see below).
+**Not required:** Cloudflare keys (Phase 4). **Cannot be auto-fetched:** pooler host/region (see below). **E2E tokens** are only for isolated Playwright runs that create `sinc-ci-e2e-*` projects — see [playwright-wsl-setup.md](./playwright-wsl-setup.md).
 
 ### Transaction pooler (not direct connection)
 

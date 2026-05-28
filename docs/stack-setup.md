@@ -1,12 +1,16 @@
 # Stack Setup Guide — Student CRM
 
-Everything you need **installed locally** and **provisioned in the cloud** before building the app. Check items off as you go, then run the verification tests at the bottom.
+Setup checklist, **build-phase todo**, and verification commands. Use this file to track what is done and what is next.
+
+**Build phases 6–14:** [build-plan.md](./build-plan.md)  
+**Automated tests (E2E + API):** [testing-plan.md](./testing-plan.md)  
+**Per-phase implementation notes:** [phases/README.md](./phases/README.md)
 
 Related: [project_requirements/README.md](../project_requirements/README.md), [project_requirements/architecture.md](../project_requirements/architecture.md), [quick-start.md](./quick-start.md)
 
 ---
 
-## Setup checklist (check off as you go)
+## Setup checklist — infrastructure (complete)
 
 ### Phase 1 — Local tools (complete)
 
@@ -65,11 +69,95 @@ npm run db:seed
 npm run verify:stack:supabase
 ```
 
-### Phase 6 — Deploy & submission
+---
 
-- [ ] Worker + Pages deployed; README lists URLs
+## Build todo — application (Phases 6–14)
+
+**Approach:** Vertical slices per [build-plan.md](./build-plan.md) (wireframes + API + tests each phase).  
+**Tests (now):** Local Playwright **UI mode** (`test:e2e:ui`) as each phase lands — see [testing-plan.md](./testing-plan.md).  
+**CI / GitHub Actions:** deferred until the CI stage — [ci-e2e-recipe.md](./ci-e2e-recipe.md) only.  
+**Docs:** Update the matching file under [phases/](./phases/) as you complete each phase.
+
+**Prerequisite:** Playwright browsers installed on your machine ([playwright-wsl-setup.md](./playwright-wsl-setup.md)). Phase 6 adds the repo harness (`e2e/`, npm scripts).
+
+### Phase 6 — App foundation (current)
+
+- [ ] Isolated E2E: `e2e-run.mjs` (create `sinc-ci-e2e-*` → seed → test → artifacts → delete)
+- [ ] Playwright + `test:e2e` / `test:e2e:ui` (agent uses UI); [e2e-artifacts.md](./e2e-artifacts.md)
+- [ ] **E2E only:** `SUPABASE_ACCESS_TOKEN` + `SUPABASE_ORG_SLUG` in `worker/.dev.vars` (not needed for `npm run dev`)
+- [x] Playwright browsers on WSL ([playwright-wsl-setup.md](./playwright-wsl-setup.md)) — `npx playwright install chromium` (done on dev machine)
+- [ ] Repo harness: `@playwright/test`, `e2e/`, `npm run test:e2e:ui` (Phase 6)
+- [ ] Login/sign-up with working inputs (replace disabled scaffold)
+- [ ] Auth session + protected routes + role-aware shell
+- [ ] shadcn components from wireframe list
+- [ ] Tests `AUTH-*`, `NAV-*` green
+- [ ] Phase doc: [phases/phase-06-foundation.md](./phases/phase-06-foundation.md)
+
+### Phase 7 — Clients
+
+- [ ] Worker clients routes + service + zod
+- [ ] ClientsPage + ClientDetailPage + `src/features/clients/`
+- [ ] Tests `CLI-*`, `API-CLI-*`
+- [ ] Phase doc: [phases/phase-07-clients.md](./phases/phase-07-clients.md)
+
+### Phase 8 — Conversations & chat
+
+- [ ] Worker conversations/messages + assignment rules
+- [ ] ConversationPage + Realtime in `realtime.ts`
+- [ ] Tests `CHAT-*`, `API-CONV-*` (including chat privacy)
+- [ ] Phase doc: [phases/phase-08-conversations.md](./phases/phase-08-conversations.md)
+
+### Phase 9 — Deals & pipeline
+
+- [ ] Worker deals routes + stage history + notes
+- [ ] PipelinePage + DealDetailPage (Select stage, no drag-drop)
+- [ ] Tests `DEAL-*`, `PIPE-*`, `API-DEAL-*`
+- [ ] Phase doc: [phases/phase-09-deals.md](./phases/phase-09-deals.md)
+
+### Phase 10 — Dashboard
+
+- [ ] Worker `GET /api/dashboard`
+- [ ] DashboardPage (manager only)
+- [ ] Tests `DASH-*`
+- [ ] Phase doc: [phases/phase-10-dashboard.md](./phases/phase-10-dashboard.md)
+
+### Phase 11 — Polish & full regression
+
+- [ ] Loading / empty / error states
+- [ ] Full E2E suite + evaluation smoke (`EVAL-*`)
+- [ ] Phase doc: [phases/phase-11-polish.md](./phases/phase-11-polish.md)
+
+### Phase 12 — README & doc compile
+
+- [ ] Short root `README.md` (setup + run tests only)
+- [ ] Full [project-guide.md](./project-guide.md) compiled from phase docs
+- [ ] `docs/README.md` index
+- [ ] Phase doc: [phases/phase-12-readme.md](./phases/phase-12-readme.md)
+
+### Phase 13 — Deploy
+
+- [ ] Cloudflare Worker + Pages; production env
+- [ ] `npm run verify:stack:deploy`
+- [ ] Optional deploy smoke tests (`DEPLOY-*`)
+- [ ] Phase doc: [phases/phase-13-deploy.md](./phases/phase-13-deploy.md)
+
+### Phase 14 — Submission
+
 - [ ] Video demo + Google Form + review meeting
-- [ ] Run: `npm run verify:stack:deploy`
+- [ ] README lists deployed URLs
+- [ ] Phase doc: [phases/phase-14-submission.md](./phases/phase-14-submission.md)
+
+### Optional — GitHub Actions readiness (anytime)
+
+- [ ] Run `npm run verify:github-actions` — checks if connected `origin` can likely run workflows (not required for dev)
+
+### Deferred — GitHub Actions CI (after local E2E stable)
+
+- [ ] `.github/workflows/e2e.yml` — calls same `e2e-run.mjs` as local (headless)
+- [ ] Upload `test-results/<session>/` artifact
+- [ ] Document CI secrets in [project-guide.md](./project-guide.md)
+
+Orchestrator + isolated DB runs are built in **Phase 6**; only the workflow file is deferred.
 
 ---
 
@@ -85,6 +173,8 @@ npm run verify:stack:supabase
 | `npm run db:schema` | **Phase 5:** apply schema SQL (empty DB) |
 | `npm run db:seed` | **Phase 5:** demo users + CRM data (empty DB) |
 | `npm run install:project` | Master — `local`, `worker`, `frontend` (default; no env copy) |
+| `npm run test:e2e` | **Phase 6+:** Playwright (added with harness) |
+| `npm run test:worker` | **Phase 6+:** Vitest in `worker/` (added with services) |
 
 Override phases: `INSTALL_PROJECT_PHASES=local,worker npm run install:project`
 
@@ -106,6 +196,8 @@ src/                       # Phase 3 — Vite + React SPA
 
 worker/                    # Phase 2 — Hono API at /api
   src/                     …
+
+e2e/                       # Phase 6+ — Playwright specs (planned)
 ```
 
 **Data flow:** CRM HTTP via **Worker** + TanStack Query; **Supabase client** for Auth + Realtime only.
@@ -118,11 +210,15 @@ worker/                    # Phase 2 — Hono API at /api
 npm run verify:stack:scaffold
 npm run verify:stack:local
 npm run verify:stack:cloud      # Phase 4 — env + GitHub + Cloudflare + Supabase keys
+npm run verify:stack:supabase   # Phase 5 — schema + tables
 npm run dev                   # frontend :5173
 cd worker && npm run dev      # API :8787
+npm run test:e2e              # Phase 6+ — isolated E2E (needs E2E-only Supabase token vars)
+npm run verify:github-actions # optional — GitHub Actions readiness on origin remote
 ```
 
-**Phases 1–5 complete.** **Current:** Phase 6 — deploy Worker + Pages and submission.
+**Infrastructure (Phases 1–5):** complete.  
+**Current focus:** Phase 6 — [build-plan.md](./build-plan.md) · [phases/phase-06-foundation.md](./phases/phase-06-foundation.md)
 
 ---
 

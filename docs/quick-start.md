@@ -160,6 +160,17 @@ VITE_API_BASE_URL=http://localhost:8787
 
 **Never** put the secret key in `.env` (Vite must not see it).
 
+### E2E-only keys (optional — not needed for `npm run dev`)
+
+Only when you run isolated Playwright tests (`npm run test:e2e` / `test:e2e:ui`), add to `worker/.dev.vars`:
+
+- `SUPABASE_ACCESS_TOKEN` — [account token](https://supabase.com/dashboard/account/tokens)
+- `SUPABASE_ORG_SLUG` — org slug from dashboard URL (`…/org/<slug>/…`)
+
+Playwright on WSL: [playwright-wsl-setup.md](./playwright-wsl-setup.md) (npm in repo — **not** a Cursor plugin).
+
+Optional: `npm run verify:github-actions` — checks if GitHub Actions can run on `origin` (nice-to-have).
+
 ### Cloudflare scoped API token (required)
 
 We do **not** use the legacy Global API Key + email. Use a **scoped API token** in `worker/.cloudflare.env`.
