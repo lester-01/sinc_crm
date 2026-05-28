@@ -2,7 +2,7 @@
 
 How we verify the application does not regress. Tests are added **incrementally per build phase** (not only at the end).
 
-**Now (Phases 6–11):** Local isolated E2E in Playwright **UI mode** (`npm run test:e2e:ui`) as features land.  
+**Now (Phases 6–11):** Local isolated E2E **headless** (`npm run test:e2e`) as features land. Playwright **UI mode** is optional (test-runner dashboard, not live browser automation).  
 **Default E2E run:** **isolated** — create `sinc-ci-e2e-*` Supabase → seed → test → report → delete.  
 **Artifacts:** [e2e-artifacts.md](./e2e-artifacts.md) — per-test logs/screenshots/traces under `test-results/`.  
 **GitHub Actions:** **not now** — same orchestrator later; see [ci-e2e-recipe.md](./ci-e2e-recipe.md).
@@ -31,7 +31,7 @@ Same procedure everywhere (mirrors future GitHub Actions):
 
 1. Create Supabase `sinc-ci-e2e-<timestamp>`
 2. `db:schema` + `db:seed` on that project
-3. Run Playwright (UI locally when agent runs tests; headless in CI)
+3. Run Playwright (headless locally and in CI; optional `--ui` for debugging)
 4. Write [artifacts](./e2e-artifacts.md) under `test-results/YYYY-MM-DD_HH-mm-ss/`
 5. Delete Supabase project (`always()`)
 
@@ -64,7 +64,7 @@ Your **dev** Supabase project stays for day-to-day work. Isolated E2E does **not
 | Command | Use |
 |---------|-----|
 | `npm run test:e2e` | Isolated run, headless, artifacts |
-| `npm run test:e2e:ui` | **Isolated + Playwright UI** — preferred when agent runs tests |
+| `npm run test:e2e:ui` | Isolated + Playwright UI (optional; not live browser watch) |
 | `npm run test:e2e -- --grep @phase6` | Isolated subset |
 | `npm run test:e2e:dev` | Optional fast path: existing dev `.env`, no create/delete |
 | `npm run test:worker` | Vitest (no Supabase project churn) |

@@ -74,7 +74,7 @@ npm run verify:stack:supabase
 ## Build todo — application (Phases 6–14)
 
 **Approach:** Vertical slices per [build-plan.md](./build-plan.md) (wireframes + API + tests each phase).  
-**Tests (now):** Local Playwright **UI mode** (`test:e2e:ui`) as each phase lands — see [testing-plan.md](./testing-plan.md).  
+**Tests (now):** Local Playwright **headless** (`npm run test:e2e` or `test:e2e:dev`) — see [testing-plan.md](./testing-plan.md).  
 **CI / GitHub Actions:** deferred until the CI stage — [ci-e2e-recipe.md](./ci-e2e-recipe.md) only.  
 **Docs:** Update the matching file under [phases/](./phases/) as you complete each phase.
 
@@ -91,21 +91,21 @@ npm run verify:stack:supabase
 - [x] Tests `AUTH-*`, `NAV-*` in `e2e/specs/phase-06-auth.spec.ts`
 - [x] Phase doc: [phases/phase-06-foundation.md](./phases/phase-06-foundation.md)
 
-### Phase 7 — Clients (current)
+### Phase 7 — Clients (complete)
 
-- [ ] Worker clients routes + service + zod
-- [ ] ClientsPage + ClientDetailPage + `src/features/clients/`
-- [ ] Tests `CLI-*`, `API-CLI-*`
-- [ ] Phase doc: [phases/phase-07-clients.md](./phases/phase-07-clients.md)
+- [x] Worker clients routes + service + zod
+- [x] ClientsPage + ClientDetailPage + `src/features/clients/`
+- [x] Tests `CLI-*`, `API-CLI-*` in `e2e/specs/phase-07-clients.spec.ts`
+- [x] Phase doc: [phases/phase-07-clients.md](./phases/phase-07-clients.md)
 
-### Phase 8 — Conversations & chat
+### Phase 8 — Conversations & chat (complete)
 
-- [ ] Worker conversations/messages + assignment rules
-- [ ] ConversationPage + Realtime in `realtime.ts`
-- [ ] Tests `CHAT-*`, `API-CONV-*` (including chat privacy)
-- [ ] Phase doc: [phases/phase-08-conversations.md](./phases/phase-08-conversations.md)
+- [x] Worker conversations/messages + assignment rules
+- [x] ConversationPage + Realtime in `realtime.ts`
+- [x] Tests `CHAT-*`, `API-CONV-*` in `e2e/specs/phase-08-conversations.spec.ts`
+- [x] Phase doc: [phases/phase-08-conversations.md](./phases/phase-08-conversations.md)
 
-### Phase 9 — Deals & pipeline
+### Phase 9 — Deals & pipeline (current)
 
 - [ ] Worker deals routes + stage history + notes
 - [ ] PipelinePage + DealDetailPage (Select stage, no drag-drop)
@@ -216,7 +216,7 @@ npm run verify:github-actions # optional — GitHub Actions readiness on origin 
 ```
 
 **Infrastructure (Phases 1–5):** complete.  
-**Current focus:** Phase 7 — [build-plan.md](./build-plan.md) · [phases/phase-07-clients.md](./phases/phase-07-clients.md) (create when starting)
+**Current focus:** Phase 9 — [build-plan.md](./build-plan.md) · [phases/phase-09-deals.md](./phases/phase-09-deals.md)
 
 ---
 

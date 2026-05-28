@@ -81,7 +81,7 @@ Phase docs are the **source of truth** for implementation detail. **README** sta
 ### Tasks
 
 - [ ] Isolated E2E orchestrator (`e2e-run.mjs`: create `sinc-ci-e2e-*` → seed → test → artifacts → delete)
-- [ ] Playwright + `test:e2e` / `test:e2e:ui` (agent uses **UI**); artifact layout per [e2e-artifacts.md](./e2e-artifacts.md)
+- [x] Playwright + `test:e2e` / `test:e2e:dev` (headless); optional `test:e2e:ui`; artifact layout per [e2e-artifacts.md](./e2e-artifacts.md)
 - [ ] `SUPABASE_ACCESS_TOKEN` + `SUPABASE_ORG_SLUG` in `.dev.vars.example`; `npx playwright install chromium` once
 - [ ] Login/sign-up: email + password inputs, submit, error display
 - [ ] Client signup with `role: client` user metadata
@@ -108,11 +108,11 @@ cd worker && npm run dev
 
 ### Tasks
 
-- [ ] Worker: `GET/POST /api/clients`, `GET /api/clients/:id` + `clientsService` + zod
-- [ ] `src/features/clients/` hooks
-- [ ] ClientsPage (table, search, New Client dialog)
-- [ ] ClientDetailPage (profile, conversation/deal panels, activity)
-- [ ] Phase doc + tests: `CLI-*`, `API-CLI-*`
+- [x] Worker: `GET/POST /api/clients`, `GET /api/clients/:id` + `clientsService` + zod
+- [x] `src/features/clients/` hooks
+- [x] ClientsPage (table, search, New Client dialog)
+- [x] ClientDetailPage (profile, conversation/deal panels, activity)
+- [x] Phase doc + tests: `CLI-*`, `API-CLI-*`
 
 ### Verify
 
@@ -127,12 +127,12 @@ cd worker && npm run dev
 
 ### Tasks
 
-- [ ] Worker: conversations + messages routes; `last_message_at` on send
-- [ ] Assign/reassign/status; manager vs sales rules
-- [ ] ConversationPage (queue + thread + tabs)
-- [ ] `src/lib/realtime.ts` subscriptions + query invalidation
-- [ ] New chat from client detail
-- [ ] Phase doc + tests: `CHAT-*`, `API-CONV-*` (include **client A cannot see client B messages**)
+- [x] Worker: conversations + messages routes; `last_message_at` on send
+- [x] Assign/reassign/status; manager vs sales rules
+- [x] ConversationPage (queue + thread + tabs)
+- [x] `src/lib/realtime.ts` subscriptions + query invalidation
+- [x] New chat from client detail
+- [x] Phase doc + tests: `CHAT-*`, `API-CONV-*` (include **client A cannot see client B messages**)
 
 ### Verify
 
@@ -251,7 +251,7 @@ cd worker && npm run dev
 | Assumption | Value |
 |------------|--------|
 | E2E runs (local + CI) | **Isolated DB** each run: `sinc-ci-e2e-*` → seed → test → report → delete |
-| Agent test command | `npm run test:e2e:ui` (Playwright UI + artifacts) |
+| Agent test command | `npm run test:e2e` or `test:e2e:dev -- --grep @phaseN` (headless) |
 | CI workflow | **Deferred** — same `e2e-run.mjs`, headless; upload `test-results/` |
 | CI prefix | **`sinc-ci-e2e-`** |
 | Dev Supabase | App dev only; optional `test:e2e:dev` for fast iteration |
