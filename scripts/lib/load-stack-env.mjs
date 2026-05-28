@@ -25,10 +25,24 @@ export function parseEnvFile(path) {
   return env;
 }
 
-export function loadStackEnv() {
+/**
+ * @param {{ overlayPath?: string }} [options]
+ */
+export function loadStackEnv(options = {}) {
   const rootEnv = parseEnvFile(join(ROOT, ".env"));
   const workerVars = parseEnvFile(join(ROOT, "worker", ".dev.vars"));
-  return { rootEnv, workerVars, merged: { ...rootEnv, ...workerVars }, root: ROOT };
+  const overlay = options.overlayPath
+    ? parseEnvFile(options.overlayPath)
+    : process.env.E2E_ENV_FILE
+      ? parseEnvFile(process.env.E2E_ENV_FILE)
+      : {};
+  return {
+    rootEnv,
+    workerVars,
+    overlay,
+    merged: { ...rootEnv, ...workerVars, ...overlay },
+    root: ROOT,
+  };
 }
 
 export function getSupabaseUrl(merged) {
