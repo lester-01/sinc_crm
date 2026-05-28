@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Use default ~/.cache/ms-playwright — ignore Cursor sandbox PLAYWRIGHT_BROWSERS_PATH
+delete process.env.PLAYWRIGHT_BROWSERS_PATH;
+
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5173";
 const sessionDir = process.env.E2E_SESSION_DIR;
 

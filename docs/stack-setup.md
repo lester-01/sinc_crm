@@ -85,7 +85,7 @@ npm run verify:stack:supabase
 - [x] Isolated E2E: `e2e-run.mjs` (create `sinc-ci-e2e-*` → seed → test → artifacts → delete)
 - [x] Playwright + `test:e2e` / `test:e2e:ui` / `test:e2e:dev` — [e2e-artifacts.md](./e2e-artifacts.md)
 - [x] **E2E only:** `SUPABASE_ACCESS_TOKEN` + `SUPABASE_ORG_SLUG` in `worker/.dev.vars`
-- [x] Playwright browsers on WSL — run `sudo npx playwright install-deps chromium` if launch fails
+- [x] Playwright in repo (`@playwright/test`) — run `npm run verify:playwright`, then `sudo npx playwright install-deps chromium` if launch fails
 - [x] Login/sign-up, auth session, protected routes, role-aware shell
 - [x] shadcn: input, label, card, dropdown-menu
 - [x] Tests `AUTH-*`, `NAV-*` in `e2e/specs/phase-06-auth.spec.ts`

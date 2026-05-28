@@ -8,12 +8,25 @@ Related: [testing-plan.md](./testing-plan.md), [e2e-artifacts.md](./e2e-artifact
 
 ---
 
-## Already installed on your machine?
+## Two installs? (common confusion)
 
-If you ran `npx playwright install chromium` (or full `playwright install`), you are ready for **Phase 6**, which adds `@playwright/test` and `e2e/` specs to this repo. Verify:
+| Install | What it is |
+|---------|------------|
+| **Your earlier install** | e.g. `npx playwright install` outside the repo → browsers under `~/.cache/ms-playwright` (may be a **different Playwright version**) |
+| **This repo** | `@playwright/test` in `package.json` → must run **`npm run playwright:install`** here so browser build **matches** the project |
+
+You can have both (`chromium-1148` and `chromium-1223` in `~/.cache/ms-playwright`). Tests use the version pinned in **this** `package.json`.
+
+**Cursor/agent:** If `PLAYWRIGHT_BROWSERS_PATH` is set in the environment, unset it in your terminal before running tests:
 
 ```bash
-npx playwright --version
+unset PLAYWRIGHT_BROWSERS_PATH
+```
+
+Verify setup:
+
+```bash
+npm run verify:playwright
 ```
 
 ---
@@ -28,13 +41,26 @@ npm install
 npx playwright install chromium
 ```
 
-On WSL/Linux, if the browser fails to start:
+On WSL/Linux, if the browser fails to start with “missing dependencies”:
 
 ```bash
-npx playwright install-deps chromium
+# From repo root — needs sudo (installs apt packages)
+sudo npx playwright install-deps chromium
 ```
 
-(sudo may prompt for system libraries — normal on fresh WSL.)
+Or:
+
+```bash
+npm run playwright:install-deps
+```
+
+**`install-deps: command not found`** means you ran the wrong command. There is no system binary called `install-deps`. It is a **Playwright subcommand**:
+
+| Wrong | Right |
+|-------|--------|
+| `install-deps` | `sudo npx playwright install-deps chromium` |
+| `playwright install-deps` (not on PATH) | `npm run playwright:install-deps` |
+| `npx install-deps` | `npx playwright install-deps chromium` |
 
 | Approach | Use it? |
 |----------|---------|
@@ -125,7 +151,9 @@ npm run verify:github-actions
 
 | Problem | Try |
 |---------|-----|
-| `Host system is missing dependencies` | `npx playwright install-deps chromium` |
+| `Host system is missing dependencies` | `sudo npx playwright install-deps chromium` |
+| `install-deps: command not found` | Use `npx playwright install-deps` — see table above |
+| `Executable doesn't exist` / wrong chromium build | `unset PLAYWRIGHT_BROWSERS_PATH` then `npm run playwright:install` |
 | Browser won’t open in UI mode | Use `test:e2e` headless, or enable WSLg / update Windows |
 | Tests can’t reach app | Ensure orchestrator starts Vite `:5173` + Worker `:8787` (Phase 6 config) |
 | E2E fails at “create project” | Add `SUPABASE_ACCESS_TOKEN` + `SUPABASE_ORG_SLUG` to `worker/.dev.vars` |

@@ -79,9 +79,14 @@ async function main() {
   const playwrightArgs = ["playwright", "test", ...pwArgs];
   if (uiMode) playwrightArgs.push("--ui");
 
+  const playwrightEnv = {
+    ...e2eEnv,
+    PLAYWRIGHT_BROWSERS_PATH: "",
+  };
+
   log(`[e2e] playwright ${playwrightArgs.slice(1).join(" ")}`);
   try {
-    exitCode = run("npx", playwrightArgs, e2eEnv);
+    exitCode = run("npx", playwrightArgs, playwrightEnv);
   } finally {
     if (!devMode) {
       log("[e2e] cleanup");
