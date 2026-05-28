@@ -1,5 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
+import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
+import { RoleHomeRedirect } from "@/features/auth/RoleHomeRedirect";
 import { ClientDetailPage } from "@/pages/ClientDetailPage";
 import { ClientsPage } from "@/pages/ClientsPage";
 import { ConversationPage } from "@/pages/ConversationPage";
@@ -14,16 +16,22 @@ export const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
-    path: "/",
-    element: <AppShell />,
+    element: <ProtectedRoute />,
     children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
-      { path: "dashboard", element: <DashboardPage /> },
-      { path: "clients", element: <ClientsPage /> },
-      { path: "clients/:clientId", element: <ClientDetailPage /> },
-      { path: "conversations", element: <ConversationPage /> },
-      { path: "pipeline", element: <PipelinePage /> },
-      { path: "deals/:dealId", element: <DealDetailPage /> },
+      {
+        path: "/",
+        element: <AppShell />,
+        children: [
+          { index: true, element: <RoleHomeRedirect /> },
+          { path: "dashboard", element: <DashboardPage /> },
+          { path: "clients", element: <ClientsPage /> },
+          { path: "clients/:clientId", element: <ClientDetailPage /> },
+          { path: "conversations", element: <ConversationPage /> },
+          { path: "pipeline", element: <PipelinePage /> },
+          { path: "deals/:dealId", element: <DealDetailPage /> },
+        ],
+      },
     ],
   },
+  { path: "*", element: <Navigate to="/" replace /> },
 ]);
