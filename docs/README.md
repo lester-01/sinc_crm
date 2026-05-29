@@ -8,13 +8,14 @@
 | [playwright-wsl-setup.md](./playwright-wsl-setup.md) | Playwright on WSL (npm, not Cursor plugin) |
 | [e2e-artifacts.md](./e2e-artifacts.md) | Per-test folders, logs, screenshots, traces |
 | [ci-e2e-recipe.md](./ci-e2e-recipe.md) | GitHub Actions (deferred; same orchestrator) |
-| [project-guide.md](./project-guide.md) | Comprehensive guide (compiled Phase 12); README stays short |
+| [external-auth.md](./external-auth.md) | Tooling auth ladder (Phase 12) — Cloudflare, Supabase scripts, GitHub |
+| [project-guide.md](./project-guide.md) | Comprehensive guide (compiled Phase 13); README stays short |
 | [phases/README.md](./phases/README.md) | Per-phase implementation notes (written as we go) |
 | [quick-start.md](./quick-start.md) | Fast local onboarding |
 | [database-setup.md](./database-setup.md) | Phase 5 schema, seed, credentials |
 | [cloudflare-auth.md](./cloudflare-auth.md) | Cloudflare API token |
 | [roadmap.md](./roadmap.md) | Post-MVP / deferred items |
 
-**Final project guide:** compiled from phase docs in Phase 12 (see [build-plan.md](./build-plan.md)).
+**Current focus:** Phase 13 README compile (see [build-plan.md](./build-plan.md)).
 
 Requirements (assessment spec): [project_requirements/README.md](../project_requirements/README.md)

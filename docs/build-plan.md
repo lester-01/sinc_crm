@@ -1,6 +1,6 @@
 # Build plan — Phases 6–14
 
-Master plan for implementing the SINC Student CRM after infrastructure (Phases 1–5) is complete.
+Master plan for implementing the SINC Student CRM after infrastructure (Phases 1–5) is complete. Application build phases **6–15**.
 
 **Status:** Approved — vertical slices; **local E2E in UI mode** as we go; GitHub Actions only in CI stage; phase docs maintained as we go.
 
@@ -37,8 +37,9 @@ Improve wireframes where the spec is clearer (e.g. all eight pipeline stages, cl
 | Start of phase | Create `docs/phases/phase-NN-<slug>.md` from template; link from [phases/README.md](./phases/README.md) |
 | During phase | Record decisions, endpoints, constraints, test IDs added |
 | End of phase | Mark phase complete in [stack-setup.md](./stack-setup.md); run phase verify + relevant tests |
-| After Phase 12 | Compile phase docs into [project-guide.md](./project-guide.md) |
-| README | Short: clone, env, dev, **run tests** — see Phase 12 |
+| After Phase 13 | Compile phase docs into [project-guide.md](./project-guide.md) |
+| README | Short: clone, env, dev, **run tests** — see Phase 13 |
+| Tooling auth ladder | Phase 12 — [phase-12-external-auth.md](./phases/phase-12-external-auth.md) |
 
 Phase docs are the **source of truth** for implementation detail. **README** stays minimal; **project-guide.md** holds the full story.
 
@@ -66,9 +67,10 @@ Phase docs are the **source of truth** for implementation detail. **README** sta
 | 9 | Deals & pipeline | Deals API + pipeline + deal detail + history | `phase-09-deals.md` |
 | 10 | Dashboard | Manager metrics API + UI | `phase-10-dashboard.md` |
 | 11 | Polish & regression | UX states, evaluation walkthrough, full test suite green | `phase-11-polish.md` |
-| 12 | README & docs compile | Root README, doc index | `phase-12-readme.md` |
-| 13 | Deploy | Cloudflare Pages + Worker | `phase-13-deploy.md` |
-| 14 | Submission | Video, form, meeting | `phase-14-submission.md` |
+| 12 | External tooling auth | Env-first ladder; Cloudflare/Supabase/GitHub scripts + `external-auth.md` | `phase-12-external-auth.md` |
+| 13 | README & docs compile | Root README, symlinks, testing guide, project guide | `phase-13-readme.md` |
+| 14 | Deploy | Cloudflare Pages + Worker + deploy guide | `phase-14-deploy.md` |
+| 15 | Submission | Video, form, meeting | `phase-15-submission.md` |
 
 **Test harness bootstrap** happens at the **start of Phase 6** (Playwright local only, `e2e/` layout). **No GitHub Actions yet** — see deferred item in [stack-setup.md](./stack-setup.md). See [testing-plan.md](./testing-plan.md).
 
@@ -198,34 +200,60 @@ cd worker && npm run dev
 
 ---
 
-## Phase 12 — README & documentation compile
+## Phase 12 — External service authentication
 
-**Goal:** Assessor-ready repo documentation.
+**Goal:** Enforce the tooling auth ladder in scripts; document it; restore Cloudflare OAuth as an optional desktop path.
 
-### Tasks
+**Prerequisite for Phase 13.** Full task list: [phases/phase-12-external-auth.md](./phases/phase-12-external-auth.md).
 
-- [ ] Root **`README.md`** — short: clone, env, `npm run dev`, `db:schema`/`db:seed`, demo users, **`npm run test:e2e`**
-- [ ] **`docs/project-guide.md`** — full compile from phase docs
-- [ ] `docs/README.md` index
+### Tasks (summary)
+
+- [x] `load-stack-env.mjs`: `process.env` overrides file values
+- [x] Cloudflare / Supabase / GitHub scripts: already-authed → env → file → OAuth (tool defaults; no custom timeout); if `CI=true`, **fail fast** before OAuth
+- [x] Do not require env **files** on disk when all required keys are in the environment
+- [x] **`docs/external-auth.md`** + update **`cloudflare-auth.md`** (OAuth **not** deprecated; token recommended for prod/CI)
+- [x] Roadmap aligned; GitHub desktop ladder test optional (see [roadmap.md](./roadmap.md))
 
 ### Verify
 
-- Fresh clone instructions work (documented assumption: empty DB + seed).
+- Documented test matrix: token-only via env (no files), file-only, OAuth desktop path where applicable.
 
 ---
 
-## Phase 13 — Deploy
+## Phase 13 — README & documentation compile
 
-**Goal:** Production URLs in README.
+**Goal:** Assessor-ready repo documentation (no script auth changes).
+
+**Prerequisite:** Phase 12 complete. Full plan: [phases/phase-13-readme.md](./phases/phase-13-readme.md).
+
+### Tasks (summary)
+
+- [ ] Root **`README.md`** — quick start, demo users, tests one-liner, doc table, **symlinks** with **backlinks** in target docs
+- [ ] **`docs/testing-guide.md`** — human test catalog, invoke commands, how to add tests, edge-case worksheet
+- [ ] **`docs/infrastructure-phases.md`** — Phases 1–5
+- [ ] **`docs/project-guide.md`** — full compile
+- [ ] **`docs/README.md`** index; **`docs/deploy-guide.md`** stub (filled Phase 14)
+- [ ] Expand **`docs/roadmap.md`** (requirements optional + standard improvements)
+
+### Verify
+
+- Fresh clone instructions work (empty DB + seed); symlinks and backlinks resolve.
+
+---
+
+## Phase 14 — Deploy
+
+**Goal:** Production URLs; full **`docs/deploy-guide.md`** (replace stub).
 
 ### Tasks
 
-- [ ] Deploy Worker; secrets
+- [ ] Deploy Worker; secrets (env injection per Phase 12 ladder)
 - [ ] Deploy Pages; `VITE_API_BASE_URL`
-- [ ] Supabase Auth redirect URLs
+- [ ] Supabase Auth redirect URLs; `CORS_ORIGINS` on Worker
 - [ ] `npm run verify:stack:deploy`
-- [ ] Phase doc: production env + URLs
+- [ ] Phase doc: [phases/phase-14-deploy.md](./phases/phase-14-deploy.md)
 - [ ] Optional: smoke E2E against deployed URL (`@deploy` tag)
+- [ ] Update README deploy section + symlinks with live URLs
 
 ### Verify
 
@@ -233,7 +261,7 @@ cd worker && npm run dev
 
 ---
 
-## Phase 14 — Submission
+## Phase 15 — Submission
 
 **Goal:** Complete assessment delivery.
 
@@ -242,7 +270,7 @@ cd worker && npm run dev
 - [ ] Demo video (deployed app, role flows)
 - [ ] Google Form
 - [ ] Review meeting booked
-- [ ] Phase doc: submission checklist + links
+- [ ] Phase doc: [phases/phase-15-submission.md](./phases/phase-15-submission.md)
 
 ---
 

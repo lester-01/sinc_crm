@@ -2,7 +2,7 @@
 
 **Short onboarding:** use the root **`README.md`** (setup + run tests only).
 
-This guide is the **long-form** reference: architecture, phases, security constraints, testing, deployment, and assessment context. It is built incrementally from [phases/](./phases/) docs and compiled in **Phase 12**.
+This guide is the **long-form** reference: architecture, phases, security constraints, testing, deployment, and assessment context. It is built incrementally from [phases/](./phases/) docs and compiled in **Phase 13** (after Phase 12 tooling auth).
 
 ---
 
@@ -19,7 +19,7 @@ This guide is the **long-form** reference: architecture, phases, security constr
 
 ---
 
-## Planned sections (Phase 12 compile)
+## Planned sections (Phase 13 compile)
 
 1. Overview and goals  
 2. Architecture and data flow  
@@ -35,4 +35,4 @@ This guide is the **long-form** reference: architecture, phases, security constr
 12. Evaluation checklist mapping  
 13. Troubleshooting  
 
-Do not duplicate full content here until Phase 12 — link to phase docs and [testing-plan.md](./testing-plan.md) during build.
+Do not duplicate full content here until Phase 13 — link to phase docs and [testing-plan.md](./testing-plan.md) during build.

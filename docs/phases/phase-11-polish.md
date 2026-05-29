@@ -56,4 +56,4 @@ npm run test:e2e
 
 ## Handoff to Phase 12
 
-Root `README.md` + `docs/project-guide.md` compile from phase docs.
+External tooling auth ladder (scripts + `docs/external-auth.md`) — then Phase 13 README/doc compile.

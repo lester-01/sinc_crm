@@ -133,7 +133,9 @@ Use stable seed data from [database-setup.md](./database-setup.md) for assertion
 | **9 — Deals** | `DEAL-*`, `PIPE-*`, `API-DEAL-*` |
 | **10 — Dashboard** | `DASH-*` |
 | **11 — Polish** | Fill gaps, `@smoke` full suite, evaluation checklist spec |
-| **13 — Deploy** | Optional `@deploy` smoke against production URLs |
+| **12 — Tooling auth** | Document ladder; script verify matrix (not Playwright) |
+| **13 — Docs** | — (no new test IDs) |
+| **14 — Deploy** | Optional `@deploy` smoke against production URLs |
 
 Tag tests with `@phase6`, `@phase7`, … for targeted runs: `npx playwright test --grep @phase8`.
 
@@ -241,7 +243,7 @@ Status legend: **Planned** → **Implemented** when the phase lands.
 | EVAL-04 | E2E | Evaluation path: deal + pipeline | DEAL-01–02 |
 | EVAL-05 | E2E | Evaluation path: dashboard real data | DASH-01 + DASH-05 |
 
-### Phase 13 — Deploy (optional `@deploy`)
+### Phase 14 — Deploy (optional `@deploy`)
 
 | ID | Layer | Test | Assert |
 |----|-------|------|--------|
@@ -291,7 +293,7 @@ Update this section as tests land:
 | 9 | 11 | 11 | `e2e/specs/phase-09-deals.spec.ts` |
 | 10 | 5 | 5 | `e2e/specs/phase-10-dashboard.spec.ts` |
 | 11 | 5 | 5 | `e2e/specs/phase-11-eval-smoke.spec.ts` |
-| 13 | 2 | 0 | `e2e/specs/phase-13-deploy.spec.ts` |
+| 14 | 2 | 0 | `e2e/specs/phase-14-deploy.spec.ts` |
 
 **Total planned:** 52 automated cases (E2E + API); plus Worker unit tests as services grow.
 

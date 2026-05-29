@@ -2,7 +2,7 @@
 
 Setup checklist, **build-phase todo**, and verification commands. Use this file to track what is done and what is next.
 
-**Build phases 6–14:** [build-plan.md](./build-plan.md)  
+**Build phases 6–15:** [build-plan.md](./build-plan.md)  
 **Automated tests (E2E + API):** [testing-plan.md](./testing-plan.md)  
 **Per-phase implementation notes:** [phases/README.md](./phases/README.md)
 
@@ -51,7 +51,7 @@ Merged former phases 4 and 5. **Installers do not copy env files** — you copy 
 - [x] Paste Supabase + Cloudflare keys into those files
 - [x] Run **`npm run verify:stack:cloud`** — all checks pass
 
-Cloudflare: **scoped API token only** for setup/verify. OAuth/`wrangler login` is deprecated ([cloudflare-auth.md](./cloudflare-auth.md)).
+Cloudflare: **scoped API token recommended** for prod/CI; optional `wrangler login` on desktop — see [cloudflare-auth.md](./cloudflare-auth.md) and Phase 12 [external-auth](./phases/phase-12-external-auth.md).
 
 ### Phase 5 — Supabase database (complete)
 
@@ -71,7 +71,7 @@ npm run verify:stack:supabase
 
 ---
 
-## Build todo — application (Phases 6–14)
+## Build todo — application (Phases 6–15)
 
 **Approach:** Vertical slices per [build-plan.md](./build-plan.md) (wireframes + API + tests each phase).  
 **Tests (now):** Local Playwright **headless** (`npm run test:e2e` or `test:e2e:dev`) — see [testing-plan.md](./testing-plan.md).  
@@ -126,25 +126,31 @@ npm run verify:stack:supabase
 - [x] Worker Vitest (`npm run test:worker`)
 - [x] Phase doc: [phases/phase-11-polish.md](./phases/phase-11-polish.md)
 
-### Phase 12 — README & doc compile (current)
+### Phase 12 — External tooling auth
 
-- [ ] Short root `README.md` (setup + run tests only)
-- [ ] Full [project-guide.md](./project-guide.md) compiled from phase docs
-- [ ] `docs/README.md` index
-- [ ] Phase doc: [phases/phase-12-readme.md](./phases/phase-12-readme.md)
+- [x] Env-first auth ladder in scripts (`process.env` overrides files; files optional if env complete)
+- [x] Cloudflare, Supabase, GitHub (`CI=true` fail fast before OAuth)
+- [x] [external-auth.md](./external-auth.md); [cloudflare-auth.md](./cloudflare-auth.md) updated
+- [x] Phase doc: [phases/phase-12-external-auth.md](./phases/phase-12-external-auth.md)
 
-### Phase 13 — Deploy
+### Phase 13 — README & doc compile (current)
 
-- [ ] Cloudflare Worker + Pages; production env
+- [ ] Root README + symlinks/backlinks, `testing-guide.md`, `infrastructure-phases.md`, `project-guide.md`
+- [ ] `docs/deploy-guide.md` stub only
+- [ ] Phase doc: [phases/phase-13-readme.md](./phases/phase-13-readme.md)
+
+### Phase 14 — Deploy
+
+- [ ] Cloudflare Worker + Pages; full `deploy-guide.md`; production URLs in README
 - [ ] `npm run verify:stack:deploy`
 - [ ] Optional deploy smoke tests (`DEPLOY-*`)
-- [ ] Phase doc: [phases/phase-13-deploy.md](./phases/phase-13-deploy.md)
+- [ ] Phase doc: [phases/phase-14-deploy.md](./phases/phase-14-deploy.md)
 
-### Phase 14 — Submission
+### Phase 15 — Submission
 
 - [ ] Video demo + Google Form + review meeting
 - [ ] README lists deployed URLs
-- [ ] Phase doc: [phases/phase-14-submission.md](./phases/phase-14-submission.md)
+- [ ] Phase doc: [phases/phase-15-submission.md](./phases/phase-15-submission.md)
 
 ### Optional — GitHub Actions readiness (anytime)
 
@@ -217,7 +223,7 @@ npm run verify:github-actions # optional — GitHub Actions readiness on origin 
 ```
 
 **Infrastructure (Phases 1–5):** complete.  
-**Current focus:** Phase 12 — [build-plan.md](./build-plan.md) · [phases/phase-12-readme.md](./phases/phase-12-readme.md)
+**Current focus:** Phase 13 — [build-plan.md](./build-plan.md) · [phases/phase-13-readme.md](./phases/phase-13-readme.md)
 
 ---
 
