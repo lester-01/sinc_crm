@@ -12,8 +12,17 @@ log() { printf '%s\n' "$*"; }
 err() { printf 'ERROR: %s\n' "$*" >&2; }
 
 main() {
+  # shellcheck source=scripts/lib/cloudflare-env.sh
+  source "$ROOT/scripts/lib/cloudflare-env.sh"
   log ">>> Cloudflare auth"
-  bash "$ROOT/scripts/ensure-cloudflare-auth.sh"
+  if ! export_cloudflare_env; then
+    exit 1
+  fi
+  if ! "$ROOT/worker/node_modules/.bin/wrangler" whoami >/dev/null 2>&1; then
+    err "wrangler whoami failed — check CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID"
+    exit 1
+  fi
+  log "Cloudflare API token active in this shell (not a child process)."
 
   if [[ ! -x "$ROOT/worker/node_modules/.bin/wrangler" ]]; then
     err "Wrangler not found. Run: npm run setup:local"
@@ -25,7 +34,7 @@ main() {
   log "  cd worker && npx wrangler secret list"
   log "  See docs/deploy-guide.md — Worker secrets"
 
-  (cd "$ROOT/worker" && npx wrangler deploy)
+  (cd "$ROOT/worker" && npx wrangler deploy)  # inherits CLOUDFLARE_* from export above
 
   log ""
   log "Worker deployed. Copy the workers.dev URL from the line above (Published …)."

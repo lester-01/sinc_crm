@@ -40,6 +40,8 @@
     "deploy:worker": "bash scripts/deploy-worker.sh",
     "deploy:pages": "bash scripts/deploy-pages.sh",
     "deploy": "npm run deploy:worker && npm run deploy:pages",
+    "deploy:all": "node scripts/deploy-all.mjs",
+    "deploy:all:skip-db": "node scripts/deploy-all.mjs --skip-db",
     "verify:playwright": "node scripts/verify-playwright.mjs",
     "playwright:setup": "node scripts/install-playwright.mjs",
     "playwright:install": "npx playwright install chromium",

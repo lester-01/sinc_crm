@@ -11,31 +11,11 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WRANGLER_BIN="$ROOT/worker/node_modules/.bin/wrangler"
-CLOUDFLARE_ENV="$ROOT/worker/.cloudflare.env"
+# shellcheck source=scripts/lib/cloudflare-env.sh
+source "$ROOT/scripts/lib/cloudflare-env.sh"
 
 log() { printf '%s\n' "$*"; }
 err() { printf 'ERROR: %s\n' "$*" >&2; }
-
-parse_dotenv_file() {
-  local file="$1"
-  [[ -f "$file" ]] || return 0
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    line="${line%%#*}"
-    line="${line#"${line%%[![:space:]]*}"}"
-    line="${line%"${line##*[![:space:]]}"}"
-    [[ -z "$line" ]] && continue
-    if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
-      local key="${BASH_REMATCH[1]}"
-      local val="${BASH_REMATCH[2]}"
-      if [[ "$val" =~ ^\"(.*)\"$ ]]; then
-        val="${BASH_REMATCH[1]}"
-      elif [[ "$val" =~ ^\'(.*)\'$ ]]; then
-        val="${BASH_REMATCH[1]}"
-      fi
-      export "$key=$val"
-    fi
-  done <"$file"
-}
 
 token_configured() {
   [[ -n "${CLOUDFLARE_API_TOKEN:-}" && "${CLOUDFLARE_API_TOKEN}" != *"your-"* ]]
@@ -60,27 +40,6 @@ print_whoami() {
   "$WRANGLER_BIN" whoami 2>/dev/null | head -n 3 || true
 }
 
-merge_cloudflare_creds() {
-  local saved_token="${CLOUDFLARE_API_TOKEN:-}"
-  local saved_account="${CLOUDFLARE_ACCOUNT_ID:-}"
-  unset CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID 2>/dev/null || true
-  if [[ -f "$CLOUDFLARE_ENV" ]]; then
-    parse_dotenv_file "$CLOUDFLARE_ENV"
-  fi
-  local file_token="${CLOUDFLARE_API_TOKEN:-}"
-  local file_account="${CLOUDFLARE_ACCOUNT_ID:-}"
-  if [[ -n "$saved_token" ]]; then
-    export CLOUDFLARE_API_TOKEN="$saved_token"
-  elif [[ -n "$file_token" ]]; then
-    export CLOUDFLARE_API_TOKEN="$file_token"
-  fi
-  if [[ -n "$saved_account" ]]; then
-    export CLOUDFLARE_ACCOUNT_ID="$saved_account"
-  elif [[ -n "$file_account" ]]; then
-    export CLOUDFLARE_ACCOUNT_ID="$file_account"
-  fi
-}
-
 ci_fail_fast() {
   err "CI=true: headless environment — browser OAuth is not available."
   err "Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the environment."
@@ -100,7 +59,7 @@ main() {
     exit 0
   fi
 
-  merge_cloudflare_creds
+  export_cloudflare_env || exit 1
 
   if token_configured; then
     log "Cloudflare auth: verifying scoped API token..."
