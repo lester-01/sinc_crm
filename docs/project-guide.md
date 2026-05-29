@@ -126,7 +126,7 @@ Run smoke: `npm run test:e2e -- --grep @smoke`.
 
 ## 10. Deployment
 
-Stub until Phase 14: [deploy-guide.md](./deploy-guide.md). Production URLs will be added to README after deploy.
+Deploy: [deploy-guide.md](./deploy-guide.md). Record production URLs in [README](../README.md#deployment) after deploy.
 
 ---
 

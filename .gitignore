@@ -4,6 +4,7 @@ my project summary.md
 # Secrets and local env
 .env
 .env.local
+.env.production
 worker/.dev.vars
 worker/.cloudflare.env
 worker/.wrangler/

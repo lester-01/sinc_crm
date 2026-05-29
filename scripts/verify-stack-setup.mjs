@@ -654,12 +654,13 @@ async function verifyDeploy() {
   }
 
   try {
-    const healthUrl = `${apiUrl}/api/me`;
+    const healthUrl = `${apiUrl}/api/health`;
     const res = await fetch(healthUrl, { method: "GET" });
+    const ok = res.status === 200;
     record(
       "Production API reachable",
-      res.status < 500,
-      `${healthUrl} → HTTP ${res.status} (401 without token is fine)`,
+      ok,
+      ok ? healthUrl : `${healthUrl} → HTTP ${res.status}`,
     );
   } catch (e) {
     record("Production API reachable", false, e.message);

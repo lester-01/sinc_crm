@@ -311,7 +311,7 @@ Update this section as tests land:
 | 10 | 5 | 5 | `e2e/specs/phase-10-dashboard.spec.ts` |
 | 11 | 5 | 5 | `e2e/specs/phase-11-eval-smoke.spec.ts` |
 | 12 | 10 | 10 | `scripts/lib/load-stack-env.test.mjs`, `auth-ladder.integration.test.mjs` |
-| 14 | 2 | 0 | `e2e/specs/phase-14-deploy.spec.ts` |
+| 14 | 2 | 2 | `e2e/specs/phase-14-deploy.spec.ts` (skipped until `DEPLOY_*` URLs set) |
 
 **Total planned:** 52 E2E/API Playwright cases + 10 tooling auth (Node test) + 8 Worker Vitest.
 

@@ -141,14 +141,15 @@ npm run verify:stack:supabase
 - [x] `docs/deploy-guide.md` stub only
 - [x] Phase doc: [phases/phase-13-readme.md](./phases/phase-13-readme.md)
 
-### Phase 14 — Deploy (current)
+### Phase 14 — Deploy
 
-- [ ] Cloudflare Worker + Pages; full `deploy-guide.md`; production URLs in README
-- [ ] `npm run verify:stack:deploy`
-- [ ] Optional deploy smoke tests (`DEPLOY-*`)
-- [ ] Phase doc: [phases/phase-14-deploy.md](./phases/phase-14-deploy.md)
+- [x] Cloudflare Worker + Pages scripts; full [deploy-guide.md](./deploy-guide.md)
+- [x] `npm run deploy:worker`, `deploy:pages`, `deploy`; `.env.production.example`
+- [x] `npm run verify:stack:deploy` (health on production API URL)
+- [x] Optional deploy smoke (`e2e/specs/phase-14-deploy.spec.ts`, `@deploy`)
+- [ ] **You:** run deploy and fill production URLs in README
 
-### Phase 15 — Submission
+### Phase 15 — Submission (current)
 
 - [ ] Video demo + Google Form + review meeting
 - [ ] README lists deployed URLs
@@ -225,7 +226,7 @@ npm run verify:github-actions # optional — GitHub Actions readiness on origin 
 ```
 
 **Infrastructure (Phases 1–5):** complete.  
-**Current focus:** Phase 14 — [build-plan.md](./build-plan.md) · deploy guide
+**Current focus:** Phase 15 — [build-plan.md](./build-plan.md) · submission
 
 ---
 

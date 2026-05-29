@@ -1,3 +1,8 @@
+# Cloudflare Worker — SINC CRM API
+# Runtime secrets (production): SUPABASE_URL, SUPABASE_SECRET_KEY, CORS_ORIGINS
+#   npx wrangler secret put <NAME>   — see docs/deploy-guide.md
+# Deploy: npm run deploy:worker (from repo root)
+
 name = "sinc-crm-api"
 main = "src/index.ts"
 compatibility_date = "2024-09-23"

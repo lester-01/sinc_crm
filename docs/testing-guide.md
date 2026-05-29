@@ -175,6 +175,23 @@ Demo users and seed data: [database-setup.md](./database-setup.md). Password: `d
 
 ---
 
+## Production smoke (`@deploy`, optional)
+
+| ID | What it checks |
+|----|----------------|
+| DEPLOY-01 | `GET /api/health` on production Worker URL |
+| DEPLOY-02 | Manager login + dashboard on production Pages URL |
+
+Skipped unless `DEPLOY_PAGES_URL` (and `DEPLOY_API_URL` for DEPLOY-01) are set. See [deploy-guide.md](./deploy-guide.md).
+
+```bash
+DEPLOY_PAGES_URL=https://your.pages.dev \
+DEPLOY_API_URL=https://your.workers.dev \
+npx playwright test e2e/specs/phase-14-deploy.spec.ts
+```
+
+---
+
 ## Edge-case worksheet
 
 Pre-filled gaps from the assessment; extend as you explore.

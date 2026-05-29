@@ -247,13 +247,13 @@ cd worker && npm run dev
 
 ### Tasks
 
-- [ ] Deploy Worker; secrets (env injection per Phase 12 ladder)
-- [ ] Deploy Pages; `VITE_API_BASE_URL`
-- [ ] Supabase Auth redirect URLs; `CORS_ORIGINS` on Worker
-- [ ] `npm run verify:stack:deploy`
-- [ ] Phase doc: [phases/phase-14-deploy.md](./phases/phase-14-deploy.md)
-- [ ] Optional: smoke E2E against deployed URL (`@deploy` tag)
-- [ ] Update README deploy section + symlinks with live URLs
+- [x] Deploy Worker; secrets (Wrangler `secret put`; see [deploy-guide.md](./deploy-guide.md))
+- [x] Deploy Pages; `VITE_API_BASE_URL` via `.env.production`
+- [x] Document Supabase Auth redirect URLs; `CORS_ORIGINS` on Worker
+- [x] `npm run verify:stack:deploy` (`/api/health`)
+- [x] Phase doc: [phases/phase-14-deploy.md](./phases/phase-14-deploy.md)
+- [x] Optional smoke E2E (`phase-14-deploy.spec.ts`, `@deploy` — requires `DEPLOY_*` URLs)
+- [ ] **You:** run deploy; fill README URL table with live URLs
 
 ### Verify
 

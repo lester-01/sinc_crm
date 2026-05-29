@@ -188,4 +188,4 @@ Read artifacts under `test-results/` ([e2e-artifacts.md](./e2e-artifacts.md)): s
 | Security constraints to cover | [testing-plan.md](./testing-plan.md) |
 | Phase history & build order | [build-plan.md](./build-plan.md), [phases/README.md](./phases/README.md) |
 | CI later | [ci-e2e-recipe.md](./ci-e2e-recipe.md) |
-| Deploy | [deploy-guide.md](./deploy-guide.md) |
+| Deploy (Worker + Pages) | [deploy-guide.md](./deploy-guide.md) |

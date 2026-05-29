@@ -58,4 +58,21 @@ Post-MVP improvements and deferred items: [roadmap.md](roadmap.md#back-to-readme
 
 ## Deployment
 
-Production deploy steps are completed in **Phase 14**. Until then, see the stub [deploy-guide.md](deploy-guide.md#back-to-readme).
+Full steps: [deploy-guide.md](deploy-guide.md#back-to-readme).
+
+```bash
+# One-time: Worker secrets (see deploy guide)
+cd worker && npx wrangler secret put SUPABASE_URL
+# … SUPABASE_SECRET_KEY, CORS_ORIGINS
+
+cp .env.production.example .env.production   # set VITE_* including Worker URL
+npm run deploy:worker
+npm run deploy:pages
+npm run verify:stack:deploy
+```
+
+| Service | URL (fill in after you deploy) |
+|---------|--------------------------------|
+| App (Cloudflare Pages) | `https://________________.pages.dev` |
+| API (Cloudflare Worker) | `https://________________.workers.dev` |
+| Supabase | `https://________________.supabase.co` |
