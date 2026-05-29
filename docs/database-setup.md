@@ -186,12 +186,127 @@ Separating them lets you reset **data** without replaying DDL, and keeps “stru
 
 | Script | Aborts when | User action to proceed |
 |--------|-------------|------------------------|
-| `db:schema` | `profiles` table already exists | Dashboard → SQL Editor: drop public schema objects (or use a new empty project), then re-run |
-| `db:seed` | Any auth user or rows in `profiles` / `clients` | Dashboard → delete Auth users and truncate/delete public rows (or fresh project + schema), then re-run |
+| `db:schema` | `profiles` table already exists | [Reset database without deleting the project](#reset-database-without-deleting-the-project) — Level B, then `npm run db:schema` |
+| `db:seed` | Any auth user or rows in `profiles` / `clients` | [Reset database without deleting the project](#reset-database-without-deleting-the-project) — Level A, then `npm run db:seed` |
 
-Scripts **never** `DROP DATABASE`, `TRUNCATE`, or `db reset` on your linked project. This is intentional: **do not develop on production**; use a dedicated dev Supabase project.
+Scripts **never** `DROP DATABASE`, `TRUNCATE`, or `db reset` on your linked project automatically. This is intentional: **do not develop on production**; use a dedicated dev Supabase project.
 
 We are **not** using “create a second project and seed that” automation yet — keeps the workflow simple.
+
+---
+
+## Reset database without deleting the project
+
+Use this when you want a **fresh database on the same Supabase project** (same URL, same API keys in `.env` / `worker/.dev.vars`). Typical during development: re-seed demo users, or re-apply schema after editing `supabase/schema/*.sql`.
+
+**Do not delete** the Supabase project, Cloudflare Worker/Pages, or your env files unless you intend a full greenfield setup.
+
+### When to use which level
+
+| Goal | Reset level | Redeploy app? |
+|------|-------------|---------------|
+| App already deployed; schema unchanged; only need demo users again | **Level A** (data only) | No — run `npm run db:seed` only |
+| App deployed with `deploy:all:skip-db`; schema already applied; testing login | **None** | No — open stable Pages URL (see [deploy-guide](./deploy-guide.md)) |
+| Changed files under `supabase/schema/` | **Level B** (full `public` wipe) | Optional — `npm run deploy:all:skip-db` if only DB changed |
+| First-time schema on empty project | **None** | `npm run db:schema` then `npm run deploy:all` |
+
+After a successful `npm run deploy:all:skip-db`, you usually **do not** need to wipe tables — verify the app at the **stable** Pages URL from the deploy summary (not the Wrangler preview hash URL).
+
+### What to keep (always)
+
+- Supabase **project** (dashboard project, ref in `SUPABASE_URL`)
+- **Project Settings → API** keys (already in `.env` and `worker/.dev.vars`)
+- Auth provider settings you configured once (e.g. [email confirmation off for demo](#4-email-confirmation-disabled-demo-only))
+- Cloudflare deploy (Worker + Pages) — unrelated to DB reset
+
+### Level A — Data only (re-run `db:seed`)
+
+**Keeps:** all tables, enums, functions, triggers, RLS policies, and Realtime publication from `db:schema`.
+
+**Clear:**
+
+1. **Authentication → Users** — delete **all** users (Dashboard). Required so `db:seed` can create demo accounts.
+2. **`public` table data** — all rows in the CRM tables below.
+
+Tables (from `supabase/schema/02_tables.sql`):
+
+- `deal_notes`
+- `deal_stage_history`
+- `deals`
+- `conversation_messages`
+- `conversation_threads`
+- `clients`
+- `profiles`
+
+**Dashboard → SQL Editor** — run:
+
+```sql
+-- WARNING: deletes all CRM rows. Keeps schema (tables, RLS, triggers).
+-- Delete Auth users in the Dashboard first (Authentication → Users).
+
+TRUNCATE TABLE
+  public.deal_notes,
+  public.deal_stage_history,
+  public.deals,
+  public.conversation_messages,
+  public.conversation_threads,
+  public.clients,
+  public.profiles
+CASCADE;
+```
+
+**Then:**
+
+```bash
+npm run db:seed
+npm run verify:stack:supabase   # optional check
+```
+
+Redeploy only if you also changed Worker/Pages code: `npm run deploy:all:skip-db`.
+
+### Level B — Full schema reset (re-run `db:schema` + optional `db:seed`)
+
+**Keeps:** the Supabase project and API keys (see [What to keep](#what-to-keep-always)).
+
+**Clears:** everything `npm run db:schema` would create — tables, enums (`app_role`, `deal_stage`, …), functions (`handle_new_user`, `current_app_role`, …), trigger on `auth.users`, RLS policies, Realtime publication (`supabase/schema/01` … `05`).
+
+**Steps:**
+
+1. **Authentication → Users** — delete **all** users (hosted Supabase does not expose a simple “delete all users” SQL path for most roles).
+2. **SQL Editor** — run:
+
+```sql
+-- WARNING: destroys ALL objects in the public schema (tables, types, functions, policies).
+-- Does NOT delete the Supabase project. Run only on a throwaway / dev project.
+
+DROP SCHEMA public CASCADE;
+
+CREATE SCHEMA public;
+
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO anon;
+GRANT ALL ON SCHEMA public TO authenticated;
+GRANT ALL ON SCHEMA public TO service_role;
+```
+
+3. Confirm **Authentication → Users** is empty.
+
+**Then:**
+
+```bash
+npm run db:schema
+npm run db:seed                    # optional demo users + CRM rows
+npm run deploy:all:skip-db         # if app already deployed; use deploy:all on first full stack setup
+npm run verify:stack:supabase
+```
+
+### Never do this on the linked dev project
+
+- Delete the Supabase **project** in the dashboard (you would need new keys and URLs everywhere).
+- Run `npm run db:schema` expecting it to truncate or replace data — it will **abort** if `profiles` exists.
+- Use preview Pages URLs (`https://<hash>.<project-domains>`) for login tests after deploy — use the **stable** URL from `deploy:all` or `wrangler pages project list` ([deploy-guide](./deploy-guide.md#pages-url-stable-vs-deployment-preview-read-before-pass-2)).
+
+---
 
 ### 4. Email confirmation disabled (demo only)
 
@@ -313,10 +428,10 @@ Paste `supabase/schema/01` … `05` in order in **Dashboard → SQL Editor**. Sa
 ## Troubleshooting
 
 **`db:schema` — schema already exists**  
-Drop public tables/types/functions in SQL Editor (reverse dependency order), or start a new Supabase project.
+Follow [Reset database without deleting the project](#reset-database-without-deleting-the-project) — Level B.
 
 **`db:seed` — database is not empty**  
-Authentication → delete users; Table Editor → delete/truncate `profiles`, `clients`, and dependent tables; then re-seed.
+Follow [Reset database without deleting the project](#reset-database-without-deleting-the-project) — Level A.
 
 **`verify:stack:supabase` — table missing**  
 Run `db:schema` on an empty project.
