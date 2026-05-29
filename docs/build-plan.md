@@ -167,10 +167,10 @@ cd worker && npm run dev
 
 ### Tasks
 
-- [ ] Worker: `GET /api/dashboard`
-- [ ] DashboardPage per wireframe
-- [ ] Manager-only route + API guard
-- [ ] Phase doc + tests: `DASH-*`
+- [x] Worker: `GET /api/dashboard`
+- [x] DashboardPage per wireframe
+- [x] Manager-only route + API guard
+- [x] Phase doc + tests: `DASH-*`
 
 ### Verify
 
