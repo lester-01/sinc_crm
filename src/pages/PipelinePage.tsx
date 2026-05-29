@@ -13,7 +13,10 @@ export function PipelinePage() {
   const [search, setSearch] = useState("");
   const [ownerFilter, setOwnerFilter] = useState("");
   const [pendingStage, setPendingStage] = useState<Record<string, string>>({});
-  const { data: deals, isLoading } = useDeals({ q: search, ownerId: ownerFilter || undefined });
+  const { data: deals, isLoading, error } = useDeals({
+    q: search,
+    ownerId: ownerFilter || undefined,
+  });
   const patchStage = usePatchDealStage();
 
   const byStage = useMemo(() => {
@@ -80,7 +83,13 @@ export function PipelinePage() {
       </div>
 
       {isLoading && <p className="text-sm text-muted-foreground">Loading pipeline…</p>}
+      {error && (
+        <p className="text-sm text-destructive" role="alert">
+          {error instanceof Error ? error.message : "Failed to load pipeline"}
+        </p>
+      )}
 
+      {!isLoading && !error && (
       <div className="flex gap-3 overflow-x-auto pb-4">
         {DEAL_STAGES.map((stage) => (
           <div
@@ -130,6 +139,7 @@ export function PipelinePage() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

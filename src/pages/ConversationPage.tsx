@@ -48,7 +48,7 @@ export function ConversationPage() {
   const createMutation = useCreateConversation();
 
   const { data: myClients } = useQuery({
-    queryKey: ["my-client"],
+    queryKey: ["clients", "self"],
     queryFn: () => fetchClients(),
     enabled: isClient,
   });
@@ -164,7 +164,9 @@ export function ConversationPage() {
       <div className="grid gap-4 lg:grid-cols-[minmax(240px,1fr)_2fr]">
         <Card className="min-h-[420px]">
           <CardHeader>
-            <CardTitle className="text-base">Queue</CardTitle>
+            <CardTitle className="text-base">
+              {isClient ? "Your conversations" : "Queue"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 p-0">
             {listLoading && (
