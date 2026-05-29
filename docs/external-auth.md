@@ -1,0 +1,75 @@
+# External service authentication (tooling)
+
+Scripts, setup, and verification use a shared **auth ladder** for Cloudflare, Supabase, and GitHub. This is separate from **app login** (Supabase Auth in the browser).
+
+## Ladder (all services)
+
+1. **Already authenticated** — e.g. `wrangler whoami` succeeds, Supabase API reachable, `gh auth status` OK.
+2. **`process.env`** — injected keys/tokens (CI, shell export). **Overrides** dotenv file values when both are set.
+3. **Dotenv files** — `.env`, `worker/.dev.vars`, `worker/.cloudflare.env`, optional `E2E_ENV_FILE` overlay. Files are **not required** when every required key for that step is already in the environment.
+4. **Interactive OAuth** — `wrangler login`, `gh auth login` (desktop). Tool default timeouts; no custom repo timeout.
+
+## Headless / CI (`CI=true`)
+
+When `CI=true` (GitHub Actions, GitLab CI, etc.), scripts treat the environment as **headless**:
+
+- **Do not** start browser OAuth.
+- **Fail fast** with instructions to set env vars instead.
+
+There is no `SINC_*` flag — use the standard `CI` variable only.
+
+| Service | Required in CI |
+|---------|----------------|
+| Cloudflare | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` |
+| Supabase (app + worker) | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (and `VITE_API_BASE_URL` for frontend verify) |
+| Supabase (E2E project create/delete) | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_ORG_SLUG` |
+| GitHub (optional verify) | `GITHUB_TOKEN` or `GH_TOKEN` |
+
+## Injectable environment variables
+
+| Variable | Used by |
+|----------|---------|
+| `CLOUDFLARE_API_TOKEN` | Wrangler, `ensure-cloudflare-auth.sh`, verify cloudflare |
+| `CLOUDFLARE_ACCOUNT_ID` | Wrangler (recommended with token) |
+| `VITE_SUPABASE_URL` | Vite, verify, db scripts |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Vite, verify |
+| `VITE_API_BASE_URL` | Vite (local worker URL) |
+| `SUPABASE_URL` | Worker, db scripts |
+| `SUPABASE_SECRET_KEY` | Worker, db scripts (never in `.env`) |
+| `SUPABASE_ACCESS_TOKEN` | E2E isolated project scripts |
+| `SUPABASE_ORG_SLUG` | E2E isolated project scripts |
+| `GITHUB_TOKEN` / `GH_TOKEN` | `verify-github-actions` |
+| `E2E_ENV_FILE` | Path to extra dotenv overlay for E2E |
+| `CI` | When `true`, skip OAuth and fail fast |
+
+Implementation: `scripts/lib/load-stack-env.mjs` merges files then applies `STACK_ENV_KEYS` from `process.env`.
+
+## Per service
+
+### Cloudflare
+
+- Script: `scripts/ensure-cloudflare-auth.sh`
+- Order: existing session → env token → `worker/.cloudflare.env` → `wrangler login` (desktop only; **blocked when `CI=true`**)
+- Details: [cloudflare-auth.md](./cloudflare-auth.md)
+
+### Supabase (tooling)
+
+- Scripts: `db:schema`, `db:seed`, E2E create/delete, `verify-stack-setup` supabase phases
+- Keys from merged stack env (files + env). See [database-setup.md](./database-setup.md).
+
+### GitHub (optional)
+
+- Script: `npm run verify:github-actions`
+- Order: git remote / clone access → `GITHUB_TOKEN`/`GH_TOKEN` → `gh` OAuth (skipped when `CI=true` without token)
+
+## Quick commands
+
+```bash
+# Token only via env (no .cloudflare.env file on disk)
+CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... npm run verify:stack:cloudflare
+
+# CI simulation — OAuth must not run
+CI=true bash scripts/ensure-cloudflare-auth.sh   # exits 1 without token
+
+npm run setup:cloud
+```

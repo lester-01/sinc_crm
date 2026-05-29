@@ -1,31 +1,27 @@
 # Cloudflare authentication
 
-## Required: scoped API token
+## Recommended: scoped API token
 
-Wrangler and CI use **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`** in `worker/.cloudflare.env` (see [quick-start.md](./quick-start.md)).
+For local scripts, verification, and CI/CD, use **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`** in `worker/.cloudflare.env` or exported in the environment (env wins over file). See [quick-start.md](./quick-start.md) and [external-auth.md](./external-auth.md).
 
-The Worker runs on **headless servers** — browser login is not a supported path for this project going forward.
+`scripts/ensure-cloudflare-auth.sh` and `npm run verify:stack:cloudflare` use this token path by default.
 
-## Deprecated: OAuth / `wrangler login` (next release removal)
+## Optional: desktop OAuth (`wrangler login`)
 
-`scripts/ensure-cloudflare-auth.sh` still contains a **browser OAuth fallback** when `ALLOW_WRANGLER_LOGIN=1`. That path is:
+On a **desktop** machine without a token, `ensure-cloudflare-auth.sh` can run **`wrangler login`** after the token ladder fails. This is useful for quick local experiments; it is **not** used in `verify:stack:cloudflare` and is **not** available when `CI=true` (fail fast — set env vars instead).
 
-- **Deprecated** — not tested in Phase 4 verification
-- **Scheduled for removal** in the next release
+## CI / headless
 
-Do not rely on `wrangler login` for setup or deploy.
+When `CI=true`, scripts **do not** open a browser. Export:
 
----
+```bash
+CLOUDFLARE_API_TOKEN=...
+CLOUDFLARE_ACCOUNT_ID=...
+```
 
-## Maintainer note — when removing OAuth
+## Auth order (script)
 
-When deleting the OAuth branch from `ensure-cloudflare-auth.sh` and `setup-cloud.sh`:
-
-1. **Fail fast** if `worker/.cloudflare.env` is missing.
-2. **Fail fast** if `CLOUDFLARE_API_TOKEN` is unset or still a placeholder.
-3. Load token (+ account ID), run `wrangler whoami`, exit non-zero on failure — no silent fallback.
-4. Remove `ALLOW_WRANGLER_LOGIN` and all `wrangler login` calls.
-5. Update `verify-stack-setup.mjs` `verifyCloudflare()` to match (token-only; no session/OAuth check).
-6. Remove OAuth mentions from `docs/quick-start.md` and this file’s deprecated section.
-
-Reference implementation after removal: require token block at the top of `ensure-cloudflare-auth.sh` `main()` (see comments tagged `MAINTAINER: token-only`).
+1. `wrangler whoami` — already logged in
+2. Token from `process.env`
+3. Token from `worker/.cloudflare.env` (env overrides file)
+4. `wrangler login` — only if not `CI=true` and no valid token

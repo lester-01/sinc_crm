@@ -139,7 +139,7 @@ cp worker/.dev.vars.example worker/.dev.vars
 cp worker/.cloudflare.env.example worker/.cloudflare.env
 ```
 
-Then paste keys from each provider dashboard (tables below). **Do not run `npm run setup:cloud` until the files exist and Supabase keys are filled in.**
+Then paste keys from each provider dashboard (tables below), **or** export the same variables in your shell / CI. **Do not run `npm run setup:cloud` until required keys are set** (files and/or environment — see [external-auth.md](./external-auth.md)).
 
 ### Supabase keys → where to paste
 
@@ -173,9 +173,9 @@ Optional: `npm run verify:github-actions` — checks if GitHub Actions can run o
 
 ### Cloudflare scoped API token (required)
 
-We do **not** use the legacy Global API Key + email. Use a **scoped API token** in `worker/.cloudflare.env`.
+We do **not** use the legacy Global API Key + email. Use a **scoped API token** in `worker/.cloudflare.env` or in the environment (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`).
 
-Browser OAuth (`wrangler login`) is **deprecated** in this repo: still present behind `ALLOW_WRANGLER_LOGIN=1` for local experiments only, **not tested** in `verify:stack:cloud`, and **will be removed** next release (Worker/CI runs headless). See [cloudflare-auth.md](./cloudflare-auth.md).
+For **CI** (`CI=true`), export those variables — browser OAuth is not used. Optional desktop **`wrangler login`** is only for local quick start without a token. See [cloudflare-auth.md](./cloudflare-auth.md) and [external-auth.md](./external-auth.md).
 
 1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/).
 2. **My Profile → API Tokens → Create Token**.
@@ -197,17 +197,16 @@ CLOUDFLARE_ACCOUNT_ID=your-account-id
 
 Both `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are required for `npm run setup:cloud` and `npm run verify:stack:cloud`.
 
-### Cloudflare authentication (token only)
+### Cloudflare authentication
 
 `npm run setup:cloud` and `scripts/ensure-cloudflare-auth.sh`:
 
-1. Require `worker/.cloudflare.env`
-2. Require `CLOUDFLARE_API_TOKEN` (fail fast if missing)
-3. Run `wrangler whoami` with that token
+1. Use existing Wrangler session if already authenticated
+2. Prefer `CLOUDFLARE_API_TOKEN` from the environment, else `worker/.cloudflare.env`
+3. Run `wrangler whoami` with the token
+4. On desktop only (not `CI=true`): optional `wrangler login` if no token
 
-`npm run verify:stack:cloudflare` uses the same token-only path (no browser, no OAuth session check).
-
-**Deprecated:** `ALLOW_WRANGLER_LOGIN=1` enables untested `wrangler login` — see [cloudflare-auth.md](./cloudflare-auth.md).
+`npm run verify:stack:cloudflare` checks the token path (env or file); it does not run OAuth.
 
 ### Phase 4 commands
 

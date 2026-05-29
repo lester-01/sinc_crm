@@ -2,7 +2,7 @@
 
 This guide explains **what we built**, **why**, and **how to run it safely** on an **empty** Supabase project.
 
-Related: [project_requirements/database.md](../project_requirements/database.md), [stack-setup.md](./stack-setup.md), [roadmap.md](./roadmap.md)
+Related: [project_requirements/database.md](../project_requirements/database.md), [stack-setup.md](./stack-setup.md), [external-auth.md](./external-auth.md) (env vs files for scripts), [roadmap.md](./roadmap.md)
 
 ---
 
