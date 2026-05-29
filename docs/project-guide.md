@@ -80,6 +80,8 @@ Main routes: `/api/me`, `/api/clients`, `/api/conversations`, `/api/deals`, `/ap
 
 ## 7. Local development
 
+See **[development-guide.md](./development-guide.md)** for daily workflow, feature checklist, and when to add or update tests.
+
 ```bash
 npm run dev              # :5173
 cd worker && npm run dev   # :8787

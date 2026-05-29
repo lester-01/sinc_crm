@@ -41,6 +41,7 @@ Full catalog, commands, and how to add tests: [testing-guide.md](testing-guide.m
 | Stack setup & phase checklist | [stack-setup.md](stack-setup.md#back-to-readme) |
 | Database schema & seed | [database-setup.md](database-setup.md#back-to-readme) |
 | Tooling auth (Cloudflare / Supabase / GitHub) | [external-auth.md](external-auth.md#back-to-readme) |
+| **How to work on the codebase** | [development-guide.md](development-guide.md#back-to-readme) |
 | Testing (all tests + how to add) | [testing-guide.md](testing-guide.md#back-to-readme) |
 | Full project guide | [project-guide.md](project-guide.md#back-to-readme) |
 | Roadmap & future work | [roadmap.md](roadmap.md#back-to-readme) |

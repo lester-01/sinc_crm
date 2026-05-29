@@ -4,6 +4,7 @@
 
 | Doc | Purpose |
 |-----|---------|
+| [development-guide.md](./development-guide.md) | **How to work on the repo** — features, tests required, when to update tests |
 | [project-guide.md](./project-guide.md) | Comprehensive guide (architecture, phases, testing, troubleshooting) |
 | [quick-start.md](./quick-start.md) | Install, env files, Phase 4 cloud setup |
 | [stack-setup.md](./stack-setup.md) | Setup checklist + build todo (Phases 1–15) |

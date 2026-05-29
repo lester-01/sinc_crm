@@ -4,6 +4,8 @@
 
 Human-readable catalog of automated tests, how to run them, and how to add new ones. Machine-oriented matrix: [testing-plan.md](./testing-plan.md).
 
+**Contributor workflow** (when tests are required, what to do when one fails): [development-guide.md](./development-guide.md).
+
 ---
 
 ## Test layers
