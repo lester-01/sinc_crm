@@ -1,50 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { loginAs } from "../fixtures/auth";
 import { authHeaders, getAccessToken, getApiBase } from "../fixtures/api-auth";
+import { ensureCanadaDealForSales1 } from "../helpers/deals-setup";
 import { testLog } from "../helpers/log";
 
 const apiBase = () => getApiBase();
-
-/** Seed deal for Aida / sales1; prior runs may reassign owner or advance stage. */
-async function ensureCanadaDealForSales1(
-  request: import("@playwright/test").APIRequestContext,
-  stage: "new_lead" | "contacted" = "new_lead",
-) {
-  const managerHeaders = {
-    ...(await authHeaders("manager")),
-    "Content-Type": "application/json",
-  };
-  const salesHeaders = await authHeaders("sales");
-  const meRes = await request.get(`${apiBase()}/api/me`, { headers: salesHeaders });
-  const sales1 = (await meRes.json()) as { id: string };
-
-  const listRes = await request.get(`${apiBase()}/api/deals`, { headers: managerHeaders });
-  const deals = (await listRes.json()) as {
-    id: string;
-    title: string;
-    ownerId: string;
-    stage: string;
-  }[];
-  const deal = deals.find((d) => d.title === "Canada application");
-  expect(deal).toBeTruthy();
-
-  if (deal!.ownerId !== sales1.id) {
-    const ownerRes = await request.patch(`${apiBase()}/api/deals/${deal!.id}/owner`, {
-      headers: managerHeaders,
-      data: { ownerId: sales1.id },
-    });
-    expect(ownerRes.status()).toBe(200);
-  }
-  if (deal!.stage !== stage) {
-    const stageRes = await request.patch(`${apiBase()}/api/deals/${deal!.id}/stage`, {
-      headers: managerHeaders,
-      data: { stage },
-    });
-    expect(stageRes.status()).toBe(200);
-  }
-
-  return deal!;
-}
 
 const STAGE_LABELS = [
   "new lead",
