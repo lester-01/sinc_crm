@@ -40,3 +40,7 @@ export function subscribeToConversationMessages(threadId: string, onChange: () =
     `thread_id=eq.${threadId}`,
   );
 }
+
+export function subscribeToDeals(onChange: () => void) {
+  return subscribeToTable("deals", onChange);
+}

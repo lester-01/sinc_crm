@@ -8,6 +8,8 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { ApiError } from "@/features/clients/api";
 import { useClient } from "@/features/clients/hooks";
 import { useCreateConversation } from "@/features/conversations/hooks";
+import { useCreateDeal } from "@/features/deals/hooks";
+import { stageLabel } from "@/features/deals/constants";
 
 export function ClientDetailPage() {
   const navigate = useNavigate();
@@ -15,11 +17,17 @@ export function ClientDetailPage() {
   const { clientId } = useParams();
   const { data: client, isLoading, error } = useClient(clientId);
   const createChat = useCreateConversation();
+  const createDeal = useCreateDeal();
   const [showChat, setShowChat] = useState(false);
+  const [showDeal, setShowDeal] = useState(false);
   const [chatSubject, setChatSubject] = useState("");
   const [chatMessage, setChatMessage] = useState("");
+  const [dealTitle, setDealTitle] = useState("");
+  const [dealIntake, setDealIntake] = useState("Fall 2026");
 
   const canStartChat = role === "manager" || role === "sales" || role === "client";
+  const canCreateDeal = role === "manager" || role === "sales";
+  const activeDeal = client?.deals?.find((d) => d.stage !== "lost" && d.stage !== "won");
 
   async function handleNewChat(e: React.FormEvent) {
     e.preventDefault();
@@ -33,6 +41,21 @@ export function ClientDetailPage() {
     setChatSubject("");
     setChatMessage("");
     navigate(`/conversations?thread=${thread.id}`);
+  }
+
+  async function handleNewDeal(e: React.FormEvent) {
+    e.preventDefault();
+    if (!clientId || !dealTitle.trim()) return;
+    const deal = await createDeal.mutateAsync({
+      clientId,
+      title: dealTitle.trim(),
+      expectedIntake: dealIntake.trim() || undefined,
+      valueAmount: 1200,
+      valueCurrency: "USD",
+    });
+    setShowDeal(false);
+    setDealTitle("");
+    navigate(`/deals/${deal.id}`);
   }
 
   if (isLoading) {
@@ -67,9 +90,11 @@ export function ClientDetailPage() {
           <p className="mt-1 text-sm text-muted-foreground">{client.email}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" disabled title="Phase 9">
-            New Deal
-          </Button>
+          {canCreateDeal && (
+            <Button variant="outline" type="button" onClick={() => setShowDeal((v) => !v)}>
+              {showDeal ? "Cancel" : "New Deal"}
+            </Button>
+          )}
           {canStartChat && (
             <Button variant="outline" type="button" onClick={() => setShowChat((v) => !v)}>
               {showChat ? "Cancel" : "New Chat"}
@@ -77,6 +102,50 @@ export function ClientDetailPage() {
           )}
         </div>
       </div>
+
+      {role === "client" && activeDeal && (
+        <Card>
+          <CardContent className="pt-6 text-sm">
+            <span className="text-muted-foreground">Active deal: </span>
+            <Link to={`/deals/${activeDeal.id}`} className="font-medium hover:underline">
+              {activeDeal.title}
+            </Link>
+            <span className="text-muted-foreground"> ({stageLabel(String(activeDeal.stage))})</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {showDeal && canCreateDeal && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">New deal</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-3" onSubmit={handleNewDeal}>
+              <div className="space-y-2">
+                <Label htmlFor="deal-title">Title</Label>
+                <Input
+                  id="deal-title"
+                  value={dealTitle}
+                  onChange={(e) => setDealTitle(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="deal-intake">Expected intake</Label>
+                <Input
+                  id="deal-intake"
+                  value={dealIntake}
+                  onChange={(e) => setDealIntake(e.target.value)}
+                />
+              </div>
+              <Button type="submit" disabled={createDeal.isPending}>
+                Create deal
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {showChat && canStartChat && (
         <Card>
@@ -159,15 +228,16 @@ export function ClientDetailPage() {
               <p className="text-sm text-muted-foreground">No deals yet.</p>
             )}
             {client.deals.map((d) => (
-              <div
+              <Link
                 key={d.id}
-                className="flex items-center justify-between border-b border-border py-2 last:border-0"
+                to={`/deals/${d.id}`}
+                className="flex items-center justify-between border-b border-border py-2 last:border-0 hover:underline"
               >
                 <span>{d.title}</span>
                 <span className="text-xs capitalize text-muted-foreground">
-                  {String(d.stage).replace(/_/g, " ")}
+                  {stageLabel(String(d.stage))}
                 </span>
-              </div>
+              </Link>
             ))}
           </CardContent>
         </Card>
