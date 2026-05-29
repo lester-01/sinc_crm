@@ -147,12 +147,12 @@ cd worker && npm run dev
 
 ### Tasks
 
-- [ ] Worker: deals routes; `deal_stage_history` on stage change; lost reason
-- [ ] PipelinePage: 8 columns, Select stage change (no drag-drop)
-- [ ] DealDetailPage: notes, history, reassign owner
-- [ ] New deal from client; client active-deal summary
-- [ ] Realtime invalidation for pipeline/deal
-- [ ] Phase doc + tests: `DEAL-*`, `API-DEAL-*`, `PIPE-*`
+- [x] Worker: deals routes; `deal_stage_history` on stage change; lost reason
+- [x] PipelinePage: 8 columns, Select stage change (no drag-drop)
+- [x] DealDetailPage: notes, history, reassign owner
+- [x] New deal from client; client active-deal summary
+- [x] Realtime invalidation for pipeline/deal
+- [x] Phase doc + tests: `DEAL-*`, `API-DEAL-*`, `PIPE-*`
 
 ### Verify
 

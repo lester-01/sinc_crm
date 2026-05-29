@@ -105,14 +105,14 @@ npm run verify:stack:supabase
 - [x] Tests `CHAT-*`, `API-CONV-*` in `e2e/specs/phase-08-conversations.spec.ts`
 - [x] Phase doc: [phases/phase-08-conversations.md](./phases/phase-08-conversations.md)
 
-### Phase 9 — Deals & pipeline (current)
+### Phase 9 — Deals & pipeline (complete)
 
-- [ ] Worker deals routes + stage history + notes
-- [ ] PipelinePage + DealDetailPage (Select stage, no drag-drop)
-- [ ] Tests `DEAL-*`, `PIPE-*`, `API-DEAL-*`
-- [ ] Phase doc: [phases/phase-09-deals.md](./phases/phase-09-deals.md)
+- [x] Worker deals routes + stage history + notes
+- [x] PipelinePage + DealDetailPage (Select stage, no drag-drop)
+- [x] Tests `DEAL-*`, `PIPE-*`, `API-DEAL-*` in `e2e/specs/phase-09-deals.spec.ts`
+- [x] Phase doc: [phases/phase-09-deals.md](./phases/phase-09-deals.md)
 
-### Phase 10 — Dashboard
+### Phase 10 — Dashboard (current)
 
 - [ ] Worker `GET /api/dashboard`
 - [ ] DashboardPage (manager only)
@@ -216,7 +216,7 @@ npm run verify:github-actions # optional — GitHub Actions readiness on origin 
 ```
 
 **Infrastructure (Phases 1–5):** complete.  
-**Current focus:** Phase 9 — [build-plan.md](./build-plan.md) · [phases/phase-09-deals.md](./phases/phase-09-deals.md)
+**Current focus:** Phase 10 — [build-plan.md](./build-plan.md) · [phases/phase-10-dashboard.md](./phases/phase-10-dashboard.md)
 
 ---
 
