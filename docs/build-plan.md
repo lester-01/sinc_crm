@@ -12,7 +12,7 @@ Related:
 - Test catalog: [testing-plan.md](./testing-plan.md)
 - Wireframes: [project_requirements/ui-wireframes.md](../project_requirements/ui-wireframes.md)
 - API: [project_requirements/api.md](../project_requirements/api.md)
-- Evaluation: [project_requirements/evaluation.md](../project_requirements/evaluation.md)
+- Acceptance criteria: [project_requirements/evaluation.md](../project_requirements/evaluation.md)
 
 ---
 
@@ -66,11 +66,11 @@ Phase docs are the **source of truth** for implementation detail. **README** sta
 | 8 | Conversations & chat | Chat API + workspace UI + Realtime | `phase-08-conversations.md` |
 | 9 | Deals & pipeline | Deals API + pipeline + deal detail + history | `phase-09-deals.md` |
 | 10 | Dashboard | Manager metrics API + UI | `phase-10-dashboard.md` |
-| 11 | Polish & regression | UX states, evaluation walkthrough, full test suite green | `phase-11-polish.md` |
+| 11 | Polish & regression | UX states, core-flow walkthrough, full test suite green | `phase-11-polish.md` |
 | 12 | External tooling auth | Env-first ladder; Cloudflare/Supabase/GitHub scripts + `external-auth.md` | `phase-12-external-auth.md` |
 | 13 | README & docs compile | Root README, symlinks, testing guide, project guide | `phase-13-readme.md` |
 | 14 | Deploy | Cloudflare Pages + Worker + deploy guide | `phase-14-deploy.md` |
-| 15 | Submission | Video, form, meeting | `phase-15-submission.md` |
+| 15 | Production launch | Live URLs in README; optional portfolio demo | `phase-15-submission.md` |
 
 **Test harness bootstrap** happens at the **start of Phase 6** (Playwright local only, `e2e/` layout). **No GitHub Actions yet** — see deferred item in [stack-setup.md](./stack-setup.md). See [testing-plan.md](./testing-plan.md).
 
@@ -125,7 +125,7 @@ cd worker && npm run dev
 
 ## Phase 8 — Conversations & realtime chat
 
-**Goal:** Assessment-critical chat, assign, reassign; privacy between clients.
+**Goal:** Chat, assign, reassign; privacy between clients.
 
 ### Tasks
 
@@ -138,7 +138,7 @@ cd worker && npm run dev
 
 ### Verify
 
-- Evaluation flows: client chat, sales assign/reply, manager reassign.
+- Core flows: client chat, sales assign/reply, manager reassign.
 - Realtime or invalidation updates UI without manual refresh.
 
 ---
@@ -182,7 +182,7 @@ cd worker && npm run dev
 
 ## Phase 11 — Polish & full regression
 
-**Goal:** Pass evaluation checklist; CI-ready test suite.
+**Goal:** Pass acceptance checklist; CI-ready test suite.
 
 ### Tasks
 
@@ -191,11 +191,11 @@ cd worker && npm run dev
 - [x] Client-simplified experience
 - [x] CORS origins for production
 - [x] Run full `npm run test:e2e` + `npm run test:worker`
-- [x] Phase doc: evaluation mapping table
+- [x] Phase doc: acceptance criteria mapping table
 
 ### Verify
 
-- Walk [evaluation.md](../project_requirements/evaluation.md) “Required To Pass” locally.
+- Walk [evaluation.md](../project_requirements/evaluation.md) “Must have” locally.
 - All tests in [testing-plan.md](./testing-plan.md) implemented or explicitly deferred with reason.
 
 ---
@@ -222,7 +222,7 @@ cd worker && npm run dev
 
 ## Phase 13 — README & documentation compile
 
-**Goal:** Assessor-ready repo documentation (no script auth changes).
+**Goal:** Portfolio-ready repo documentation (no script auth changes).
 
 **Prerequisite:** Phase 12 complete. Full plan: [phases/phase-13-readme.md](./phases/phase-13-readme.md).
 
@@ -243,33 +243,34 @@ cd worker && npm run dev
 
 ## Phase 14 — Deploy
 
-**Goal:** Production URLs; full **`docs/deploy-guide.md`** (replace stub).
+**Goal:** Production URLs; full **`docs/deploy-guide.md`** (two-pass manual guide).
 
 ### Tasks
 
-- [x] Deploy Worker; secrets (Wrangler `secret put`; see [deploy-guide.md](./deploy-guide.md))
+- [x] Deploy Worker; secrets (Wrangler `secret put` or `secret bulk`; see [deploy-guide.md](./deploy-guide.md))
 - [x] Deploy Pages; `VITE_API_BASE_URL` via `.env.production`
-- [x] Document Supabase Auth redirect URLs; `CORS_ORIGINS` on Worker
+- [x] Document two-pass flow; Supabase Dashboard Auth URLs; Worker `CORS_ORIGINS` (not Pages dashboard CORS)
+- [x] Document CLI deploy now vs GitHub→Cloudflare CI later (both valid)
 - [x] `npm run verify:stack:deploy` (`/api/health`)
 - [x] Phase doc: [phases/phase-14-deploy.md](./phases/phase-14-deploy.md)
 - [x] Optional smoke E2E (`phase-14-deploy.spec.ts`, `@deploy` — requires `DEPLOY_*` URLs)
-- [ ] **You:** run deploy; fill README URL table with live URLs
+- [ ] **You:** manual deploy (guide); fill README URL table
+- [ ] **Later:** two-pass `deploy-all` script + optional GitHub Actions / Pages git deploy
 
 ### Verify
 
-- Deployed app usable in video demo.
+- Deployed app usable for portfolio walkthrough.
 
 ---
 
-## Phase 15 — Submission
+## Phase 15 — Production launch
 
-**Goal:** Complete assessment delivery.
+**Goal:** Ship live URLs and close out documentation.
 
 ### Tasks
 
-- [ ] Demo video (deployed app, role flows)
-- [ ] Google Form
-- [ ] Review meeting booked
+- [ ] README lists deployed Pages + Worker + Supabase URLs
+- [ ] Optional portfolio / demo walkthrough on production
 - [ ] Phase doc: [phases/phase-15-submission.md](./phases/phase-15-submission.md)
 
 ---

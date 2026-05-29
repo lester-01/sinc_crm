@@ -15,14 +15,14 @@ Links: [build-plan](../build-plan.md) · [testing-plan](../testing-plan.md) · [
 - [x] Client-simplified conversations UI (“Your conversations” label)
 - [x] Production CORS via optional `CORS_ORIGINS` on Worker
 - [x] Worker Vitest: Zod deal schemas + `corsOrigins` helper
-- [x] Evaluation smoke: `EVAL-*` in `e2e/specs/phase-11-eval-smoke.spec.ts` (`@smoke` + `@phase11`)
+- [x] Core-flow smoke: `EVAL-*` in `e2e/specs/phase-11-eval-smoke.spec.ts` (`@smoke` + `@phase11`)
 - [x] Shared E2E helpers: `e2e/helpers/deals-setup.ts`, `e2e/helpers/conversations-setup.ts`
 
 ---
 
-## Evaluation mapping
+## Acceptance criteria mapping
 
-| Required to pass (evaluation.md) | Covered by |
+| Must have (evaluation.md) | Covered by |
 |----------------------------------|------------|
 | Supabase Auth works | `AUTH-*` (phase 6), all E2E logins |
 | Client create and use chat | `EVAL-01`, `CHAT-*` |

@@ -18,7 +18,7 @@ const DEAL_STAGES = [
   "lost",
 ] as const;
 
-test.describe("@phase11 @smoke Evaluation paths", () => {
+test.describe("@phase11 @smoke Core user paths", () => {
   test("EVAL-01 client creates and uses chat", async ({ page }) => {
     const subject = `Eval chat ${Date.now()}`;
     await loginAs(page, "client", "EVAL-01");
@@ -26,7 +26,7 @@ test.describe("@phase11 @smoke Evaluation paths", () => {
     await expect(page.getByText("Your conversations")).toBeVisible();
     await page.getByRole("button", { name: "New conversation" }).click();
     await page.getByLabel("Subject").fill(subject);
-    await page.getByLabel("Message").fill("Evaluation path first message.");
+    await page.getByLabel("Message").fill("Smoke path first message.");
     await page.getByRole("button", { name: "Start conversation" }).click();
     await expect(page.getByRole("button", { name: subject })).toBeVisible({ timeout: 15_000 });
 

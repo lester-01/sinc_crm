@@ -32,4 +32,4 @@ npm run test:e2e:dev -- --grep @phase10
 
 ## Handoff to Phase 11
 
-Polish, loading/empty states, full `@smoke` regression and evaluation checklist.
+Polish, loading/empty states, full `@smoke` regression and acceptance checklist.

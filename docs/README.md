@@ -15,13 +15,13 @@
 | [external-auth.md](./external-auth.md) | Tooling auth ladder (env / files / CI) |
 | [database-setup.md](./database-setup.md) | Schema, seed, credentials |
 | [cloudflare-auth.md](./cloudflare-auth.md) | Cloudflare token vs OAuth |
-| [deploy-guide.md](./deploy-guide.md) | Deploy Worker + Pages (Phase 14) |
+| [deploy-guide.md](./deploy-guide.md) | Two-pass manual deploy (CLI); GitHub→Cloudflare CI planned |
 | [roadmap.md](./roadmap.md) | Post-MVP / deferred items |
 | [playwright-wsl-setup.md](./playwright-wsl-setup.md) | Playwright on WSL |
 | [e2e-artifacts.md](./e2e-artifacts.md) | Per-test artifacts under `test-results/` |
 | [ci-e2e-recipe.md](./ci-e2e-recipe.md) | GitHub Actions E2E (deferred) |
 | [phases/README.md](./phases/README.md) | Per-phase implementation notes |
 
-**Current focus:** Phase 15 submission (see [build-plan.md](./build-plan.md)).
+**Current focus:** Phase 15 production launch (see [build-plan.md](./build-plan.md)).
 
-Requirements (assessment spec): [project_requirements/README.md](../project_requirements/README.md)
+Product requirements: [project_requirements/README.md](../project_requirements/README.md)

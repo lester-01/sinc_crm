@@ -24,9 +24,9 @@ Links: [build-plan](../build-plan.md) · [testing-guide](../testing-guide.md) ·
 
 ---
 
-## Evaluation mapping (assessor quick reference)
+## Acceptance criteria mapping (quick reference)
 
-| Evaluation theme | Where to look |
+| Theme | Where to look |
 |------------------|---------------|
 | Run app locally | [README](../../README.md#quick-start) |
 | Demo logins | [README](../../README.md#demo-users) |

@@ -2,7 +2,7 @@
 
 # Project guide
 
-Long-form reference for assessors and maintainers. Short onboarding: [README.md](../README.md).
+Long-form reference for contributors and maintainers. Short onboarding: [README.md](../README.md).
 
 ---
 
@@ -10,7 +10,7 @@ Long-form reference for assessors and maintainers. Short onboarding: [README.md]
 
 **SINC Student CRM** — multi-role CRM with conversations (chat), deal pipeline, and manager analytics. Stack: React SPA (Vite), Cloudflare Worker API (Hono), Supabase (Postgres + Auth + Realtime).
 
-Goals and acceptance criteria: [project_requirements/](../project_requirements/) especially [evaluation.md](../project_requirements/evaluation.md).
+Product goals and acceptance criteria: [project_requirements/](../project_requirements/) especially [evaluation.md](../project_requirements/evaluation.md).
 
 ---
 
@@ -108,7 +108,7 @@ Commands: `npm run test:e2e`, `npm run test:e2e:dev`, `npm run test:worker`.
 
 ---
 
-## 9. Evaluation checklist mapping
+## 9. Acceptance criteria mapping
 
 | Requirement | Evidence |
 |-------------|----------|
@@ -126,13 +126,19 @@ Run smoke: `npm run test:e2e -- --grep @smoke`.
 
 ## 10. Deployment
 
-Deploy: [deploy-guide.md](./deploy-guide.md). Record production URLs in [README](../README.md#deployment) after deploy.
+Deploy: [deploy-guide.md](./deploy-guide.md) — **two-pass manual procedure** (Pass 1: schema/worker/pages; Pass 2: CORS secret + Supabase Auth URLs). Optional `db:seed` for demo logins only.
+
+**How we deploy today:** Wrangler CLI (`npm run deploy:worker`, `deploy:pages`) with a Cloudflare API token.
+
+**Also valid (not wired in this repo yet):** GitHub push → Cloudflare Pages build, plus GitHub Actions for Worker secrets and deploy. We plan to support **both** CLI and CI paths; use the deploy guide’s CLI steps for now.
+
+Record production URLs in [README](../README.md#deployment) after deploy. A future two-pass automation script is planned after manual deploy is verified.
 
 ---
 
 ## 11. CI (deferred)
 
-GitHub Actions workflow not checked in yet. Recipe for isolated E2E in CI: [ci-e2e-recipe.md](./ci-e2e-recipe.md). Use `CI=true` and inject secrets per [external-auth.md](./external-auth.md).
+GitHub Actions workflow not checked in yet. Recipe for isolated **E2E** in CI: [ci-e2e-recipe.md](./ci-e2e-recipe.md) (testing, separate from production deploy). Use `CI=true` and inject secrets per [external-auth.md](./external-auth.md). Production deploy via Actions is described as a future option in [deploy-guide.md](./deploy-guide.md).
 
 Optional: `npm run verify:github-actions`.
 

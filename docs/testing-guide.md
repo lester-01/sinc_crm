@@ -30,7 +30,7 @@ Human-readable catalog of automated tests, how to run them, and how to add new o
 | `npm run test:e2e:ui` | Isolated + Playwright UI mode |
 | `npm run test:e2e:dev` | Fast path: needs Vite `:5173` + Worker `:8787` + seeded dev DB |
 | `npm run test:e2e:dev -- --grep @phase9` | Subset by phase tag |
-| `npm run test:e2e -- --grep @smoke` | Evaluation smoke only |
+| `npm run test:e2e -- --grep @smoke` | Core-flow smoke only |
 | `npm run test:worker` | 8 Vitest tests in `worker/` |
 | `npm run test:scripts` | 10 `AUTH-LADDER-*` tests (tooling auth) |
 | `npm run test:tooling` | `test:scripts` + `test:worker` |
@@ -44,7 +44,7 @@ Human-readable catalog of automated tests, how to run them, and how to add new o
 
 ## E2E catalog (50 tests)
 
-Specs live under `e2e/specs/`. Tags: `@phase6` … `@phase11`, `@smoke` for evaluation paths.
+Specs live under `e2e/specs/`. Tags: `@phase6` … `@phase11`, `@smoke` for core user paths.
 
 ### Phase 6 — Auth & navigation (`phase-06-auth.spec.ts`, 10 tests)
 
@@ -116,7 +116,7 @@ Specs live under `e2e/specs/`. Tags: `@phase6` … `@phase11`, `@smoke` for eval
 | DASH-04 | Sales `GET /api/dashboard` → `403` |
 | DASH-05 | Dashboard counts match seed thresholds |
 
-### Phase 11 — Evaluation smoke (`phase-11-eval-smoke.spec.ts`, 5 tests, `@smoke`)
+### Phase 11 — Core-flow smoke (`phase-11-eval-smoke.spec.ts`, 5 tests, `@smoke`)
 
 | ID | What it checks |
 |----|----------------|
@@ -182,7 +182,7 @@ Demo users and seed data: [database-setup.md](./database-setup.md). Password: `d
 | DEPLOY-01 | `GET /api/health` on production Worker URL |
 | DEPLOY-02 | Manager login + dashboard on production Pages URL |
 
-Skipped unless `DEPLOY_PAGES_URL` (and `DEPLOY_API_URL` for DEPLOY-01) are set. See [deploy-guide.md](./deploy-guide.md).
+Skipped unless `DEPLOY_PAGES_URL` (and `DEPLOY_API_URL` for DEPLOY-01) are set. Requires optional `db:seed` for DEPLOY-02. See [deploy-guide.md](./deploy-guide.md) (two-pass manual deploy).
 
 ```bash
 DEPLOY_PAGES_URL=https://your.pages.dev \
@@ -194,21 +194,21 @@ npx playwright test e2e/specs/phase-14-deploy.spec.ts
 
 ## Edge-case worksheet
 
-Pre-filled gaps from the assessment; extend as you explore.
+Pre-filled gaps from early testing; extend as you explore.
 
 | Area | Known gap / note | Your notes |
 |------|------------------|------------|
 | Realtime | Subscription cleanup on logout not fully automated | |
 | Email auth | Supabase email confirmation flow not E2E-tested | |
 | Drag pipeline | UI uses select, not drag-and-drop | |
-| Production | `DEPLOY-*` specs planned for Phase 14 | |
-| GitHub Actions | Workflow file deferred; recipe in [ci-e2e-recipe.md](./ci-e2e-recipe.md) | |
+| Production | `DEPLOY-*` optional after manual deploy — [deploy-guide.md](./deploy-guide.md) | |
+| GitHub Actions | E2E workflow deferred ([ci-e2e-recipe.md](./ci-e2e-recipe.md)); prod deploy via GH→CF also deferred (CLI in deploy guide) | |
 | Load testing | Out of scope for MVP | |
 | OAuth in CI | Must use env tokens when `CI=true` | |
 
 ---
 
-## Evaluation mapping
+## Acceptance criteria mapping
 
 | Review question | Test IDs |
 |-----------------|----------|

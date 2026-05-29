@@ -132,7 +132,7 @@ Use stable seed data from [database-setup.md](./database-setup.md) for assertion
 | **8 — Conversations** | `CHAT-*`, `API-CONV-*` (privacy-critical) |
 | **9 — Deals** | `DEAL-*`, `PIPE-*`, `API-DEAL-*` |
 | **10 — Dashboard** | `DASH-*` |
-| **11 — Polish** | Fill gaps, `@smoke` full suite, evaluation checklist spec |
+| **11 — Polish** | Fill gaps, `@smoke` full suite, acceptance checklist spec |
 | **12 — Tooling auth** | `AUTH-LADDER-*` in `scripts/lib/*.test.mjs`; document ladder |
 | **13 — Docs** | — (no new test IDs) |
 | **14 — Deploy** | Optional `@deploy` smoke against production URLs |
@@ -250,15 +250,15 @@ Status legend: **Planned** → **Implemented** when the phase lands.
 
 Spec files: `scripts/lib/load-stack-env.test.mjs`, `scripts/lib/auth-ladder.integration.test.mjs`.
 
-### Phase 11 — Regression & evaluation (`@smoke`)
+### Phase 11 — Regression & core flows (`@smoke`)
 
 | ID | Layer | Test | Assert |
 |----|-------|------|--------|
-| EVAL-01 | E2E | Evaluation path: client chat | CHAT-01 + CHAT-02 |
-| EVAL-02 | E2E | Evaluation path: sales assign + reply | CHAT-03–05 |
-| EVAL-03 | E2E | Evaluation path: manager reassign | CHAT-06 |
-| EVAL-04 | E2E | Evaluation path: deal + pipeline | DEAL-01–02 |
-| EVAL-05 | E2E | Evaluation path: dashboard real data | DASH-01 + DASH-05 |
+| EVAL-01 | E2E | Core path: client chat | CHAT-01 + CHAT-02 |
+| EVAL-02 | E2E | Core path: sales assign + reply | CHAT-03–05 |
+| EVAL-03 | E2E | Core path: manager reassign | CHAT-06 |
+| EVAL-04 | E2E | Core path: deal + pipeline | DEAL-01–02 |
+| EVAL-05 | E2E | Core path: dashboard real data | DASH-01 + DASH-05 |
 
 ### Phase 14 — Deploy (optional `@deploy`)
 

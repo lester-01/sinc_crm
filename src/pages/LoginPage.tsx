@@ -49,7 +49,7 @@ export function LoginPage() {
           <CardDescription>
             {mode === "signin"
               ? "Use your demo or registered email."
-              : "Self-register as a client (assessment demo)."}
+              : "Self-register as a client (demo)."}
           </CardDescription>
         </CardHeader>
         <CardContent>

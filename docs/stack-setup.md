@@ -124,7 +124,7 @@ npm run verify:stack:supabase
 ### Phase 11 — Polish & full regression (complete)
 
 - [x] Loading / empty / error states
-- [x] Full E2E suite + evaluation smoke (`EVAL-*`) in `e2e/specs/phase-11-eval-smoke.spec.ts`
+- [x] Full E2E suite + core-flow smoke (`EVAL-*`) in `e2e/specs/phase-11-eval-smoke.spec.ts`
 - [x] Worker Vitest (`npm run test:worker`)
 - [x] Phase doc: [phases/phase-11-polish.md](./phases/phase-11-polish.md)
 
@@ -138,21 +138,22 @@ npm run verify:stack:supabase
 ### Phase 13 — README & doc compile
 
 - [x] Root README + symlinks/backlinks, `testing-guide.md`, `infrastructure-phases.md`, `project-guide.md`
-- [x] `docs/deploy-guide.md` stub only
+- [x] `docs/deploy-guide.md` stub (filled in Phase 14)
 - [x] Phase doc: [phases/phase-13-readme.md](./phases/phase-13-readme.md)
 
 ### Phase 14 — Deploy
 
-- [x] Cloudflare Worker + Pages scripts; full [deploy-guide.md](./deploy-guide.md)
+- [x] Cloudflare Worker + Pages scripts; [deploy-guide.md](./deploy-guide.md) (two-pass manual CLI)
 - [x] `npm run deploy:worker`, `deploy:pages`, `deploy`; `.env.production.example`
 - [x] `npm run verify:stack:deploy` (health on production API URL)
 - [x] Optional deploy smoke (`e2e/specs/phase-14-deploy.spec.ts`, `@deploy`)
-- [ ] **You:** run deploy and fill production URLs in README
+- [ ] **You:** manual deploy per guide; Pass 2 (CORS + Supabase Auth URLs); fill README URL table
+- [ ] **Later:** GitHub→Cloudflare CI deploy + two-pass `deploy-all` script (both valid; CLI first)
 
-### Phase 15 — Submission (current)
+### Phase 15 — Production launch (current)
 
-- [ ] Video demo + Google Form + review meeting
-- [ ] README lists deployed URLs
+- [ ] README lists deployed URLs (live app + API)
+- [ ] Optional portfolio walkthrough / demo recording
 - [ ] Phase doc: [phases/phase-15-submission.md](./phases/phase-15-submission.md)
 
 ### Optional — GitHub Actions readiness (anytime)
@@ -226,7 +227,7 @@ npm run verify:github-actions # optional — GitHub Actions readiness on origin 
 ```
 
 **Infrastructure (Phases 1–5):** complete.  
-**Current focus:** Phase 15 — [build-plan.md](./build-plan.md) · submission
+**Current focus:** Phase 15 — [build-plan.md](./build-plan.md) · production launch
 
 ---
 

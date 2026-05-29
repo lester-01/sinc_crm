@@ -21,7 +21,7 @@ One markdown file per **build phase** (6–15). Written **during** implementatio
 | 12 | [phase-12-external-auth.md](./phase-12-external-auth.md) | Complete |
 | 13 | [phase-13-readme.md](./phase-13-readme.md) | Complete |
 | 14 | [phase-14-deploy.md](./phase-14-deploy.md) | Complete (fill live URLs in README) |
-| 15 | [phase-15-submission.md](./phase-15-submission.md) | Not started |
+| 15 | [phase-15-submission.md](./phase-15-submission.md) | Not started (production launch) |
 
 ## How to use
 

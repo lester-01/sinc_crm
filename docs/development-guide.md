@@ -46,7 +46,7 @@ Use this for anything that affects users, APIs, or security — not for typo-onl
 
 ### 1. Plan
 
-- Skim [project_requirements/](../project_requirements/) if the feature touches evaluation criteria.
+- Skim [project_requirements/](../project_requirements/) if the feature touches acceptance criteria.
 - Add or update a row in [testing-plan.md](./testing-plan.md) with a test ID (`FEATURE-NN` or next ID in the phase), layer (E2E / API / Vitest), and expected outcome.
 - If the feature needs new schema or seed data, plan [database-setup.md](./database-setup.md) steps (`db:schema` on empty DB only; `db:seed` for demo rows).
 
@@ -188,4 +188,4 @@ Read artifacts under `test-results/` ([e2e-artifacts.md](./e2e-artifacts.md)): s
 | Security constraints to cover | [testing-plan.md](./testing-plan.md) |
 | Phase history & build order | [build-plan.md](./build-plan.md), [phases/README.md](./phases/README.md) |
 | CI later | [ci-e2e-recipe.md](./ci-e2e-recipe.md) |
-| Deploy (Worker + Pages) | [deploy-guide.md](./deploy-guide.md) |
+| Deploy (Worker + Pages, two-pass manual CLI) | [deploy-guide.md](./deploy-guide.md) — GitHub→Cloudflare CI planned alongside CLI |

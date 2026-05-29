@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Stack setup verification for Student CRM assessment.
+ * Stack setup verification for Student CRM.
  * Run: npm run verify:stack [-- --phase=all|local|cloud|cloudflare|env|supabase|supabase-connect|github|scaffold|deploy]
  */
 

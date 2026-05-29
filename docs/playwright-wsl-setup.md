@@ -81,7 +81,7 @@ Optional: if `apt update` fails on **trixie-backports** (`Couldn't find the star
 | Approach | Use it? |
 |----------|---------|
 | **`npm install` + `npx playwright install`** in the repo | **Yes — default** |
-| Cursor “Playwright” extension / plugin | **No** — optional elsewhere; not required for this assessment |
+| Cursor “Playwright” extension / plugin | **No** — optional elsewhere; not required for this repo |
 | Global `npm install -g playwright` | **No** — stick to project version |
 
 Run tests from the **WSL terminal** in the project folder (same environment as `npm run dev`).

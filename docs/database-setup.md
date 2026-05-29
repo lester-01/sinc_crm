@@ -153,7 +153,7 @@ Use a **throwaway Supabase project** for CI — schema/seed abort if the databas
 | Seed data | `npm run db:seed` | Demo auth users + CRM rows on **empty** DB only |
 | Verify | `npm run verify:stack:supabase` | Tables exist + secret key can read `profiles` |
 
-We **do not** use Supabase CLI migration history (`supabase/migrations/`) in this phase. The assessment README asks for “migrations” in documentation sense: **versioned SQL you can re-apply on a fresh project**. See [Schema scripts vs migrations](#schema-scripts-vs-migrations) below.
+We **do not** use Supabase CLI migration history (`supabase/migrations/`) in this phase. The product README documents “migrations” in the sense of **versioned SQL you can re-apply on a fresh project**. See [Schema scripts vs migrations](#schema-scripts-vs-migrations) below.
 
 ---
 
@@ -195,10 +195,10 @@ We are **not** using “create a second project and seed that” automation yet 
 
 ### 4. Email confirmation disabled (demo only)
 
-For the assessment demo we **disable email confirmation** in Supabase Auth so you can:
+For the **demo environment** we **disable email confirmation** in Supabase Auth so you can:
 
 - Log in immediately with seeded `@demo.local` users.
-- Register extra fake clients during the video without inbox friction.
+- Register extra fake clients during demos without inbox friction.
 
 **This is deliberate and documented.** It weakens account security and must not be copied to production. See [roadmap.md](./roadmap.md).
 
