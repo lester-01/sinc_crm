@@ -61,20 +61,16 @@ Post-MVP improvements and deferred items: [roadmap.md](roadmap.md#back-to-readme
 
 **Production:** follow the two-pass guide — [deploy-guide.md](deploy-guide.md#back-to-readme) (manual CLI today; GitHub→Cloudflare CI is a valid alternative we will document later).
 
+To reset Supabase data or schema **without deleting the project** (fast dev iteration), see [database-setup.md — Reset database](docs/database-setup.md#reset-database-without-deleting-the-project).
+
 ```bash
-# Pass 1 — see deploy-guide.md for secrets, optional db:seed, and order
-npm run db:schema                              # empty Supabase project only
-# npm run db:seed                              # optional: demo users for walkthrough
+# End-to-end (recommended) — see deploy-guide.md
+npm run deploy:all -- --skip-db    # use --skip-db if schema already exists
 
-cd worker && npx wrangler secret put SUPABASE_URL
-# … SUPABASE_SECRET_KEY (CORS_ORIGINS after Pages URL is known)
-
-cp .env.production.example .env.production     # VITE_* including Worker URL after deploy:worker
-npm run deploy:worker
-npm run deploy:pages
-
-# Pass 2 — CORS_ORIGINS secret + Supabase Dashboard Auth URLs → then:
-npm run verify:stack:deploy
+# Or manual two-pass:
+# npm run db:schema              # empty Supabase project only (first time)
+# npm run deploy:worker && npm run deploy:pages
+# npm run verify:stack:deploy
 ```
 
 | Service | URL (fill in after you deploy) |

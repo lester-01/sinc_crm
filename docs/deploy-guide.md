@@ -14,7 +14,20 @@ This guide is for a **first manual deploy** using the existing npm scripts. A fu
 | Auth redirects | **Supabase Dashboard** | Authentication → URL configuration |
 | Browser → API CORS | **Worker code + secret** | `CORS_ORIGINS` secret (not Cloudflare Pages settings) |
 
-Related: [external-auth.md](./external-auth.md) · [cloudflare-auth.md](./cloudflare-auth.md) · [database-setup.md](./database-setup.md) · [phases/phase-14-deploy.md](./phases/phase-14-deploy.md)
+Related: [external-auth.md](./external-auth.md) · [cloudflare-auth.md](./cloudflare-auth.md) · [database-setup.md](./database-setup.md) · [phases/phase-14-deploy.md](./phases/phase-14-deploy.md) · [pages-naming-investigation.md](./pages-naming-investigation.md)
+
+---
+
+## Pages: project name vs `pages.dev` hostname
+
+Two different identifiers:
+
+| Field | Repo default | Used for |
+|-------|--------------|----------|
+| **Project Name** | `sinc-crm` (from `worker/wrangler.toml` `sinc-crm-api` → `sinc-crm`) | `wrangler pages deploy --project-name` |
+| **Project Domains** | Assigned by Cloudflare API `subdomain` (e.g. `<name>-esg.pages.dev`) | Browser URL, `CORS_ORIGINS`, Supabase Auth |
+
+They can differ: deploy with **`sinc-crm`**, browse at **`https://<project-domains>`** from `wrangler pages project list`. Do not set `--project-name` to the domain label unless it matches **Project Name** in that list.
 
 ---
 
@@ -49,16 +62,16 @@ Production: **two public URLs** (Pages + Worker) plus **Supabase Dashboard** aut
 
 | URL type | Looks like | Use for production? |
 |----------|------------|---------------------|
-| **Deployment preview** | `https://de21a19d.sinc-crm-esg.pages.dev` | **No** — hash changes every deploy; easy CORS mistakes |
-| **Stable project URL** | `https://sinc-crm-esg.pages.dev` | **Yes** — bookmark, README, CORS, Supabase Auth |
+| **Deployment preview** | `https://<hash>.<project-domains>` | **No** — hash changes every deploy; easy CORS mistakes |
+| **Stable project URL** | `https://<project-domains>` | **Yes** — bookmark, README, CORS, Supabase Auth |
 
 The preview URL is the deployment row Wrangler shows right after upload (first 8 characters of the deployment ID + your project domain). The **stable** URL is the project’s **Project Domains** entry.
 
 **Where to get the stable URL**
 
 1. **After `npm run deploy:pages`** — read the script footer (`USE THIS (stable production URL): …`), not the hash URL in Wrangler’s table above it.
-2. **CLI:** `cd worker && npx wrangler pages project list` → column **Project Domains** (e.g. `sinc-crm-esg.pages.dev` → app is `https://sinc-crm-esg.pages.dev`).
-3. **Dashboard:** Cloudflare → **Workers & Pages** → project **sinc-crm** → overview / domains.
+2. **CLI:** `cd worker && npx wrangler pages project list` → column **Project Domains** (e.g. `my-project-abc.pages.dev` → app is `https://my-project-abc.pages.dev`).
+3. **Dashboard:** Cloudflare → **Workers & Pages** → project **sinc-crm** (Project Name) → overview / domains.
 
 **Why this mattered:** `CORS_ORIGINS` and Supabase Auth must match the **exact origin** you open in the browser. Preview and stable URLs are different origins. Using the preview URL while CORS lists only the stable URL produces `/api/me` CORS errors even when login against Supabase succeeds.
 
@@ -80,12 +93,43 @@ Pass 1 — Deploy what you can
 
 Pass 2 — Wire URLs (no full redeploy required for CORS secret alone)
   6. Worker: CORS_ORIGINS = stable Pages origin only (exact, no trailing slash)
-  7. Supabase Dashboard: Site URL + Redirect URLs = same stable origin
+  7. Supabase Auth URLs via Management API (`SUPABASE_ACCESS_TOKEN`) — or dashboard fallback
   8. npm run verify:stack:deploy (+ optional Playwright smoke)
   9. Record URLs in README (and optional local notes file)
 ```
 
 **Pass 2 can be done minutes later** — you do not need to repeat Pass 1 unless you change Worker code or Pages build env.
+
+### One-command deploy (`deploy:all`)
+
+```bash
+npm run deploy:all
+```
+
+Runs Pass 1 + Pass 2 (Worker, Pages build/deploy, CORS secret bulk, Supabase Auth URLs via API). Requires `worker/.cloudflare.env`, `worker/.dev.vars` (including `SUPABASE_ACCESS_TOKEN`), and `.env`.
+
+**Skip database** when schema already exists (your case after a prior `db:schema`):
+
+```bash
+npm run deploy:all -- --skip-db
+# or
+npm run deploy:all:skip-db
+# or
+SKIP_DB=1 npm run deploy:all
+```
+
+**Important:** `npm run deploy:all --skip-db` (without `--` before `--skip-db`) does **not** work — npm does not forward that flag to the script. You must use `--` or one of the alternatives above.
+
+### Fast iteration: reset DB vs skip DB
+
+| Situation | What to run |
+|-----------|-------------|
+| Deploy succeeded; schema already applied; only redeploying Worker/Pages | `npm run deploy:all:skip-db` — **no** database wipe |
+| Need fresh demo users (`manager1@demo.local`, etc.) | [database-setup.md — Level A](./database-setup.md#reset-database-without-deleting-the-project) → `npm run db:seed` |
+| Changed SQL under `supabase/schema/` | [database-setup.md — Level B](./database-setup.md#reset-database-without-deleting-the-project) → `npm run db:schema` (+ optional `db:seed`) |
+| First deploy on empty Supabase project | `npm run deploy:all` (includes `db:schema`) or run `db:schema` then `deploy:all:skip-db` |
+
+After deploy, open the **stable** Pages URL from the summary or `wrangler pages project list` (Project Domains), not the per-deployment preview hash — see [Pages URL: stable vs preview](#pages-url-stable-vs-deployment-preview-read-before-pass-2).
 
 ---
 
@@ -93,7 +137,7 @@ Pass 2 — Wire URLs (no full redeploy required for CORS secret alone)
 
 - **Cloudflare:** scoped API token — `worker/.cloudflare.env` or `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` ([external-auth.md](./external-auth.md), [cloudflare-auth.md](./cloudflare-auth.md)).
 - **Supabase:** a project for production (one project for demo + prod is fine for a portfolio deploy). Keys in `worker/.dev.vars` or exported env ([database-setup.md](./database-setup.md)).
-- **Empty database** for `npm run db:schema` (script refuses if tables already exist).
+- **Empty database** for `npm run db:schema` on first setup (script refuses if tables already exist). Re-deploy with `npm run deploy:all:skip-db` when schema is already applied. To wipe and re-apply schema or re-seed on the **same** project, see [database-setup.md — Reset database](./database-setup.md#reset-database-without-deleting-the-project).
 - **Node 22+** and `npm run setup:local` (Wrangler available under `worker/`).
 
 **Optional for demo / portfolio walkthrough:**
@@ -151,7 +195,7 @@ Production secrets are stored in **Cloudflare**, not in `wrangler.toml` or git.
 
 | Secret | Value |
 |--------|--------|
-| `CORS_ORIGINS` | **Stable** Pages origin, e.g. `https://sinc-crm-esg.pages.dev` (**not** `https://<hash>.….pages.dev`; no trailing slash) |
+| `CORS_ORIGINS` | **Stable** Pages origin, e.g. `https://<project-domains>` (**not** `https://<hash>.….pages.dev`; no trailing slash) |
 
 #### Option A — Interactive (fine for first deploy)
 
@@ -230,25 +274,21 @@ VITE_API_BASE_URL=https://sinc-crm-api.<your-subdomain>.workers.dev
 npm run deploy:pages
 ```
 
-Default Pages project name: `sinc-crm`. Override:
+Pages **project name** is derived from [`worker/wrangler.toml`](../worker/wrangler.toml) (`sinc-crm-api` → `sinc-crm`) or from the Cloudflare API project list.
 
-```bash
-PAGES_PROJECT_NAME=my-crm npm run deploy:pages
-```
+`deploy:all` / `deploy:pages` resolve the **stable URL** via Cloudflare API only (see [cloudflare-auth.md](./cloudflare-auth.md)). First run may create the Pages project in your account.
 
-First run may create the Pages project in your account.
+Wrangler will print a **deployment preview** URL in its table (e.g. `https://<hash>.<project-domains>`). **Ignore that for production wiring.**
 
-Wrangler will print a **deployment preview** URL in its table (e.g. `https://de21a19d.sinc-crm-esg.pages.dev`). **Ignore that for production wiring.**
+Use the **stable** URL from the script footer or **Project Domains**:
 
-Use the **stable** URL printed at the end of the script, for example:
-
-`https://sinc-crm-esg.pages.dev`
+`https://<project-domains>`
 
 To look it up yourself:
 
 ```bash
 cd worker && npx wrangler pages project list
-# → Project Domains column, e.g. sinc-crm-esg.pages.dev → https://sinc-crm-esg.pages.dev
+# Project Name = deploy slug; Project Domains = stable hostname for CORS/Auth
 ```
 
 See [Pages URL: stable vs deployment preview](#pages-url-stable-vs-deployment-preview-read-before-pass-2).
@@ -264,7 +304,7 @@ Set the secret to your **exact** Pages origin:
 ```bash
 cd worker
 npx wrangler secret put CORS_ORIGINS
-# e.g. https://sinc-crm-esg.pages.dev  (stable URL only — not https://<hash>.sinc-crm-esg.pages.dev)
+# e.g. https://<project-domains>  (stable URL only — not https://<hash>.<project-domains>)
 ```
 
 Or update via `wrangler secret bulk` / `--secrets-file` (see Step 2).
@@ -273,20 +313,19 @@ Or update via `wrangler secret bulk` / `--secrets-file` (see Step 2).
 
 ---
 
-### Step 7 — Supabase Auth URLs (Supabase Dashboard)
+### Step 7 — Supabase Auth URLs (automated in `deploy:all`)
 
-**Where:** [Supabase Dashboard](https://supabase.com/dashboard) → your project → **Authentication** → **URL configuration**
+**`npm run deploy:all`** updates Auth URL configuration via the [Supabase Management API](https://supabase.com/docs/reference/api/v1-update-auth-service-config):
+
+- `PATCH /v1/projects/{ref}/config/auth`
+- Sets **Site URL** to the stable Pages origin from the Cloudflare API
+- Merges **Redirect URLs** (`uri_allow_list`) with production origin plus `http://localhost:5173` for local dev
+
+**Requires** `SUPABASE_ACCESS_TOKEN` in `worker/.dev.vars` (personal access token with **auth_config_write**). Create at [Account tokens](https://supabase.com/dashboard/account/tokens). This is **not** the same as `SUPABASE_SECRET_KEY`.
 
 **Not** configured in Cloudflare. Use your **Pages** URL, not the Worker URL.
 
-| Field | Set to |
-|-------|--------|
-| **Site URL** | Stable Pages URL, e.g. `https://sinc-crm-esg.pages.dev` |
-| **Redirect URLs** | Add the same stable URL (and any custom domain later) |
-
-**What this does:** Supabase Auth **allowlists browser redirect targets** after OAuth, magic links, recovery, etc. It is separate from Worker **CORS** (which allowlists `fetch` from the SPA to `/api/*`).
-
-This app uses **email/password** sign-in in the SPA; redirect settings still matter for some auth flows and for troubleshooting “login redirect” errors.
+**Manual fallback:** if the API step fails, use [Supabase Dashboard](https://supabase.com/dashboard) → **Authentication** → **URL configuration** and match the stable Pages URL from `deploy:all` output.
 
 **Demo only:** if you use seeded users, keep email confirmation disabled per [database-setup.md](./database-setup.md).
 
@@ -303,7 +342,7 @@ Requires `.env.production` with a non-local `VITE_API_BASE_URL`. Checks `GET <VI
 **Optional** production smoke (needs demo seed for DEPLOY-02 login):
 
 ```bash
-DEPLOY_PAGES_URL=https://sinc-crm-esg.pages.dev \
+DEPLOY_PAGES_URL=https://<project-domains> \
 DEPLOY_API_URL=https://sinc-crm-api.<your-subdomain>.workers.dev \
 npx playwright test e2e/specs/phase-14-deploy.spec.ts
 ```
@@ -314,13 +353,7 @@ npx playwright test e2e/specs/phase-14-deploy.spec.ts
 
 Update the root [README.md](../README.md#deployment) table with your live URLs (portfolio, sharing, and smoke tests).
 
-**Recommended:** keep a **local, gitignored** note so you do not rely on terminal scrollback, for example `deploy-urls.local.txt`:
-
-```txt
-Pages=https://sinc-crm-esg.pages.dev
-Worker=https://sinc-crm-api.<subdomain>.workers.dev
-Supabase=https://<ref>.supabase.co
-```
+After `deploy:all`, the script prints **Worker**, **Pages**, and **Supabase** URLs from the Cloudflare API. Re-fetch the stable Pages hostname with a token that has **Pages Read** (see [cloudflare-auth.md](./cloudflare-auth.md)).
 
 Do not commit secrets or `.env.production`.
 
@@ -379,19 +412,13 @@ Do not commit `.env.production`, `worker/.dev.vars`, or secret files.
 | API 401 on `/api/me` without login | Expected — use `/api/health` for smoke |
 | UI still calls old API | Update `.env.production` → `npm run deploy:pages` (rebuild) |
 | `wrangler deploy` auth fail | Token permissions; [cloudflare-auth.md](./cloudflare-auth.md) |
-| `db:schema` / `db:seed` refused | DB not empty — use a fresh project or follow [database-setup.md](./database-setup.md) reset guidance |
+| `db:schema` / `db:seed` refused | DB not empty — [Reset database (same project)](./database-setup.md#reset-database-without-deleting-the-project) (Level A or B) |
 | DEPLOY-02 smoke fails | Run `db:seed` or sign in with a real manager account |
 
 ---
 
-## Planned automation (not in repo yet)
+## Automation vs manual steps
 
-A **two-pass deploy script** will:
-
-1. Run Pass 1 (schema → worker → pages) where values are known from env/files.
-2. Capture URLs from Wrangler output (or predictable project names).
-3. Run Pass 2 (CORS secret, print Supabase Dashboard checklist for Auth URLs).
-
-Until that exists, use this guide for manual deploy. After your first successful deploy, that script will be added for repeatable/autonomous runs.
+**`npm run deploy:all`** runs Pass 1 + Pass 2: schema (optional), Worker, Pages, CORS secret bulk, and Supabase Auth URL sync via API. Use this guide for step-by-step detail, manual `deploy:worker` / `deploy:pages`, or when debugging a single pass.
 
 Phase handoff: [phases/phase-14-deploy.md](./phases/phase-14-deploy.md) · Next: [phase-15-submission.md](./phase-15-submission.md) (production launch checklist)

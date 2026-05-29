@@ -27,7 +27,7 @@ Production deployment path for **Cloudflare Worker** + **Cloudflare Pages**, ful
 | `verify:stack:deploy` uses `/api/health` | Done |
 | `e2e/specs/phase-14-deploy.spec.ts` (`DEPLOY-01`, `DEPLOY-02`) | Done — skipped without `DEPLOY_*` URLs |
 | README deploy section | Template — fill live URLs after deploy |
-| Automated `deploy-all` script | Planned — not in repo yet |
+| `npm run deploy:all` / `deploy:all:skip-db` | Done — see [deploy-guide.md](../deploy-guide.md#one-command-deploy-deployall) |
 
 ---
 
@@ -48,7 +48,7 @@ See [deploy-guide.md](../deploy-guide.md) for full detail.
 6. Supabase Dashboard → Authentication → URL configuration  
 7. `npm run verify:stack:deploy`  
 8. Optional: `DEPLOY_*` Playwright smoke  
-9. README URL table (+ optional local `deploy-urls.local.txt`)
+9. README URL table (URLs from `deploy:all` API summary)
 
 ---
 

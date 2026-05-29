@@ -162,6 +162,8 @@ VITE_API_BASE_URL=http://localhost:8787
 
 **Never** put the secret key in `.env` (Vite must not see it).
 
+To wipe demo data or re-apply schema on the **same** project (without creating a new Supabase project), see [database-setup.md — Reset database](./database-setup.md#reset-database-without-deleting-the-project).
+
 ### E2E-only keys (optional — not needed for `npm run dev`)
 
 Only when you run isolated Playwright tests (`npm run test:e2e` / `test:e2e:ui`), add to `worker/.dev.vars`:
@@ -182,11 +184,15 @@ For **CI** (`CI=true`), export those variables — browser OAuth is not used. Op
 1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/).
 2. **My Profile → API Tokens → Create Token**.
 3. Use **Create Custom Token** (or a template that includes Workers + Account read).
-4. Suggested permissions (minimum for local wrangler + later deploy):
+4. Suggested permissions (minimum for local wrangler + deploy):
    - **Account** — Account Settings: **Read**
-   - **Account** — Workers Scripts: **Edit** (or Workers R2 / Pages if you use those later)
-5. **Account Resources** — include your account.
-6. Create token and copy it once (shown only once).
+   - **Account** — Workers Scripts: **Edit**
+   - **Account** — Cloudflare Pages: **Read** (API: stable `pages.dev` URL — required for `deploy:all`)
+   - **Account** — Cloudflare Pages: **Edit** (deploy frontend)
+   See [cloudflare-auth.md](./cloudflare-auth.md) if deploy fails with `Authentication error` / code `10000`.
+5. **Optional (not required):** **User** → User Details → **Read** — removes `Unable to retrieve email` noise in `wrangler whoami` only; deploy does not need it. See [cloudflare-auth.md](./cloudflare-auth.md#optional-user-permissions-not-required-for-deploy).
+6. **Account Resources** — include your account.
+7. Create token and copy it once (shown only once).
 
 Paste into `worker/.cloudflare.env`:
 
@@ -229,6 +235,7 @@ npm run verify:stack:cloudflare
 npm run verify:stack:github
 npm run db:schema               # Phase 5 — empty DB only (see database-setup.md)
 npm run db:seed                 # Phase 5 — demo users (see database-setup.md)
+# Re-seed or re-apply schema on same project: database-setup.md#reset-database-without-deleting-the-project
 npm run verify:stack:supabase   # Phase 5 — tables + secret key
 ```
 
