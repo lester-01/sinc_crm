@@ -182,7 +182,7 @@ Status legend: **Planned** → **Implemented** when the phase lands.
 
 | ID | Layer | Test | Assert |
 |----|-------|------|--------|
-| CLI-01 | E2E | Manager client list | Seeded clients visible (≥4 rows) |
+| CLI-01 | E2E | Manager client list | Seeded clients visible (≥5 rows; Aida Client link) |
 | CLI-02 | E2E | Sales creates client | New row appears; valid email |
 | CLI-03 | E2E | Client own profile | `client1` sees own name/email only on detail |
 | CLI-04 | E2E | Client cannot open other client | Navigate to other UUID → forbidden or redirect |
