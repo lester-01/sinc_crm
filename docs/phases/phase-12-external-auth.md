@@ -66,17 +66,16 @@ Enforce and document one **tooling auth ladder** for **Cloudflare**, **Supabase*
 ### Verify
 
 ```bash
-# Cloudflare: CI must not hang on OAuth
+npm run test:scripts   # AUTH-LADDER-01 … AUTH-LADDER-10
+
+# Manual / optional:
 CI=true bash scripts/ensure-cloudflare-auth.sh   # expect exit 1 without token
-
-# Cloudflare: token via env only (no .cloudflare.env file) — when token is valid:
 CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... npm run verify:stack:cloudflare
-
-# Stack credentials check (env or files)
 node scripts/lib/require-stack-credentials.mjs
-
 npm run verify:github-actions
 ```
+
+- [x] Automated tests: `scripts/lib/load-stack-env.test.mjs`, `auth-ladder.integration.test.mjs`
 
 ---
 

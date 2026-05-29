@@ -35,6 +35,8 @@
     "test:e2e:ui:dev": "node scripts/e2e-run.mjs --dev --ui",
     "test:e2e:dev": "playwright test",
     "test:worker": "npm run test --prefix worker",
+    "test:scripts": "node --test scripts/lib/load-stack-env.test.mjs scripts/lib/auth-ladder.integration.test.mjs",
+    "test:tooling": "npm run test:scripts && npm run test:worker",
     "verify:playwright": "node scripts/verify-playwright.mjs",
     "playwright:setup": "node scripts/install-playwright.mjs",
     "playwright:install": "npx playwright install chromium",

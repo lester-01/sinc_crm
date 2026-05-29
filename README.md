@@ -31,7 +31,7 @@ Password for all seeded accounts: **`demo1234`** (override with `SEED_DEMO_PASSW
 
 Run **`npm run test:e2e`** for the full isolated Playwright suite (creates a temporary Supabase project, seeds, tests, deletes). For day-to-day dev against your existing `.env`, use **`npm run test:e2e:dev`**. Worker unit tests: **`npm run test:worker`**.
 
-Full catalog, commands, and how to add tests: [testing-guide.md](testing-guide.md#back-to-readme).
+Full catalog, commands, and how to add tests: [testing-guide.md](testing-guide.md#back-to-readme). Tooling auth ladder: `npm run test:scripts`.
 
 ## Documentation
 

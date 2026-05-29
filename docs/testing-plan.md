@@ -133,7 +133,7 @@ Use stable seed data from [database-setup.md](./database-setup.md) for assertion
 | **9 — Deals** | `DEAL-*`, `PIPE-*`, `API-DEAL-*` |
 | **10 — Dashboard** | `DASH-*` |
 | **11 — Polish** | Fill gaps, `@smoke` full suite, evaluation checklist spec |
-| **12 — Tooling auth** | Document ladder; script verify matrix (not Playwright) |
+| **12 — Tooling auth** | `AUTH-LADDER-*` in `scripts/lib/*.test.mjs`; document ladder |
 | **13 — Docs** | — (no new test IDs) |
 | **14 — Deploy** | Optional `@deploy` smoke against production URLs |
 
@@ -233,6 +233,23 @@ Status legend: **Planned** → **Implemented** when the phase lands.
 | DASH-04 | API | Sales `GET /api/dashboard` | `403` |
 | DASH-05 | API | Dashboard counts | Match known seed totals (snapshot or min thresholds) |
 
+### Phase 12 — Tooling auth ladder (`npm run test:scripts`)
+
+| ID | Layer | Test | Assert |
+|----|-------|------|--------|
+| AUTH-LADDER-01 | Unit | `isCiEnvironment` | Only `CI=true` is headless |
+| AUTH-LADDER-02 | Unit | `isPlaceholder` | Rejects `your-*`, short values |
+| AUTH-LADDER-03 | Unit | `parseEnvFile` | Quoted/unquoted parse |
+| AUTH-LADDER-04 | Unit | `hasCloudflareStackKeys` | Token required, non-placeholder |
+| AUTH-LADDER-05 | Unit | `hasFrontend/WorkerStackKeys` | Required Supabase keys |
+| AUTH-LADDER-06 | Unit | `loadStackEnv` | Env overrides file |
+| AUTH-LADDER-07 | Integration | `ensure-cloudflare-auth.sh` | `CI=true` fail fast, no `wrangler login` |
+| AUTH-LADDER-08 | Integration | `require-stack-credentials.mjs` | Env-only credentials OK |
+| AUTH-LADDER-09 | Integration | `require-stack-credentials.mjs` | Missing CF token → exit 1 |
+| AUTH-LADDER-10 | Integration | `verify-github-actions.mjs` | `CI=true` → no gh OAuth message |
+
+Spec files: `scripts/lib/load-stack-env.test.mjs`, `scripts/lib/auth-ladder.integration.test.mjs`.
+
 ### Phase 11 — Regression & evaluation (`@smoke`)
 
 | ID | Layer | Test | Assert |
@@ -293,9 +310,10 @@ Update this section as tests land:
 | 9 | 11 | 11 | `e2e/specs/phase-09-deals.spec.ts` |
 | 10 | 5 | 5 | `e2e/specs/phase-10-dashboard.spec.ts` |
 | 11 | 5 | 5 | `e2e/specs/phase-11-eval-smoke.spec.ts` |
+| 12 | 10 | 10 | `scripts/lib/load-stack-env.test.mjs`, `auth-ladder.integration.test.mjs` |
 | 14 | 2 | 0 | `e2e/specs/phase-14-deploy.spec.ts` |
 
-**Total planned:** 52 automated cases (E2E + API); plus Worker unit tests as services grow.
+**Total planned:** 52 E2E/API Playwright cases + 10 tooling auth (Node test) + 8 Worker Vitest.
 
 ---
 

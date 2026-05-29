@@ -64,9 +64,19 @@ Implementation: `scripts/lib/load-stack-env.mjs` merges files then applies `STAC
 - Script: `npm run verify:github-actions`
 - Order: git remote / clone access → `GITHUB_TOKEN`/`GH_TOKEN` → `gh` OAuth (skipped when `CI=true` without token)
 
+## Automated tests (`AUTH-LADDER-*`)
+
+| Command | Coverage |
+|---------|----------|
+| `npm run test:scripts` | Env override, `CI=true` fail-fast, require-credentials, verify-github CI path |
+
+See [testing-guide.md](./testing-guide.md#tooling-auth-ladder-auth-ladder--node-test) for the full ID list.
+
 ## Quick commands
 
 ```bash
+npm run test:scripts
+
 # Token only via env (no .cloudflare.env file on disk)
 CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... npm run verify:stack:cloudflare
 
