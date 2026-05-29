@@ -37,6 +37,7 @@ Full catalog, commands, and how to add tests: [testing-guide.md](testing-guide.m
 
 | Topic | Quick link |
 |-------|------------|
+| **API reference (OpenAPI)** | [docs/api/openapi.yaml](docs/api/openapi.yaml) · [interactive viewer](docs/api/index.html) |
 | Quick start (install, env, Phase 4) | [quick-start.md](quick-start.md#back-to-readme) |
 | Stack setup & phase checklist | [stack-setup.md](stack-setup.md#back-to-readme) |
 | Database schema & seed | [database-setup.md](database-setup.md#back-to-readme) |

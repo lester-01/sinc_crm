@@ -1,0 +1,58 @@
+# API authentication
+
+The SINC CRM Worker API does **not** handle login or sign-up. Clients obtain a Supabase access token via **Supabase Auth** (the React SPA uses `@supabase/supabase-js`), then send that token on every protected request.
+
+## Obtaining a token
+
+1. Sign in through the app at `http://localhost:5173` (local) or your deployed Pages URL.
+2. Or call Supabase Auth directly, e.g. `supabase.auth.signInWithPassword({ email, password })`.
+3. Use the returned session's `access_token` as the Bearer token.
+
+### Demo users (seeded)
+
+Password for all demo accounts: **`demo1234`**
+
+| Role | Email |
+|------|-------|
+| Manager | `manager1@demo.local` |
+| Sales | `sales1@demo.local`, `sales2@demo.local` |
+| Client | `client1@demo.local`, `client2@demo.local` |
+
+## Request headers
+
+```
+Authorization: Bearer <supabase_access_token>
+Content-Type: application/json
+```
+
+Only `GET /api/health` is public (no token required).
+
+## Roles
+
+| Role | Description |
+|------|-------------|
+| `client` | Student/client portal — own profile, conversations, and deals only |
+| `sales` | CRM team member — clients, conversations, own deals |
+| `manager` | Full access — dashboard, reassign deal owners, all conversations |
+
+Role is stored in `profiles.role` and enforced in Worker services (not only at route middleware).
+
+## Error responses
+
+All errors use a JSON body:
+
+```json
+{ "error": "Human-readable message" }
+```
+
+| Status | When |
+|--------|------|
+| `400` | Request body or query failed Zod validation |
+| `401` | Missing, invalid, or expired Bearer token |
+| `403` | Authenticated but role or resource access denied |
+| `404` | Resource not found |
+| `409` | Conflict (e.g. duplicate client email) |
+| `500` | Server or database error |
+| `503` | Supabase misconfiguration during auth |
+
+See [openapi.yaml](./openapi.yaml) for per-endpoint permissions and examples.

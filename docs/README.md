@@ -4,6 +4,9 @@
 
 | Doc | Purpose |
 |-----|---------|
+| [api/openapi.yaml](./api/openapi.yaml) | **API reference (OpenAPI 3.1)** — routes, schemas, role permissions, examples |
+| [api/index.html](./api/index.html) | Interactive API docs (Scalar viewer; serve `docs/api/` locally) |
+| [api/authentication.md](./api/authentication.md) | Auth flow, demo users, error codes |
 | [development-guide.md](./development-guide.md) | **How to work on the repo** — features, tests required, when to update tests |
 | [project-guide.md](./project-guide.md) | Comprehensive guide (architecture, phases, testing, troubleshooting) |
 | [quick-start.md](./quick-start.md) | Install, env files, Phase 4 cloud setup |

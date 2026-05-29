@@ -44,7 +44,8 @@
     "playwright:setup": "node scripts/install-playwright.mjs",
     "playwright:install": "npx playwright install chromium",
     "playwright:install-deps": "bash scripts/install-playwright-deps.sh",
-    "playwright:install-deps:debian": "bash scripts/install-playwright-deps-debian.sh"
+    "playwright:install-deps:debian": "bash scripts/install-playwright-deps-debian.sh",
+    "lint:openapi": "npx @redocly/cli lint docs/api/openapi.yaml --config redocly.yaml"
   },
   "dependencies": {
     "@radix-ui/react-dropdown-menu": "^2.1.16",

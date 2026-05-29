@@ -74,7 +74,7 @@ Full reference: [external-auth.md](./external-auth.md). Cloudflare-specific: [cl
 
 Protected routes return `401` without JWT, `403` when role forbids action. Critical constraints are covered by `API-*` Playwright tests — see [testing-guide.md](./testing-guide.md).
 
-Main routes: `/api/me`, `/api/clients`, `/api/conversations`, `/api/deals`, `/api/dashboard`, `/api/health`.
+**Full API reference:** [api/openapi.yaml](./api/openapi.yaml) (OpenAPI 3.1 — all routes, request/response schemas, role permissions via `x-permissions`, and examples). Interactive viewer: [api/index.html](./api/index.html) (run `npx serve docs/api` locally). Auth overview: [api/authentication.md](./api/authentication.md).
 
 ---
 

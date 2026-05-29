@@ -1,0 +1,1818 @@
+openapi: 3.1.0
+info:
+  title: SINC Student CRM API
+  version: "1.0.0"
+  description: |
+    REST API for the SINC Student CRM (Cloudflare Worker + Hono).
+
+    **Authentication:** Login and sign-up are handled by [Supabase Auth](https://supabase.com/docs/guides/auth), not this API.
+    Obtain a Supabase access token, then send `Authorization: Bearer <token>` on protected routes.
+
+    See [authentication.md](./authentication.md) for demo users, error codes, and role overview.
+
+    **Roles:** `client` | `sales` | `manager` — each operation documents who may call it via `x-permissions` and a role table in the description.
+
+servers:
+  - url: http://localhost:8787
+    description: Local development (wrangler dev)
+  - url: https://YOUR-WORKER.workers.dev
+    description: Production Worker (replace after deploy)
+
+tags:
+  - name: Health
+    description: Service health check (public)
+  - name: Me
+    description: Current authenticated user profile
+  - name: Clients
+    description: Client records
+  - name: Conversations
+    description: Conversation threads and assignment
+  - name: Messages
+    description: Messages within conversation threads
+  - name: Deals
+    description: Deal pipeline
+  - name: Dashboard
+    description: Manager analytics (manager only)
+  - name: Users
+    description: Team member listing
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Public liveness probe. No authentication required.
+      security: []
+      operationId: getHealth
+      x-permissions:
+        auth: none
+        roles:
+          client: { access: allow }
+          sales: { access: allow }
+          manager: { access: allow }
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                ok: true
+                service: sinc-crm-api
+                version: scaffold
+
+  /api/me:
+    get:
+      tags: [Me]
+      summary: Current user profile
+      description: |
+        Returns the authenticated user's profile from `profiles`.
+
+        | Role | Access |
+        |------|--------|
+        | client | Allow — own profile |
+        | sales | Allow — own profile |
+        | manager | Allow — own profile |
+      operationId: getMe
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: allow, note: own profile }
+          sales: { access: allow, note: own profile }
+          manager: { access: allow, note: own profile }
+      responses:
+        "200":
+          description: Profile found
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/MeProfile"
+                  - $ref: "#/components/schemas/MeProfileMissing"
+              examples:
+                withProfile:
+                  summary: Normal profile
+                  value:
+                    id: d4e5f6a7-b8c9-0123-def0-234567890123
+                    fullName: Alex Sales
+                    role: sales
+                    createdAt: "2025-01-15T10:00:00.000Z"
+                missingProfile:
+                  summary: Auth OK but no profiles row
+                  value:
+                    id: d4e5f6a7-b8c9-0123-def0-234567890123
+                    profile: null
+                    message: "Authenticated; profiles row not found (apply schema + bootstrap)"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/clients:
+    get:
+      tags: [Clients]
+      summary: List clients
+      description: |
+        List client records. Clients see only their own record; sales and managers see all (with optional filters).
+
+        | Role | Access |
+        |------|--------|
+        | client | Scoped — own client record only |
+        | sales | Allow — all clients; filter by `ownerId` (deals owned by user) |
+        | manager | Allow — all clients |
+      operationId: listClients
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: scoped, note: own client record only }
+          sales: { access: allow, note: all clients; ownerId filter via deals }
+          manager: { access: allow }
+      parameters:
+        - $ref: "#/components/parameters/QueryQ"
+        - name: ownerId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter to clients with deals owned by this user (sales/manager only)
+      responses:
+        "200":
+          description: Client list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClientListItem"
+              examples:
+                salesView:
+                  summary: Sales — multiple clients
+                  value:
+                    - id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                      profileId: null
+                      fullName: Jane Student
+                      email: client1@demo.local
+                      phone: "+1 555 0100"
+                      country: US
+                      targetCountry: UK
+                      createdAt: "2025-01-10T08:00:00.000Z"
+                      updatedAt: "2025-03-01T12:00:00.000Z"
+                      activeDealTitle: UK Masters Application
+                clientView:
+                  summary: Client — single own record
+                  value:
+                    - id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                      profileId: e5f6a7b8-c9d0-1234-ef01-345678901234
+                      fullName: Jane Student
+                      email: client1@demo.local
+                      phone: "+1 555 0100"
+                      country: US
+                      targetCountry: UK
+                      createdAt: "2025-01-10T08:00:00.000Z"
+                      updatedAt: "2025-03-01T12:00:00.000Z"
+                      activeDealTitle: UK Masters Application
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags: [Clients]
+      summary: Create client
+      description: |
+        Create a new client record (no linked auth profile).
+
+        | Role | Access |
+        |------|--------|
+        | client | Deny |
+        | sales | Allow |
+        | manager | Allow |
+      operationId: createClient
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: deny }
+          sales: { access: allow }
+          manager: { access: allow }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClientBody"
+            example:
+              fullName: New Student
+              email: newstudent@example.com
+              phone: "+1 555 0199"
+              country: CA
+              targetCountry: AU
+      responses:
+        "201":
+          description: Client created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientListItem"
+              example:
+                id: f6a7b8c9-d0e1-2345-f012-456789012345
+                profileId: null
+                fullName: New Student
+                email: newstudent@example.com
+                phone: "+1 555 0199"
+                country: CA
+                targetCountry: AU
+                createdAt: "2025-05-29T14:00:00.000Z"
+                updatedAt: "2025-05-29T14:00:00.000Z"
+                activeDealTitle: null
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Client role forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Forbidden
+        "409":
+          description: Duplicate email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Client with this email already exists
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/clients/{clientId}:
+    get:
+      tags: [Clients]
+      summary: Client detail
+      description: |
+        Client record with conversations, deals, and recent activity.
+
+        | Role | Access |
+        |------|--------|
+        | client | Scoped — own client only |
+        | sales | Allow |
+        | manager | Allow |
+      operationId: getClient
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: scoped, note: own client only }
+          sales: { access: allow }
+          manager: { access: allow }
+      parameters:
+        - $ref: "#/components/parameters/ClientId"
+      responses:
+        "200":
+          description: Client detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientDetail"
+              example:
+                id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                profileId: e5f6a7b8-c9d0-1234-ef01-345678901234
+                fullName: Jane Student
+                email: client1@demo.local
+                phone: "+1 555 0100"
+                country: US
+                targetCountry: UK
+                createdAt: "2025-01-10T08:00:00.000Z"
+                updatedAt: "2025-03-01T12:00:00.000Z"
+                activeDealTitle: UK Masters Application
+                conversations:
+                  - id: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                    subject: Visa questions
+                    status: open
+                    lastMessageAt: "2025-05-28T16:30:00.000Z"
+                deals:
+                  - id: c3d4e5f6-a7b8-9012-cdef-123456789012
+                    title: UK Masters Application
+                    stage: documents_requested
+                    valueAmount: 2500
+                    valueCurrency: USD
+                    ownerId: d4e5f6a7-b8c9-0123-def0-234567890123
+                    updatedAt: "2025-05-27T09:00:00.000Z"
+                activity:
+                  - type: stage_change
+                    description: "UK Masters Application: contacted → documents_requested"
+                    createdAt: "2025-05-27T09:00:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Client not found
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/conversations:
+    get:
+      tags: [Conversations]
+      summary: List conversations
+      description: |
+        List conversation threads. Visibility and queue filters depend on role.
+
+        | Role | Access |
+        |------|--------|
+        | client | Scoped — own threads only |
+        | sales | Scoped — unassigned + assigned to self (default); use `queue` param |
+        | manager | Allow — all threads |
+      operationId: listConversations
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: scoped, note: own threads only }
+          sales: { access: scoped, note: "queue: unassigned | mine | all (default: unassigned+mine)" }
+          manager: { access: allow }
+      parameters:
+        - name: queue
+          in: query
+          schema:
+            type: string
+            enum: [unassigned, mine, all]
+          description: Sales queue filter (ignored for client/manager)
+      responses:
+        "200":
+          description: Conversation list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConversationListItem"
+              example:
+                - id: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                  clientId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                  clientName: Jane Student
+                  subject: Visa questions
+                  status: open
+                  assignedTo: d4e5f6a7-b8c9-0123-def0-234567890123
+                  assignedToName: Alex Sales
+                  lastMessageAt: "2025-05-28T16:30:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags: [Conversations]
+      summary: Create conversation
+      description: |
+        Create a thread and post the first message.
+
+        | Role | Access |
+        |------|--------|
+        | client | Scoped — `clientId` must be own client |
+        | sales | Allow |
+        | manager | Allow |
+      operationId: createConversation
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: scoped, note: clientId must match own client record }
+          sales: { access: allow }
+          manager: { access: allow }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConversationBody"
+            example:
+              clientId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+              subject: Document upload help
+              message: Hi, I need help uploading my transcript.
+      responses:
+        "200":
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationCreated"
+              example:
+                id: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                clientId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                subject: Document upload help
+                status: open
+                assignedTo: null
+                lastMessageAt: "2025-05-29T14:05:00.000Z"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Client cannot create for another client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Forbidden
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Client not found
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/conversations/{threadId}:
+    get:
+      tags: [Conversations]
+      summary: Conversation detail
+      description: |
+        Thread with full message history.
+
+        | Role | Access |
+        |------|--------|
+        | client | Scoped — own threads |
+        | sales | Scoped — unassigned or assigned to self |
+        | manager | Allow |
+      operationId: getConversation
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: scoped, note: own threads }
+          sales: { access: scoped, note: unassigned or assigned to self }
+          manager: { access: allow }
+      parameters:
+        - $ref: "#/components/parameters/ThreadId"
+      responses:
+        "200":
+          description: Conversation detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationDetail"
+              example:
+                id: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                clientId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                clientName: Jane Student
+                clientEmail: client1@demo.local
+                subject: Visa questions
+                status: open
+                assignedTo: d4e5f6a7-b8c9-0123-def0-234567890123
+                assignedToName: Alex Sales
+                lastMessageAt: "2025-05-28T16:30:00.000Z"
+                messages:
+                  - id: "11111111-1111-1111-1111-111111111111"
+                    senderId: e5f6a7b8-c9d0-1234-ef01-345678901234
+                    senderName: Jane Student
+                    senderType: client
+                    body: When do I need to submit my visa docs?
+                    createdAt: "2025-05-28T15:00:00.000Z"
+                  - id: "22222222-2222-2222-2222-222222222222"
+                    senderId: d4e5f6a7-b8c9-0123-def0-234567890123
+                    senderName: Alex Sales
+                    senderType: team
+                    body: Please upload them by end of next week.
+                    createdAt: "2025-05-28T16:30:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Conversation not found
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/conversations/{threadId}/status:
+    patch:
+      tags: [Conversations]
+      summary: Update conversation status
+      description: |
+        Change thread status (`open`, `pending`, `closed`).
+
+        | Role | Access |
+        |------|--------|
+        | client | Deny |
+        | sales | Scoped — accessible threads only |
+        | manager | Scoped — all threads |
+      operationId: patchConversationStatus
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: deny }
+          sales: { access: scoped, note: accessible threads }
+          manager: { access: allow }
+      parameters:
+        - $ref: "#/components/parameters/ThreadId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchStatusBody"
+            example:
+              status: closed
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusUpdated"
+              example:
+                id: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                status: closed
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Conversation not found
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/conversations/{threadId}/assign:
+    patch:
+      tags: [Conversations]
+      summary: Assign conversation
+      description: |
+        Assign thread to a team member.
+
+        | Role | Access |
+        |------|--------|
+        | client | Deny |
+        | sales | Scoped — may only assign to self; unassigned or own threads |
+        | manager | Allow — assign to any sales/manager member |
+      operationId: assignConversation
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: deny }
+          sales: { access: scoped, note: assign to self only }
+          manager: { access: allow, note: assignee must be sales or manager }
+      parameters:
+        - $ref: "#/components/parameters/ThreadId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignConversationBody"
+            example:
+              assignedTo: d4e5f6a7-b8c9-0123-def0-234567890123
+      responses:
+        "200":
+          description: Assignment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssignmentUpdated"
+              example:
+                id: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                assignedTo: d4e5f6a7-b8c9-0123-def0-234567890123
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              examples:
+                salesOtherUser:
+                  summary: Sales tried to assign to someone else
+                  value:
+                    error: Sales can only assign conversations to themselves
+                wrongRole:
+                  summary: Assignee not a team member
+                  value:
+                    error: Assignee must be a team member
+        "404":
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Conversation not found
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/conversations/{threadId}/messages:
+    post:
+      tags: [Messages]
+      summary: Post message
+      description: |
+        Add a message to a conversation thread.
+
+        | Role | Access |
+        |------|--------|
+        | client | Scoped — own threads |
+        | sales | Scoped — accessible threads |
+        | manager | Scoped — all threads |
+      operationId: postMessage
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: scoped, note: own threads; senderType client }
+          sales: { access: scoped, note: accessible threads; senderType team }
+          manager: { access: allow, note: senderType team }
+      parameters:
+        - $ref: "#/components/parameters/ThreadId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostMessageBody"
+            example:
+              body: Thanks, I will upload the documents today.
+      responses:
+        "200":
+          description: Message posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationMessage"
+              example:
+                id: "33333333-3333-3333-3333-333333333333"
+                senderId: e5f6a7b8-c9d0-1234-ef01-345678901234
+                senderName: Jane Student
+                senderType: client
+                body: Thanks, I will upload the documents today.
+                createdAt: "2025-05-29T14:10:00.000Z"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Conversation not found
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/deals:
+    get:
+      tags: [Deals]
+      summary: List deals
+      description: |
+        List deals in the pipeline.
+
+        | Role | Access |
+        |------|--------|
+        | client | Scoped — own client's deals |
+        | sales | Allow — all deals |
+        | manager | Allow — all deals |
+      operationId: listDeals
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: scoped, note: own client deals only }
+          sales: { access: allow }
+          manager: { access: allow }
+      parameters:
+        - name: stage
+          in: query
+          schema:
+            $ref: "#/components/schemas/DealStage"
+        - name: ownerId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: clientId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/QueryQ"
+      responses:
+        "200":
+          description: Deal list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DealListItem"
+              example:
+                - id: c3d4e5f6-a7b8-9012-cdef-123456789012
+                  clientId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                  clientName: Jane Student
+                  ownerId: d4e5f6a7-b8c9-0123-def0-234567890123
+                  ownerName: Alex Sales
+                  title: UK Masters Application
+                  stage: documents_requested
+                  valueAmount: 2500
+                  valueCurrency: USD
+                  expectedIntake: "2025-09"
+                  updatedAt: "2025-05-27T09:00:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags: [Deals]
+      summary: Create deal
+      description: |
+        Create a new deal (starts at `new_lead`).
+
+        | Role | Access |
+        |------|--------|
+        | client | Deny |
+        | sales | Scoped — owner must be self |
+        | manager | Allow — any owner |
+      operationId: createDeal
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: deny }
+          sales: { access: scoped, note: ownerId must be self if provided }
+          manager: { access: allow }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDealBody"
+            example:
+              clientId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+              title: Canada PG Diploma
+              expectedIntake: "2026-01"
+              valueAmount: 1800
+              valueCurrency: USD
+      responses:
+        "200":
+          description: Deal created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DealCreated"
+              example:
+                id: c3d4e5f6-a7b8-9012-cdef-123456789012
+                clientId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                ownerId: d4e5f6a7-b8c9-0123-def0-234567890123
+                title: Canada PG Diploma
+                stage: new_lead
+                updatedAt: "2025-05-29T14:15:00.000Z"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              examples:
+                clientRole:
+                  summary: Client cannot create deals
+                  value:
+                    error: Forbidden
+                salesWrongOwner:
+                  summary: Sales cannot create for another owner
+                  value:
+                    error: Sales can only create deals owned by themselves
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/deals/{dealId}:
+    get:
+      tags: [Deals]
+      summary: Deal detail
+      description: |
+        Deal with notes and stage history.
+
+        | Role | Access |
+        |------|--------|
+        | client | Scoped — own client's deals |
+        | sales | Allow |
+        | manager | Allow |
+      operationId: getDeal
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: scoped, note: own client deals }
+          sales: { access: allow }
+          manager: { access: allow }
+      parameters:
+        - $ref: "#/components/parameters/DealId"
+      responses:
+        "200":
+          description: Deal detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DealDetail"
+              example:
+                id: c3d4e5f6-a7b8-9012-cdef-123456789012
+                clientId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                clientName: Jane Student
+                clientEmail: client1@demo.local
+                ownerId: d4e5f6a7-b8c9-0123-def0-234567890123
+                ownerName: Alex Sales
+                title: UK Masters Application
+                stage: documents_requested
+                valueAmount: 2500
+                valueCurrency: USD
+                expectedIntake: "2025-09"
+                lostReason: null
+                createdAt: "2025-01-20T10:00:00.000Z"
+                updatedAt: "2025-05-27T09:00:00.000Z"
+                notes:
+                  - id: "44444444-4444-4444-4444-444444444444"
+                    body: Client requested deadline extension.
+                    createdAt: "2025-05-26T11:00:00.000Z"
+                    authorName: Alex Sales
+                stageHistory:
+                  - id: "55555555-5555-5555-5555-555555555555"
+                    fromStage: contacted
+                    toStage: documents_requested
+                    createdAt: "2025-05-27T09:00:00.000Z"
+                    changedByName: Alex Sales
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Deal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Deal not found
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/deals/{dealId}/stage:
+    patch:
+      tags: [Deals]
+      summary: Update deal stage
+      description: |
+        Move deal to a new pipeline stage. `lostReason` is required when `stage` is `lost`.
+
+        | Role | Access |
+        |------|--------|
+        | client | Deny |
+        | sales | Scoped — own deals only |
+        | manager | Allow — any deal |
+      operationId: patchDealStage
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: deny }
+          sales: { access: scoped, note: own deals only }
+          manager: { access: allow }
+      parameters:
+        - $ref: "#/components/parameters/DealId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchStageBody"
+            examples:
+              advance:
+                summary: Advance stage
+                value:
+                  stage: consultation_booked
+              lost:
+                summary: Mark lost (requires lostReason)
+                value:
+                  stage: lost
+                  lostReason: Chose another agency
+      responses:
+        "200":
+          description: Stage updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StageUpdated"
+              example:
+                id: c3d4e5f6-a7b8-9012-cdef-123456789012
+                stage: consultation_booked
+                lostReason: null
+                updatedAt: "2025-05-29T14:20:00.000Z"
+        "400":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: lostReason is required when stage is lost
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              examples:
+                clientRole:
+                  value:
+                    error: Forbidden
+                salesNotOwner:
+                  value:
+                    error: Sales can only update deals they own
+        "404":
+          description: Deal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Deal not found
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/deals/{dealId}/owner:
+    patch:
+      tags: [Deals]
+      summary: Reassign deal owner
+      description: |
+        Change deal owner to a sales or manager team member.
+
+        | Role | Access |
+        |------|--------|
+        | client | Deny |
+        | sales | Deny |
+        | manager | Allow |
+      operationId: patchDealOwner
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: deny }
+          sales: { access: deny }
+          manager: { access: allow, note: ownerId must be sales or manager }
+      parameters:
+        - $ref: "#/components/parameters/DealId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchOwnerBody"
+            example:
+              ownerId: a7b8c9d0-e1f2-3456-0123-567890123456
+      responses:
+        "200":
+          description: Owner updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OwnerUpdated"
+              example:
+                id: c3d4e5f6-a7b8-9012-cdef-123456789012
+                ownerId: a7b8c9d0-e1f2-3456-0123-567890123456
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              examples:
+                salesRole:
+                  value:
+                    error: Forbidden
+                invalidOwner:
+                  value:
+                    error: Owner must be a team member
+        "404":
+          description: Deal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Deal not found
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/deals/{dealId}/notes:
+    post:
+      tags: [Deals]
+      summary: Add deal note
+      description: |
+        Add an internal note to a deal.
+
+        | Role | Access |
+        |------|--------|
+        | client | Deny |
+        | sales | Scoped — accessible deals |
+        | manager | Allow |
+      operationId: postDealNote
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: deny }
+          sales: { access: scoped, note: accessible deals }
+          manager: { access: allow }
+      parameters:
+        - $ref: "#/components/parameters/DealId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostNoteBody"
+            example:
+              body: Follow up on document checklist next week.
+      responses:
+        "200":
+          description: Note created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DealNote"
+              example:
+                id: "66666666-6666-6666-6666-666666666666"
+                body: Follow up on document checklist next week.
+                createdAt: "2025-05-29T14:25:00.000Z"
+                authorName: Alex Sales
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Deal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Deal not found
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Manager dashboard
+      description: |
+        Aggregated CRM metrics and recent activity. **Manager role required** (enforced at route middleware).
+
+        | Role | Access |
+        |------|--------|
+        | client | Deny |
+        | sales | Deny |
+        | manager | Allow |
+      operationId: getDashboard
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: deny }
+          sales: { access: deny }
+          manager: { access: allow }
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardData"
+              example:
+                openChats: 5
+                unassignedConversations: 2
+                activeDeals: 12
+                wonDeals: 3
+                conversationsByStatus:
+                  open: 5
+                  pending: 1
+                  closed: 8
+                dealsByStage:
+                  new_lead: 2
+                  contacted: 3
+                  consultation_booked: 1
+                  documents_requested: 2
+                  application_started: 2
+                  submitted: 1
+                  won: 3
+                  lost: 1
+                dealsByOwner:
+                  - ownerId: d4e5f6a7-b8c9-0123-def0-234567890123
+                    ownerName: Alex Sales
+                    count: 7
+                  - ownerId: a7b8c9d0-e1f2-3456-0123-567890123456
+                    ownerName: Sam Sales
+                    count: 5
+                recentActivity:
+                  - id: stage-abc123
+                    kind: deal_stage
+                    description: "UK Masters Application: contacted → documents_requested"
+                    createdAt: "2025-05-27T09:00:00.000Z"
+                  - id: msg-def456
+                    kind: conversation_message
+                    description: "Jane Student: message in Visa questions"
+                    createdAt: "2025-05-28T16:30:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Non-manager forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Forbidden
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/users:
+    get:
+      tags: [Users]
+      summary: List team members
+      description: |
+        List sales and manager profiles (for assignment UIs). **Manager only** (enforced in service).
+
+        | Role | Access |
+        |------|--------|
+        | client | Deny |
+        | sales | Deny |
+        | manager | Allow |
+      operationId: listUsers
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: deny }
+          sales: { access: deny }
+          manager: { access: allow }
+      responses:
+        "200":
+          description: Team members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamMember"
+              example:
+                - id: d4e5f6a7-b8c9-0123-def0-234567890123
+                  fullName: Alex Sales
+                  role: sales
+                - id: a7b8c9d0-e1f2-3456-0123-567890123456
+                  fullName: Sam Sales
+                  role: sales
+                - id: b8c9d0e1-f2a3-4567-1234-678901234567
+                  fullName: Morgan Manager
+                  role: manager
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase access token from Supabase Auth session
+
+  parameters:
+    ClientId:
+      name: clientId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ThreadId:
+      name: threadId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DealId:
+      name: dealId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    QueryQ:
+      name: q
+      in: query
+      schema:
+        type: string
+      description: Search term (name/email for clients; title for deals)
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid Bearer token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+          examples:
+            missing:
+              value:
+                error: Missing or invalid Authorization header
+            expired:
+              value:
+                error: Invalid or expired token
+    Forbidden:
+      description: Authenticated but not permitted
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+          example:
+            error: Forbidden
+    ValidationError:
+      description: Request validation failed (Zod)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+          example:
+            error: Validation failed
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+          example:
+            error: Internal server error
+
+  schemas:
+    ErrorBody:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    UserRole:
+      type: string
+      enum: [client, sales, manager]
+
+    ConversationStatus:
+      type: string
+      enum: [open, pending, closed]
+
+    DealStage:
+      type: string
+      enum:
+        - new_lead
+        - contacted
+        - consultation_booked
+        - documents_requested
+        - application_started
+        - submitted
+        - won
+        - lost
+
+    HealthResponse:
+      type: object
+      required: [ok, service, version]
+      properties:
+        ok:
+          type: boolean
+        service:
+          type: string
+        version:
+          type: string
+
+    MeProfile:
+      type: object
+      required: [id, fullName, role, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        role:
+          $ref: "#/components/schemas/UserRole"
+        createdAt:
+          type: string
+          format: date-time
+
+    MeProfileMissing:
+      type: object
+      required: [id, profile, message]
+      properties:
+        id:
+          type: string
+          format: uuid
+        profile:
+          type: ["null"]
+        message:
+          type: string
+
+    ClientListItem:
+      type: object
+      required: [id, fullName, email, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        profileId:
+          type: [string, "null"]
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: [string, "null"]
+        country:
+          type: [string, "null"]
+        targetCountry:
+          type: [string, "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        activeDealTitle:
+          type: [string, "null"]
+
+    CreateClientBody:
+      type: object
+      required: [fullName, email]
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        country:
+          type: string
+        targetCountry:
+          type: string
+
+    ClientDetail:
+      allOf:
+        - $ref: "#/components/schemas/ClientListItem"
+        - type: object
+          required: [conversations, deals, activity]
+          properties:
+            conversations:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  subject:
+                    type: string
+                  status:
+                    type: string
+                  lastMessageAt:
+                    type: string
+                    format: date-time
+            deals:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  stage:
+                    type: string
+                  valueAmount:
+                    type: [number, "null"]
+                  valueCurrency:
+                    type: [string, "null"]
+                  ownerId:
+                    type: [string, "null"]
+                    format: uuid
+                  updatedAt:
+                    type: string
+                    format: date-time
+            activity:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  description:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+
+    ConversationListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          type: string
+          format: uuid
+        clientName:
+          type: string
+        subject:
+          type: string
+        status:
+          type: string
+        assignedTo:
+          type: [string, "null"]
+          format: uuid
+        assignedToName:
+          type: [string, "null"]
+        lastMessageAt:
+          type: string
+          format: date-time
+
+    CreateConversationBody:
+      type: object
+      required: [clientId, subject, message]
+      properties:
+        clientId:
+          type: string
+          format: uuid
+        subject:
+          type: string
+          minLength: 1
+        message:
+          type: string
+          minLength: 1
+
+    ConversationCreated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          type: string
+          format: uuid
+        subject:
+          type: string
+        status:
+          type: string
+        assignedTo:
+          type: [string, "null"]
+          format: uuid
+        lastMessageAt:
+          type: string
+          format: date-time
+
+    ConversationDetail:
+      allOf:
+        - $ref: "#/components/schemas/ConversationListItem"
+        - type: object
+          properties:
+            clientEmail:
+              type: [string, "null"]
+              format: email
+            messages:
+              type: array
+              items:
+                $ref: "#/components/schemas/ConversationMessage"
+
+    ConversationMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        senderName:
+          type: string
+        senderType:
+          type: string
+          enum: [client, team]
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AssignConversationBody:
+      type: object
+      required: [assignedTo]
+      properties:
+        assignedTo:
+          type: string
+          format: uuid
+
+    PatchStatusBody:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/ConversationStatus"
+
+    PostMessageBody:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          minLength: 1
+
+    StatusUpdated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+
+    AssignmentUpdated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assignedTo:
+          type: [string, "null"]
+          format: uuid
+
+    DealListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          type: string
+          format: uuid
+        clientName:
+          type: string
+        ownerId:
+          type: [string, "null"]
+          format: uuid
+        ownerName:
+          type: [string, "null"]
+        title:
+          type: string
+        stage:
+          type: string
+        valueAmount:
+          type: [number, "null"]
+        valueCurrency:
+          type: [string, "null"]
+        expectedIntake:
+          type: [string, "null"]
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateDealBody:
+      type: object
+      required: [clientId, title]
+      properties:
+        clientId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+        ownerId:
+          type: string
+          format: uuid
+        expectedIntake:
+          type: string
+        valueAmount:
+          type: number
+          minimum: 0
+        valueCurrency:
+          type: string
+
+    DealCreated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          type: string
+          format: uuid
+        ownerId:
+          type: [string, "null"]
+          format: uuid
+        title:
+          type: string
+        stage:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+    DealDetail:
+      allOf:
+        - $ref: "#/components/schemas/DealListItem"
+        - type: object
+          properties:
+            clientEmail:
+              type: [string, "null"]
+              format: email
+            lostReason:
+              type: [string, "null"]
+            createdAt:
+              type: string
+              format: date-time
+            notes:
+              type: array
+              items:
+                $ref: "#/components/schemas/DealNote"
+            stageHistory:
+              type: array
+              items:
+                $ref: "#/components/schemas/DealStageHistoryEntry"
+
+    DealNote:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        authorName:
+          type: string
+
+    DealStageHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fromStage:
+          type: [string, "null"]
+        toStage:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        changedByName:
+          type: string
+
+    PatchStageBody:
+      type: object
+      required: [stage]
+      properties:
+        stage:
+          $ref: "#/components/schemas/DealStage"
+        lostReason:
+          type: string
+          description: Required when stage is `lost`
+
+    PatchOwnerBody:
+      type: object
+      required: [ownerId]
+      properties:
+        ownerId:
+          type: string
+          format: uuid
+
+    PostNoteBody:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          minLength: 1
+
+    StageUpdated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        stage:
+          type: string
+        lostReason:
+          type: [string, "null"]
+        updatedAt:
+          type: string
+          format: date-time
+
+    OwnerUpdated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: [string, "null"]
+          format: uuid
+
+    DashboardData:
+      type: object
+      properties:
+        openChats:
+          type: integer
+        unassignedConversations:
+          type: integer
+        activeDeals:
+          type: integer
+        wonDeals:
+          type: integer
+        conversationsByStatus:
+          type: object
+          additionalProperties:
+            type: integer
+        dealsByStage:
+          type: object
+          additionalProperties:
+            type: integer
+        dealsByOwner:
+          type: array
+          items:
+            type: object
+            properties:
+              ownerId:
+                type: [string, "null"]
+                format: uuid
+              ownerName:
+                type: string
+              count:
+                type: integer
+        recentActivity:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              kind:
+                type: string
+                enum: [deal_stage, conversation_message]
+              description:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
+
+    TeamMember:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        role:
+          type: string
