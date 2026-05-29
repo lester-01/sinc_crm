@@ -8,6 +8,13 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  hasCloudflareStackKeys,
+  hasFrontendStackKeys,
+  hasWorkerStackKeys,
+  isPlaceholder,
+  loadStackEnv,
+} from "./lib/load-stack-env.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const MIN_NODE_MAJOR = 22;
@@ -120,13 +127,7 @@ function parseEnvFile(path) {
 }
 
 function loadEnv() {
-  const rootEnv = parseEnvFile(join(ROOT, ".env"));
-  const workerVars = parseEnvFile(join(ROOT, "worker", ".dev.vars"));
-  return { ...rootEnv, ...workerVars };
-}
-
-function loadCloudflareEnv() {
-  return parseEnvFile(join(ROOT, "worker", ".cloudflare.env"));
+  return loadStackEnv().merged;
 }
 
 function wranglerWhoami(extraEnv = {}) {
@@ -140,16 +141,6 @@ function wranglerWhoami(extraEnv = {}) {
   const ok =
     r.status === 0 && !out.toLowerCase().includes("not authenticated");
   return { ok, out };
-}
-
-function isPlaceholder(val) {
-  return (
-    !val ||
-    val.length < 10 ||
-    val.includes("your-") ||
-    val === "..." ||
-    /^=+$/.test(val)
-  );
 }
 
 function supabasePublicKey(env) {
@@ -205,40 +196,40 @@ function verifyCloudflare() {
   }
 
   const cloudflareEnvPath = join(ROOT, "worker", ".cloudflare.env");
+  const merged = loadEnv();
+  const hasCfKeys = hasCloudflareStackKeys(merged);
+  const cfFileExists = existsSync(cloudflareEnvPath);
   record(
-    "worker/.cloudflare.env exists",
-    existsSync(cloudflareEnvPath),
-    existsSync(cloudflareEnvPath)
+    "worker/.cloudflare.env exists (optional if env has token)",
+    cfFileExists || hasCfKeys,
+    cfFileExists
       ? cloudflareEnvPath
-      : "copy worker/.cloudflare.env.example → worker/.cloudflare.env",
+      : hasCfKeys
+        ? "CLOUDFLARE_API_TOKEN from environment"
+        : "copy worker/.cloudflare.env.example or export CLOUDFLARE_API_TOKEN",
   );
 
-  if (!existsSync(cloudflareEnvPath)) {
-    return;
-  }
-
-  const cf = loadCloudflareEnv();
-  const token = cf.CLOUDFLARE_API_TOKEN;
+  const token = merged.CLOUDFLARE_API_TOKEN;
   record(
     "Cloudflare: CLOUDFLARE_API_TOKEN configured",
-    Boolean(token && !isPlaceholder(token)),
-    token && !isPlaceholder(token)
-      ? "set"
-      : "required in worker/.cloudflare.env — see docs/quick-start.md",
+    hasCfKeys,
+    hasCfKeys
+      ? "set (env or file)"
+      : "export CLOUDFLARE_API_TOKEN or use worker/.cloudflare.env — see docs/external-auth.md",
   );
 
-  if (!token || isPlaceholder(token)) {
+  if (!hasCfKeys) {
     record(
       "Cloudflare: wrangler whoami (scoped API token)",
       false,
-      "set CLOUDFLARE_API_TOKEN before verify (OAuth not used; see docs/cloudflare-auth.md)",
+      "set CLOUDFLARE_API_TOKEN before verify — see docs/cloudflare-auth.md",
     );
     return;
   }
 
   const tokenEnv = { CLOUDFLARE_API_TOKEN: token };
-  if (cf.CLOUDFLARE_ACCOUNT_ID && !isPlaceholder(cf.CLOUDFLARE_ACCOUNT_ID)) {
-    tokenEnv.CLOUDFLARE_ACCOUNT_ID = cf.CLOUDFLARE_ACCOUNT_ID;
+  if (merged.CLOUDFLARE_ACCOUNT_ID && !isPlaceholder(merged.CLOUDFLARE_ACCOUNT_ID)) {
+    tokenEnv.CLOUDFLARE_ACCOUNT_ID = merged.CLOUDFLARE_ACCOUNT_ID;
   }
   const withToken = wranglerWhoami(tokenEnv);
   record(
@@ -254,35 +245,45 @@ function verifyCloudflare() {
 function verifyEnv() {
   const envPath = join(ROOT, ".env");
   const envExists = existsSync(envPath);
+  const env = loadEnv();
+  const hasFrontend = hasFrontendStackKeys(env);
+
   record(
-    ".env file exists",
-    envExists,
-    envExists ? envPath : "copy .env.example → .env (installer does not copy)",
+    ".env file exists (optional if env has frontend keys)",
+    envExists || hasFrontend,
+    envExists
+      ? envPath
+      : hasFrontend
+        ? "VITE_SUPABASE_* from environment"
+        : "copy .env.example → .env or export frontend keys",
   );
 
   const workerVarsPath = join(ROOT, "worker", ".dev.vars");
   const workerVarsExists = existsSync(workerVarsPath);
+  const hasWorker = hasWorkerStackKeys(env);
   record(
-    "worker/.dev.vars exists",
-    workerVarsExists,
+    "worker/.dev.vars exists (optional if env has worker keys)",
+    workerVarsExists || hasWorker,
     workerVarsExists
       ? workerVarsPath
-      : "copy worker/.dev.vars.example → worker/.dev.vars",
+      : hasWorker
+        ? "SUPABASE_* from environment"
+        : "copy worker/.dev.vars.example or export worker keys",
   );
 
   const cloudflareEnvPath = join(ROOT, "worker", ".cloudflare.env");
+  const hasCf = hasCloudflareStackKeys(env);
   record(
-    "worker/.cloudflare.env exists",
-    existsSync(cloudflareEnvPath),
+    "worker/.cloudflare.env exists (optional if env has token)",
+    existsSync(cloudflareEnvPath) || hasCf,
     existsSync(cloudflareEnvPath)
       ? cloudflareEnvPath
-      : "copy worker/.cloudflare.env.example → worker/.cloudflare.env",
+      : hasCf
+        ? "CLOUDFLARE_API_TOKEN from environment"
+        : "copy worker/.cloudflare.env.example or export token",
   );
 
-  if (!envExists) return;
-
-  const rootEnvOnly = parseEnvFile(envPath);
-  const env = loadEnv();
+  const rootEnvOnly = envExists ? parseEnvFile(envPath) : {};
   const supabaseUrl = env.VITE_SUPABASE_URL;
   record(
     "env: VITE_SUPABASE_URL",
@@ -315,29 +316,30 @@ function verifyEnv() {
     record("env: secret key not in .env (security)", true, "OK");
   }
 
-  if (workerVarsExists) {
+  record(
+    "worker secrets: SUPABASE_URL",
+    Boolean(
+      (env.SUPABASE_URL || env.VITE_SUPABASE_URL) &&
+        !isPlaceholder(env.SUPABASE_URL || env.VITE_SUPABASE_URL),
+    ),
+    env.SUPABASE_URL || env.VITE_SUPABASE_URL ? "set" : "missing or placeholder",
+  );
+  if (
+    env.SUPABASE_PUBLISHABLE_KEY &&
+    !isPlaceholder(env.SUPABASE_PUBLISHABLE_KEY)
+  ) {
     record(
-      "worker/.dev.vars: SUPABASE_URL",
-      Boolean(env.SUPABASE_URL && !isPlaceholder(env.SUPABASE_URL)),
-      env.SUPABASE_URL ? "set" : "missing or placeholder",
+      "worker/.dev.vars: SUPABASE_SECRET_KEY",
+      false,
+      "SUPABASE_PUBLISHABLE_KEY belongs in .env — use SUPABASE_SECRET_KEY here",
     );
-    if (
-      env.SUPABASE_PUBLISHABLE_KEY &&
-      !isPlaceholder(env.SUPABASE_PUBLISHABLE_KEY)
-    ) {
-      record(
-        "worker/.dev.vars: SUPABASE_SECRET_KEY",
-        false,
-        "SUPABASE_PUBLISHABLE_KEY belongs in .env — use SUPABASE_SECRET_KEY here",
-      );
-    } else {
-      const secret = supabaseSecretKey(env);
-      record(
-        "worker/.dev.vars: SUPABASE_SECRET_KEY",
-        Boolean(secret && !isPlaceholder(secret)),
-        secret ? "set" : "missing or placeholder",
-      );
-    }
+  } else {
+    const secret = supabaseSecretKey(env);
+    record(
+      "worker/.dev.vars: SUPABASE_SECRET_KEY",
+      Boolean(secret && !isPlaceholder(secret)),
+      secret ? "set" : "missing or placeholder",
+    );
   }
 }
 

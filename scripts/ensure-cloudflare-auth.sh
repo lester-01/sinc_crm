@@ -1,26 +1,19 @@
 #!/usr/bin/env bash
-# Ensure Wrangler can call the Cloudflare API via scoped API token (worker/.cloudflare.env).
+# Cloudflare tooling auth ladder:
+#   1) wrangler whoami (existing session)
+#   2) CLOUDFLARE_API_TOKEN (+ ACCOUNT_ID) from environment
+#   3) same keys from worker/.cloudflare.env (env wins over file)
+#   4) wrangler login (desktop OAuth) — skipped when CI=true (fail fast)
 #
-# Supported: CLOUDFLARE_API_TOKEN (+ CLOUDFLARE_ACCOUNT_ID) → wrangler whoami
-#
-# Deprecated (next release removal): ALLOW_WRANGLER_LOGIN=1 → wrangler login (browser OAuth).
-#   Not tested in Phase 4 verify. Backend/CI is headless — use token only.
-#
-# MAINTAINER: token-only — When removing OAuth, fail fast if worker/.cloudflare.env or
-#   CLOUDFLARE_API_TOKEN is missing; do not fall back to wrangler login.
-#
-# Usage:
-#   bash scripts/ensure-cloudflare-auth.sh
+# Usage: bash scripts/ensure-cloudflare-auth.sh
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WRANGLER_BIN="$ROOT/worker/node_modules/.bin/wrangler"
 CLOUDFLARE_ENV="$ROOT/worker/.cloudflare.env"
-ALLOW_WRANGLER_LOGIN="${ALLOW_WRANGLER_LOGIN:-0}"
 
 log() { printf '%s\n' "$*"; }
-warn() { printf 'WARNING: %s\n' "$*" >&2; }
 err() { printf 'ERROR: %s\n' "$*" >&2; }
 
 parse_dotenv_file() {
@@ -67,27 +60,32 @@ print_whoami() {
   "$WRANGLER_BIN" whoami 2>/dev/null | head -n 3 || true
 }
 
-load_cloudflare_token_env() {
+merge_cloudflare_creds() {
+  local saved_token="${CLOUDFLARE_API_TOKEN:-}"
+  local saved_account="${CLOUDFLARE_ACCOUNT_ID:-}"
   unset CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID 2>/dev/null || true
-  parse_dotenv_file "$CLOUDFLARE_ENV"
+  if [[ -f "$CLOUDFLARE_ENV" ]]; then
+    parse_dotenv_file "$CLOUDFLARE_ENV"
+  fi
+  local file_token="${CLOUDFLARE_API_TOKEN:-}"
+  local file_account="${CLOUDFLARE_ACCOUNT_ID:-}"
+  if [[ -n "$saved_token" ]]; then
+    export CLOUDFLARE_API_TOKEN="$saved_token"
+  elif [[ -n "$file_token" ]]; then
+    export CLOUDFLARE_API_TOKEN="$file_token"
+  fi
+  if [[ -n "$saved_account" ]]; then
+    export CLOUDFLARE_ACCOUNT_ID="$saved_account"
+  elif [[ -n "$file_account" ]]; then
+    export CLOUDFLARE_ACCOUNT_ID="$file_account"
+  fi
 }
 
-# MAINTAINER: token-only — start here after OAuth removal; require file + token before whoami.
-require_cloudflare_token_file() {
-  if [[ ! -f "$CLOUDFLARE_ENV" ]]; then
-    err "Missing worker/.cloudflare.env"
-    err "Copy worker/.cloudflare.env.example and set CLOUDFLARE_API_TOKEN."
-    err "See docs/quick-start.md and docs/cloudflare-auth.md"
-    exit 1
-  fi
-  load_cloudflare_token_env
-  if ! token_configured; then
-    err "CLOUDFLARE_API_TOKEN is required in worker/.cloudflare.env"
-    err "Create a scoped token in the Cloudflare dashboard (see docs/quick-start.md)."
-    exit 1
-  fi
-  export CLOUDFLARE_API_TOKEN
-  [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] && export CLOUDFLARE_ACCOUNT_ID
+ci_fail_fast() {
+  err "CI=true: headless environment — browser OAuth is not available."
+  err "Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the environment."
+  err "See docs/external-auth.md"
+  exit 1
 }
 
 main() {
@@ -96,36 +94,41 @@ main() {
     exit 1
   fi
 
-  require_cloudflare_token_file
-
-  log "Cloudflare auth: verifying scoped API token (worker/.cloudflare.env)..."
   if whoami_ok; then
-    log "Authenticated with scoped API token."
+    log "Already authenticated with Cloudflare."
     print_whoami
     exit 0
   fi
 
-  err "CLOUDFLARE_API_TOKEN is set but wrangler whoami failed."
-  err "Check token permissions and CLOUDFLARE_ACCOUNT_ID in worker/.cloudflare.env"
+  merge_cloudflare_creds
 
-  # --- Deprecated OAuth fallback (removal planned; not tested in verify:stack:cloud) ---
-  if [[ "$ALLOW_WRANGLER_LOGIN" != "1" ]]; then
-    err "Browser OAuth is deprecated. See docs/cloudflare-auth.md"
+  if token_configured; then
+    log "Cloudflare auth: verifying scoped API token..."
+    if whoami_ok; then
+      log "Authenticated with scoped API token."
+      print_whoami
+      exit 0
+    fi
+    err "CLOUDFLARE_API_TOKEN is set but wrangler whoami failed."
+    err "Check token permissions and CLOUDFLARE_ACCOUNT_ID."
     exit 1
   fi
 
-  warn "DEPRECATED: wrangler login (browser OAuth) — untested fallback; removed next release."
-  warn "Use CLOUDFLARE_API_TOKEN in worker/.cloudflare.env for headless/CI."
-  log "Starting wrangler login (browser may open)..."
+  if [[ "${CI:-}" == "true" ]]; then
+    ci_fail_fast
+  fi
+
+  log "No API token found. Starting wrangler login (desktop browser may open)..."
   (cd "$ROOT/worker" && "$WRANGLER_BIN" login)
 
   if whoami_ok; then
-    log "Authenticated after wrangler login (deprecated path)."
+    log "Authenticated after wrangler login."
     print_whoami
     exit 0
   fi
 
-  err "wrangler login finished but whoami still failed."
+  err "Not authenticated. Set CLOUDFLARE_API_TOKEN (+ CLOUDFLARE_ACCOUNT_ID) or complete wrangler login."
+  err "See docs/external-auth.md"
   exit 1
 }
 

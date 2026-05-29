@@ -14,6 +14,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseGithubRemote } from "./lib/github-remote.mjs";
+import { isCiEnvironment } from "./lib/load-stack-env.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const strict = process.argv.includes("--strict");
@@ -248,7 +249,14 @@ export async function verifyGithubActions(options = {}) {
   );
 
   if (!apiUsed) {
-    if (!hasGh) {
+    if (isCiEnvironment()) {
+      record(
+        "GitHub API auth",
+        false,
+        "CI=true: set GITHUB_TOKEN or GH_TOKEN — browser OAuth is not available in CI",
+        true,
+      );
+    } else if (!hasGh) {
       record(
         "GitHub API auth",
         false,
