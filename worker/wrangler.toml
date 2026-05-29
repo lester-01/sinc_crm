@@ -1,6 +1,7 @@
 # Cloudflare Worker — SINC CRM API
-# Runtime secrets (production): SUPABASE_URL, SUPABASE_SECRET_KEY, CORS_ORIGINS
-#   npx wrangler secret put <NAME>   — see docs/deploy-guide.md
+# Runtime secrets (production): SUPABASE_URL, SUPABASE_SECRET_KEY, CORS_ORIGINS (Pass 2)
+#   npx wrangler secret put <NAME>  |  secret bulk <file>  — see docs/deploy-guide.md
+#   worker/.dev.vars is for wrangler dev only — not uploaded on deploy
 # Deploy: npm run deploy:worker (from repo root)
 
 name = "sinc-crm-api"

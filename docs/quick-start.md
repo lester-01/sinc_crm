@@ -199,6 +199,8 @@ CLOUDFLARE_ACCOUNT_ID=your-account-id
 
 Both `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are required for `npm run setup:cloud` and `npm run verify:stack:cloud`.
 
+**Production deploy (Phase 14):** same token powers `npm run deploy:worker` and `deploy:pages`. Follow the two-pass guide in [deploy-guide.md](./deploy-guide.md) (manual CLI today; GitHub→Cloudflare CI is a valid future option).
+
 ### Cloudflare authentication
 
 `npm run setup:cloud` and `scripts/ensure-cloudflare-auth.sh`:

@@ -27,3 +27,10 @@ CLOUDFLARE_ACCOUNT_ID=...
 2. Token from `process.env`
 3. Token from `worker/.cloudflare.env` (env overrides file)
 4. `wrangler login` — only if not `CI=true` and no valid token
+
+## Production deploy
+
+`npm run deploy:worker` and `deploy:pages` use the same token ladder via `ensure-cloudflare-auth.sh`.
+
+- **Today:** manual CLI deploy — [deploy-guide.md](./deploy-guide.md) (two-pass: Worker → Pages → CORS + Supabase Auth URLs).
+- **Later:** GitHub push → Cloudflare Pages and/or GitHub Actions for Worker — valid alternative, not checked into this repo yet; both paths will be documented.

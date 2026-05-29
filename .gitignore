@@ -5,6 +5,8 @@ my project summary.md
 .env
 .env.local
 .env.production
+deploy-urls.local.txt
+worker/.production.secrets
 worker/.dev.vars
 worker/.cloudflare.env
 worker/.wrangler/
