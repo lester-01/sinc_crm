@@ -1,9 +1,28 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Plus, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useClients, useCreateClient } from "@/features/clients/hooks";
 
@@ -20,7 +39,8 @@ export function ClientsPage() {
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFormError(null);
-    const fd = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
     const fullName = String(fd.get("fullName") ?? "").trim();
     const email = String(fd.get("email") ?? "").trim();
     const phone = String(fd.get("phone") ?? "").trim();
@@ -35,7 +55,7 @@ export function ClientsPage() {
         country: country || undefined,
         targetCountry: targetCountry || undefined,
       });
-      e.currentTarget.reset();
+      form.reset();
       setShowForm(false);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Failed to create client");
@@ -43,69 +63,82 @@ export function ClientsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-2xl font-semibold">Clients</h2>
-        {canCreate && (
-          <Button type="button" onClick={() => setShowForm((v) => !v)}>
-            {showForm ? "Cancel" : "New Client"}
-          </Button>
-        )}
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Clients"
+        description="Search and manage student profiles across your sales team."
+        actions={
+          canCreate ? (
+            <Button type="button" onClick={() => setShowForm(true)}>
+              <Plus className="mr-2 size-4" />
+              New Client
+            </Button>
+          ) : undefined
+        }
+      />
 
-      {showForm && canCreate && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">New client</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleCreate}>
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full name</Label>
-                <Input id="fullName" name="fullName" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" name="phone" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
-                <Input id="country" name="country" />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="targetCountry">Target country</Label>
-                <Input id="targetCountry" name="targetCountry" />
-              </div>
-              {formError && (
-                <p className="text-sm text-destructive sm:col-span-2" role="alert">
-                  {formError}
-                </p>
-              )}
-              <div className="sm:col-span-2">
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Creating…" : "Create client"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New client</DialogTitle>
+            <DialogDescription>Add a new student profile to the CRM.</DialogDescription>
+          </DialogHeader>
+          <form id="new-client-form" className="grid gap-4 sm:grid-cols-2" onSubmit={handleCreate}>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="fullName">Full name</Label>
+              <Input id="fullName" name="fullName" required />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" required />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" name="phone" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="country">Country</Label>
+              <Input id="country" name="country" />
+            </div>
+            <div className="flex flex-col gap-2 sm:col-span-2">
+              <Label htmlFor="targetCountry">Target country</Label>
+              <Input id="targetCountry" name="targetCountry" />
+            </div>
+            {formError && (
+              <p className="text-sm text-destructive sm:col-span-2" role="alert">
+                {formError}
+              </p>
+            )}
+          </form>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" form="new-client-form" disabled={createMutation.isPending}>
+              {createMutation.isPending ? "Creating…" : "Create client"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <div className="max-w-md space-y-2">
-        <Label htmlFor="client-search">Search</Label>
+      <div className="relative max-w-md">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           id="client-search"
           placeholder="Name or email"
+          className="pl-9"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
-      {isLoading && <p className="text-sm text-muted-foreground">Loading clients…</p>}
+      {isLoading && (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full rounded-lg" />
+          ))}
+        </div>
+      )}
       {error && (
         <p className="text-sm text-destructive" role="alert">
           {error instanceof Error ? error.message : "Failed to load clients"}
@@ -113,40 +146,44 @@ export function ClientsPage() {
       )}
 
       {!isLoading && !error && (
-        <Card>
-          <CardContent className="p-0">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Name</th>
-                  <th className="px-4 py-3 font-medium">Email</th>
-                  <th className="px-4 py-3 font-medium">Target country</th>
-                  <th className="px-4 py-3 font-medium">Active deal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(clients ?? []).map((c) => (
-                  <tr key={c.id} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3">
-                      <Link
-                        to={`/clients/${c.id}`}
-                        className="font-medium text-foreground hover:underline"
-                      >
-                        {c.fullName}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3">{c.email}</td>
-                    <td className="px-4 py-3">{c.targetCountry ?? "—"}</td>
-                    <td className="px-4 py-3">{c.activeDealTitle ?? "No active deal"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {(clients ?? []).length === 0 && (
-              <p className="px-4 py-6 text-muted-foreground">No clients found.</p>
-            )}
-          </CardContent>
-        </Card>
+        <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-card">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Target country</TableHead>
+                <TableHead>Active deal</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(clients ?? []).map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell>
+                    <Link
+                      to={`/clients/${c.id}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {c.fullName}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{c.email}</TableCell>
+                  <TableCell>{c.targetCountry ?? "—"}</TableCell>
+                  <TableCell>
+                    {c.activeDealTitle ? (
+                      <Badge variant="secondary">{c.activeDealTitle}</Badge>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">No active deal</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {(clients ?? []).length === 0 && (
+            <p className="px-4 py-8 text-center text-muted-foreground">No clients found.</p>
+          )}
+        </div>
       )}
     </div>
   );

@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useTeamMembers } from "@/features/conversations/hooks";
 import { DEAL_STAGES, stageLabel } from "@/features/deals/constants";
@@ -69,12 +72,21 @@ export function DealDetailPage() {
   }
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading deal…</p>;
+    return (
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-10 w-72" />
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl" />
+        </div>
+      </div>
+    );
   }
 
   if (error instanceof ApiError && (error.status === 403 || error.status === 404)) {
     return (
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <h2 className="text-2xl font-semibold">Access denied</h2>
         <Button variant="outline" asChild>
           <Link to="/pipeline">Back to pipeline</Link>
@@ -92,19 +104,24 @@ export function DealDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
+          <div className="mb-2 flex items-center gap-2">
+            <Badge variant="secondary" className="capitalize">
+              {stageLabel(deal.stage)}
+            </Badge>
+          </div>
           <h2 className="text-2xl font-semibold">{deal.title}</h2>
           <p className="text-sm text-muted-foreground">
             Client:{" "}
-            <Link to={`/clients/${deal.clientId}`} className="hover:underline">
+            <Link to={`/clients/${deal.clientId}`} className="font-medium text-primary hover:underline">
               {deal.clientName}
             </Link>
           </p>
         </div>
         {canEditStage && (
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="deal-stage">Stage</Label>
             <select
               id="deal-stage"
@@ -134,65 +151,70 @@ export function DealDetailPage() {
         )}
       </div>
 
-      <Card>
-        <CardContent className="grid gap-2 pt-6 text-sm sm:grid-cols-3">
-          <div>
+      <Card className="border-border/80 shadow-card">
+        <CardContent className="grid gap-4 pt-6 sm:grid-cols-3">
+          <div className="text-sm">
             <span className="text-muted-foreground">Owner: </span>
-            {deal.ownerName ?? "Unassigned"}
+            <span className="font-medium">{deal.ownerName ?? "Unassigned"}</span>
           </div>
-          <div>
+          <div className="text-sm">
             <span className="text-muted-foreground">Value: </span>
-            {deal.valueCurrency ?? "USD"} {deal.valueAmount ?? "—"}
+            <span className="font-medium">
+              {deal.valueCurrency ?? "USD"} {deal.valueAmount ?? "—"}
+            </span>
           </div>
-          <div>
+          <div className="text-sm">
             <span className="text-muted-foreground">Intake: </span>
-            {deal.expectedIntake ?? "—"}
+            <span className="font-medium">{deal.expectedIntake ?? "—"}</span>
           </div>
         </CardContent>
       </Card>
 
       {role === "manager" && (
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="space-y-2">
-            <Label htmlFor="reassign-owner">Reassign owner</Label>
-            <select
-              id="reassign-owner"
-              className="h-9 min-w-[200px] rounded-md border border-input bg-background px-2 text-sm"
-              value={reassignTo}
-              onChange={(e) => setReassignTo(e.target.value)}
+        <Card className="border-border/80 shadow-card">
+          <CardContent className="flex flex-wrap items-end gap-3 pt-6">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="reassign-owner">Reassign owner</Label>
+              <select
+                id="reassign-owner"
+                className="h-9 min-w-[200px] rounded-md border border-input bg-background px-2 text-sm"
+                value={reassignTo}
+                onChange={(e) => setReassignTo(e.target.value)}
+              >
+                <option value="">Select team member…</option>
+                {(team ?? []).map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!reassignTo || patchOwner.isPending}
+              onClick={() => void handleReassign()}
             >
-              <option value="">Select team member…</option>
-              {(team ?? []).map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.fullName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!reassignTo || patchOwner.isPending}
-            onClick={() => void handleReassign()}
-          >
-            Reassign owner
-          </Button>
-        </div>
+              Reassign owner
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card className="border-border/80 shadow-card">
           <CardHeader>
             <CardTitle className="text-base">Notes</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="flex flex-col gap-3">
             {(role === "manager" || role === "sales") && (
-              <form className="flex gap-2" onSubmit={handleAddNote}>
+              <form className="flex flex-col gap-2 sm:flex-row" onSubmit={handleAddNote}>
                 <Input
                   placeholder="Add note…"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   aria-label="Add note"
+                  className="sm:flex-1"
                 />
                 <Button type="submit" disabled={postNote.isPending || !note.trim()}>
                   Add
@@ -203,9 +225,9 @@ export function DealDetailPage() {
               <p className="text-sm text-muted-foreground">No notes yet.</p>
             )}
             {deal.notes.map((n) => (
-              <div key={n.id} className="border-b border-border py-2 text-sm last:border-0">
+              <div key={n.id} className="rounded-lg bg-muted/40 px-3 py-2 text-sm">
                 <p>{n.body}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {n.authorName} · {new Date(n.createdAt).toLocaleString()}
                 </p>
               </div>
@@ -213,22 +235,25 @@ export function DealDetailPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/80 shadow-card">
           <CardHeader>
             <CardTitle className="text-base">Stage history</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="flex flex-col gap-2">
             {deal.stageHistory.length === 0 && (
               <p className="text-sm text-muted-foreground">No history yet.</p>
             )}
-            {deal.stageHistory.map((h) => (
-              <p key={h.id} className="border-b border-border py-2 text-sm last:border-0">
-                {h.fromStage ? `${stageLabel(h.fromStage)} → ` : ""}
-                {stageLabel(h.toStage)}
-                <span className="block text-xs text-muted-foreground">
+            {deal.stageHistory.map((h, i) => (
+              <div key={h.id}>
+                <p className="text-sm">
+                  {h.fromStage ? `${stageLabel(h.fromStage)} → ` : ""}
+                  <span className="font-medium">{stageLabel(h.toStage)}</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
                   {h.changedByName} · {new Date(h.createdAt).toLocaleString()}
-                </span>
-              </p>
+                </p>
+                {i < deal.stageHistory.length - 1 && <Separator className="mt-2" />}
+              </div>
             ))}
           </CardContent>
         </Card>
