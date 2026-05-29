@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
+import { buildPoolerDbUrl } from "./supabase-management.mjs";
 import {
   hasCloudflareStackKeys,
   hasFrontendStackKeys,
@@ -106,6 +107,15 @@ describe("load-stack-env (tooling auth ladder)", () => {
         }),
         true,
       );
+    });
+  });
+
+  describe("E2E pooler DB URL", () => {
+    it("AUTH-LADDER-11: buildPoolerDbUrl uses session pooler port 5432 for schema", () => {
+      const url = buildPoolerDbUrl("abcdefgh", "pass-word-12345678", "eu-central-1");
+      assert.match(url, /aws-1-eu-central-1\.pooler\.supabase\.com:5432/);
+      assert.match(url, /postgres\.abcdefgh:/);
+      assert.doesNotMatch(url, /db\.abcdefgh\.supabase\.co/);
     });
   });
 

@@ -4,7 +4,7 @@
  * No Cursor/MCP required — needs Supabase CLI + database credentials in env.
  */
 
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   checkSchemaExists,
@@ -17,6 +17,7 @@ import {
   loadStackEnv,
 } from "./lib/load-stack-env.mjs";
 import { resolveDbUrlOrExplain } from "./lib/resolve-db-url.mjs";
+import { executeProjectSql } from "./lib/supabase-management.mjs";
 import { supabaseDbQuery } from "./lib/supabase-cli.mjs";
 
 function fail(msg) {
@@ -69,16 +70,31 @@ async function main() {
     .filter((f) => f.endsWith(".sql"))
     .sort();
 
+  const accessToken = merged.SUPABASE_ACCESS_TOKEN?.trim();
+  const useManagementApi = Boolean(accessToken && ref);
+
   console.log(
-    `Applying ${files.length} schema file(s) via Supabase CLI (db query)...\n`,
+    useManagementApi
+      ? `Applying ${files.length} schema file(s) via Supabase Management API...\n`
+      : `Applying ${files.length} schema file(s) via Supabase CLI (db query)...\n`,
   );
 
   for (const file of files) {
     const path = join(schemaDir, file);
-    const r = supabaseDbQuery({ dbUrl, file: path, root });
-    if (r.status !== 0) {
-      console.error(r.stderr || r.stdout);
-      fail(`Failed applying ${file}`);
+    if (useManagementApi) {
+      const sql = readFileSync(path, "utf8");
+      try {
+        await executeProjectSql(accessToken, ref, sql);
+      } catch (e) {
+        console.error(e.message);
+        fail(`Failed applying ${file}`);
+      }
+    } else {
+      const r = supabaseDbQuery({ dbUrl, file: path, root });
+      if (r.status !== 0) {
+        console.error(r.stderr || r.stdout);
+        fail(`Failed applying ${file}`);
+      }
     }
     console.log(`Applied: ${file}`);
   }
