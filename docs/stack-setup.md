@@ -1,3 +1,5 @@
+[← Back to README — Documentation](../README.md#documentation)
+
 # Stack Setup Guide — Student CRM
 
 Setup checklist, **build-phase todo**, and verification commands. Use this file to track what is done and what is next.
@@ -133,13 +135,13 @@ npm run verify:stack:supabase
 - [x] [external-auth.md](./external-auth.md); [cloudflare-auth.md](./cloudflare-auth.md) updated
 - [x] Phase doc: [phases/phase-12-external-auth.md](./phases/phase-12-external-auth.md)
 
-### Phase 13 — README & doc compile (current)
+### Phase 13 — README & doc compile
 
-- [ ] Root README + symlinks/backlinks, `testing-guide.md`, `infrastructure-phases.md`, `project-guide.md`
-- [ ] `docs/deploy-guide.md` stub only
-- [ ] Phase doc: [phases/phase-13-readme.md](./phases/phase-13-readme.md)
+- [x] Root README + symlinks/backlinks, `testing-guide.md`, `infrastructure-phases.md`, `project-guide.md`
+- [x] `docs/deploy-guide.md` stub only
+- [x] Phase doc: [phases/phase-13-readme.md](./phases/phase-13-readme.md)
 
-### Phase 14 — Deploy
+### Phase 14 — Deploy (current)
 
 - [ ] Cloudflare Worker + Pages; full `deploy-guide.md`; production URLs in README
 - [ ] `npm run verify:stack:deploy`
@@ -223,7 +225,7 @@ npm run verify:github-actions # optional — GitHub Actions readiness on origin 
 ```
 
 **Infrastructure (Phases 1–5):** complete.  
-**Current focus:** Phase 13 — [build-plan.md](./build-plan.md) · [phases/phase-13-readme.md](./phases/phase-13-readme.md)
+**Current focus:** Phase 14 — [build-plan.md](./build-plan.md) · deploy guide
 
 ---
 

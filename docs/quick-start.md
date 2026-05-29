@@ -1,3 +1,5 @@
+[← Back to README — Quick start](../README.md#quick-start)
+
 # Quick Start
 
 ## Linux / WSL (automated)

@@ -1,3 +1,5 @@
+[← Back to README — Documentation](../README.md#documentation)
+
 # Database setup (Phase 5)
 
 This guide explains **what we built**, **why**, and **how to run it safely** on an **empty** Supabase project.

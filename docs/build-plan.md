@@ -37,8 +37,8 @@ Improve wireframes where the spec is clearer (e.g. all eight pipeline stages, cl
 | Start of phase | Create `docs/phases/phase-NN-<slug>.md` from template; link from [phases/README.md](./phases/README.md) |
 | During phase | Record decisions, endpoints, constraints, test IDs added |
 | End of phase | Mark phase complete in [stack-setup.md](./stack-setup.md); run phase verify + relevant tests |
-| After Phase 13 | Compile phase docs into [project-guide.md](./project-guide.md) |
-| README | Short: clone, env, dev, **run tests** — see Phase 13 |
+| Project guide | [project-guide.md](./project-guide.md) compiled (Phase 13) |
+| README | [README.md](../README.md) — quick start, demo users, tests, doc symlinks |
 | Tooling auth ladder | Phase 12 — [phase-12-external-auth.md](./phases/phase-12-external-auth.md) |
 
 Phase docs are the **source of truth** for implementation detail. **README** stays minimal; **project-guide.md** holds the full story.
@@ -228,12 +228,12 @@ cd worker && npm run dev
 
 ### Tasks (summary)
 
-- [ ] Root **`README.md`** — quick start, demo users, tests one-liner, doc table, **symlinks** with **backlinks** in target docs
-- [ ] **`docs/testing-guide.md`** — human test catalog, invoke commands, how to add tests, edge-case worksheet
-- [ ] **`docs/infrastructure-phases.md`** — Phases 1–5
-- [ ] **`docs/project-guide.md`** — full compile
-- [ ] **`docs/README.md`** index; **`docs/deploy-guide.md`** stub (filled Phase 14)
-- [ ] Expand **`docs/roadmap.md`** (requirements optional + standard improvements)
+- [x] Root **`README.md`** — quick start, demo users, tests one-liner, doc table, **symlinks** with **backlinks** in target docs
+- [x] **`docs/testing-guide.md`** — human test catalog, invoke commands, how to add tests, edge-case worksheet
+- [x] **`docs/infrastructure-phases.md`** — Phases 1–5
+- [x] **`docs/project-guide.md`** — full compile
+- [x] **`docs/README.md`** index; **`docs/deploy-guide.md`** stub (filled Phase 14)
+- [x] **`docs/roadmap.md`** backlinks + README link
 
 ### Verify
 

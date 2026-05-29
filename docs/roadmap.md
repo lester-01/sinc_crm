@@ -1,7 +1,8 @@
+[← Back to README — Future work](../README.md#future-work)
+
 # Roadmap (post-MVP / assessment)
 
-Items we **intentionally deferred** for the one-week MVP, with brief rationale.  
-(Full expansion planned in Phase 13 README compile.)
+Items we **intentionally deferred** for the one-week MVP, with brief rationale.
 
 ---
 

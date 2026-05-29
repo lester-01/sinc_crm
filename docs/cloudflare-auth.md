@@ -1,3 +1,5 @@
+[← Back to README — Documentation](../README.md#documentation)
+
 # Cloudflare authentication
 
 ## Recommended: scoped API token

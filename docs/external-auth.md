@@ -1,3 +1,5 @@
+[← Back to README — Documentation](../README.md#documentation)
+
 # External service authentication (tooling)
 
 Scripts, setup, and verification use a shared **auth ladder** for Cloudflare, Supabase, and GitHub. This is separate from **app login** (Supabase Auth in the browser).
