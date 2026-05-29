@@ -119,13 +119,14 @@ npm run verify:stack:supabase
 - [x] Tests `DASH-*` in `e2e/specs/phase-10-dashboard.spec.ts`
 - [x] Phase doc: [phases/phase-10-dashboard.md](./phases/phase-10-dashboard.md)
 
-### Phase 11 — Polish & full regression (current)
+### Phase 11 — Polish & full regression (complete)
 
-- [ ] Loading / empty / error states
-- [ ] Full E2E suite + evaluation smoke (`EVAL-*`)
-- [ ] Phase doc: [phases/phase-11-polish.md](./phases/phase-11-polish.md)
+- [x] Loading / empty / error states
+- [x] Full E2E suite + evaluation smoke (`EVAL-*`) in `e2e/specs/phase-11-eval-smoke.spec.ts`
+- [x] Worker Vitest (`npm run test:worker`)
+- [x] Phase doc: [phases/phase-11-polish.md](./phases/phase-11-polish.md)
 
-### Phase 12 — README & doc compile
+### Phase 12 — README & doc compile (current)
 
 - [ ] Short root `README.md` (setup + run tests only)
 - [ ] Full [project-guide.md](./project-guide.md) compiled from phase docs
@@ -216,7 +217,7 @@ npm run verify:github-actions # optional — GitHub Actions readiness on origin 
 ```
 
 **Infrastructure (Phases 1–5):** complete.  
-**Current focus:** Phase 11 — [build-plan.md](./build-plan.md) · [phases/phase-11-polish.md](./phases/phase-11-polish.md)
+**Current focus:** Phase 12 — [build-plan.md](./build-plan.md) · [phases/phase-12-readme.md](./phases/phase-12-readme.md)
 
 ---
 

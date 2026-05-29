@@ -285,12 +285,12 @@ Update this section as tests land:
 
 | Phase | Planned | Implemented | Spec file |
 |------:|--------:|------------:|-----------|
-| 6 | 10 | 0 | `e2e/specs/phase-06-auth.spec.ts` |
-| 7 | 8 | 0 | `e2e/specs/phase-07-clients.spec.ts` |
-| 8 | 11 | 0 | `e2e/specs/phase-08-conversations.spec.ts` |
-| 9 | 11 | 0 | `e2e/specs/phase-09-deals.spec.ts` |
-| 10 | 5 | 0 | `e2e/specs/phase-10-dashboard.spec.ts` |
-| 11 | 5 | 0 | `e2e/specs/phase-11-eval-smoke.spec.ts` |
+| 6 | 10 | 10 | `e2e/specs/phase-06-auth.spec.ts` |
+| 7 | 8 | 8 | `e2e/specs/phase-07-clients.spec.ts` |
+| 8 | 11 | 11 | `e2e/specs/phase-08-conversations.spec.ts` |
+| 9 | 11 | 11 | `e2e/specs/phase-09-deals.spec.ts` |
+| 10 | 5 | 5 | `e2e/specs/phase-10-dashboard.spec.ts` |
+| 11 | 5 | 5 | `e2e/specs/phase-11-eval-smoke.spec.ts` |
 | 13 | 2 | 0 | `e2e/specs/phase-13-deploy.spec.ts` |
 
 **Total planned:** 52 automated cases (E2E + API); plus Worker unit tests as services grow.

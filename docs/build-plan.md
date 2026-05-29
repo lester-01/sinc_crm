@@ -184,12 +184,12 @@ cd worker && npm run dev
 
 ### Tasks
 
-- [ ] Loading / empty / error on all major queries
-- [ ] TanStack Query key consistency
-- [ ] Client-simplified experience
-- [ ] CORS origins for production
-- [ ] Run full `npm run test:e2e` + `npm run test:worker` (when added)
-- [ ] Phase doc: evaluation mapping table
+- [x] Loading / empty / error on all major queries
+- [x] TanStack Query key consistency
+- [x] Client-simplified experience
+- [x] CORS origins for production
+- [x] Run full `npm run test:e2e` + `npm run test:worker`
+- [x] Phase doc: evaluation mapping table
 
 ### Verify
 

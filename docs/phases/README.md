@@ -17,7 +17,7 @@ One markdown file per **build phase** (6–14). Written **during** implementatio
 | 8 | [phase-08-conversations.md](./phase-08-conversations.md) | Complete |
 | 9 | [phase-09-deals.md](./phase-09-deals.md) | Complete |
 | 10 | [phase-10-dashboard.md](./phase-10-dashboard.md) | Complete |
-| 11 | [phase-11-polish.md](./phase-11-polish.md) | Not started |
+| 11 | [phase-11-polish.md](./phase-11-polish.md) | Complete |
 | 12 | [phase-12-readme.md](./phase-12-readme.md) | Not started |
 | 13 | [phase-13-deploy.md](./phase-13-deploy.md) | Not started |
 | 14 | [phase-14-submission.md](./phase-14-submission.md) | Not started |
