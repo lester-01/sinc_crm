@@ -109,13 +109,25 @@ export async function getDbContext(merged, _projectRef, root) {
 }
 
 export async function checkSchemaExists(ctx, root) {
+  if (ctx.admin) {
+    try {
+      return await schemaExistsRest(ctx.admin);
+    } catch {
+      /* fall through to CLI when REST is unavailable */
+    }
+  }
   if (ctx.dbUrl) return schemaExistsCli(ctx.dbUrl, root);
-  if (!ctx.admin) return false;
-  return schemaExistsRest(ctx.admin);
+  return false;
 }
 
 export async function checkDatabaseHasData(ctx, root) {
+  if (ctx.admin) {
+    try {
+      return await databaseHasDataRest(ctx.admin);
+    } catch {
+      /* fall through */
+    }
+  }
   if (ctx.dbUrl) return databaseHasDataCli(ctx.dbUrl, root);
-  if (!ctx.admin) return false;
-  return databaseHasDataRest(ctx.admin);
+  return false;
 }

@@ -103,7 +103,9 @@ async function main() {
     fail("Schema apply finished but profiles table is still missing.");
   }
 
-  console.log("\nSchema apply complete (Supabase CLI only).");
+  console.log(
+    `\nSchema apply complete (${useManagementApi ? "Management API" : "Supabase CLI"}).`,
+  );
   console.log("Next:");
   console.log("  1. Disable email confirmation — docs/database-setup.md");
   console.log("  2. npm run db:seed");

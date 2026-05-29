@@ -181,8 +181,12 @@ test.describe("@phase9 Deals & pipeline", () => {
   test("PIPE-01 pipeline shows stages", async ({ page }) => {
     await loginAs(page, "manager", "PIPE-01");
     await page.goto("/pipeline");
+    const columnHeaders = page.locator(
+      "div.overflow-x-auto > div > div.border-b.font-medium",
+    );
+    await expect(columnHeaders).toHaveCount(STAGE_LABELS.length, { timeout: 15_000 });
     for (const label of STAGE_LABELS) {
-      await expect(page.getByText(label, { exact: true })).toBeVisible();
+      await expect(columnHeaders.filter({ hasText: label })).toHaveCount(1);
     }
     testLog("PIPE-01", "All 8 stage columns visible", "PASS");
   });
