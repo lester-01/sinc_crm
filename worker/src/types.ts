@@ -5,6 +5,8 @@ export type AppRole = "client" | "sales" | "manager";
 export type Env = {
   SUPABASE_URL: string;
   SUPABASE_SECRET_KEY: string;
+  /** Comma-separated extra origins for Cloudflare Pages (optional). */
+  CORS_ORIGINS?: string;
 };
 
 export type AppVariables = {

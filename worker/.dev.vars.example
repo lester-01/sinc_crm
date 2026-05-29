@@ -4,6 +4,9 @@
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SECRET_KEY=your-secret-key
 
+# Optional: comma-separated Cloudflare Pages origins for production CORS
+# CORS_ORIGINS=https://your-project.pages.dev
+
 # Required for npm run db:schema (Supabase CLI → Postgres)
 # Dashboard → Connect → ORM / Transaction pooler (port 6543, serverless-safe)
 # Paste the URI exactly as shown; use [YOUR-PASSWORD] placeholder or embed password.

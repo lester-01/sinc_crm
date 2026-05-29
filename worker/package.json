@@ -9,7 +9,8 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "whoami": "wrangler whoami",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.4.3",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250417.0",
     "typescript": "^5.8.3",
+    "vitest": "^3.1.2",
     "wrangler": "4.95.0"
   }
 }

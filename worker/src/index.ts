@@ -7,18 +7,19 @@ import { dealsRoutes } from "./routes/deals";
 import { meRoutes } from "./routes/me";
 import { messagesRoutes } from "./routes/messages";
 import { usersRoutes } from "./routes/users";
+import { corsOrigins } from "./lib/corsOrigins";
 import type { Env } from "./types";
 
 const app = new Hono<{ Bindings: Env }>();
 
-app.use(
-  "*",
-  cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+app.use("*", async (c, next) => {
+  const origins = corsOrigins(c.env);
+  return cors({
+    origin: origins,
     allowHeaders: ["Authorization", "Content-Type"],
     allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-  }),
-);
+  })(c, next);
+});
 
 const api = new Hono<{ Bindings: Env }>();
 
