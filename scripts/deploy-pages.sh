@@ -37,13 +37,39 @@ main() {
   fi
 
   log ">>> Deploy to Cloudflare Pages (project: $PAGES_PROJECT_NAME)"
+  log "    (Wrangler may print a deployment preview URL — ignore it; see stable URL below.)"
   "$WRANGLER_BIN" pages deploy "$ROOT/dist" --project-name="$PAGES_PROJECT_NAME"
 
+  stable_domain=""
+  if stable_domain="$(
+    cd "$ROOT/worker" && "$WRANGLER_BIN" pages project list --json 2>/dev/null | node -e "
+      const name = process.argv[1];
+      const rows = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+      const row = rows.find((r) => r['Project Name'] === name);
+      if (!row) process.exit(1);
+      const domains = String(row['Project Domains'] ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+      if (domains[0]) console.log(domains[0]);
+    " "$PAGES_PROJECT_NAME"
+  )"; then
+    :
+  else
+    stable_domain="${PAGES_PROJECT_NAME}.pages.dev"
+    log "WARN: Could not read project domain from wrangler; guessed https://${stable_domain}"
+  fi
+
   log ""
-  log "Pages deployed. Add the Pages URL to:"
-  log "  1. worker CORS_ORIGINS secret (comma-separated if multiple)"
-  log "  2. Supabase Auth → URL Configuration → Site URL + Redirect URLs"
-  log "Then redeploy worker if CORS changed: npm run deploy:worker"
+  log "Pages deployed."
+  log ""
+  log "  USE THIS (stable production URL):"
+  log "    https://${stable_domain}"
+  log ""
+  log "  Do NOT use the deployment preview URL from Wrangler output above"
+  log "  (e.g. https://<hash>.${stable_domain}) — it changes every deploy and breaks CORS unless listed separately."
+  log ""
+  log "Pass 2 (docs/deploy-guide.md):"
+  log "  CORS_ORIGINS=https://${stable_domain}"
+  log "  Supabase Dashboard → Authentication → URL configuration → same origin"
+  log "Then: npm run verify:stack:deploy"
 }
 
 main "$@"

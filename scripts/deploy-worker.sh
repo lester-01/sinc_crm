@@ -28,9 +28,10 @@ main() {
   (cd "$ROOT/worker" && npx wrangler deploy)
 
   log ""
-  log "Worker deployed. Note the workers.dev URL from the output above."
-  log "Set VITE_API_BASE_URL in .env.production, rebuild Pages, and set CORS_ORIGINS to your Pages URL."
-  log "Then: npm run deploy:pages"
+  log "Worker deployed. Copy the workers.dev URL from the line above (Published …)."
+  log "Pass 1: set VITE_API_BASE_URL in .env.production → npm run deploy:pages"
+  log "Pass 2: CORS_ORIGINS + Supabase Auth URLs = stable Pages URL (not the deployment preview URL)"
+  log "Full steps: docs/deploy-guide.md"
 }
 
 main "$@"
