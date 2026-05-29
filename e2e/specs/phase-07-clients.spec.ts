@@ -20,14 +20,15 @@ test.describe("@phase7 Clients", () => {
 
   test("CLI-02 sales creates client", async ({ page }) => {
     const email = `e2e-new-${Date.now()}@example.com`;
+    const fullName = `E2E New Client ${Date.now()}`;
     await loginAs(page, "sales", "CLI-02");
     await page.goto("/clients");
     await page.getByRole("button", { name: "New Client" }).click();
-    await page.getByLabel("Full name").fill("E2E New Client");
+    await page.getByLabel("Full name").fill(fullName);
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Target country").fill("Canada");
     await page.getByRole("button", { name: "Create client" }).click();
-    await expect(page.getByRole("link", { name: "E2E New Client" })).toBeVisible({
+    await expect(page.getByRole("row").filter({ hasText: email })).toBeVisible({
       timeout: 15_000,
     });
     testLog("CLI-02", `Created client ${email}`, "PASS");
