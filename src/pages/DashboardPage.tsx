@@ -1,12 +1,12 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import {
   MessageSquare,
   TrendingUp,
   Trophy,
   UserX,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -24,35 +24,65 @@ import { useDashboard } from "@/features/dashboard/hooks";
 import { cn } from "@/lib/utils";
 
 const METRICS = [
-  { key: "openChats" as const, label: "Open Chats", icon: MessageSquare, accent: "text-primary" },
-  { key: "unassignedConversations" as const, label: "Unassigned", icon: UserX, accent: "text-accent" },
-  { key: "activeDeals" as const, label: "Active Deals", icon: TrendingUp, accent: "text-chart-4" },
-  { key: "wonDeals" as const, label: "Won Deals", icon: Trophy, accent: "text-primary" },
+  {
+    key: "openChats" as const,
+    label: "Open Chats",
+    icon: MessageSquare,
+    accent: "text-primary",
+    href: "/conversations?queue=unassigned",
+  },
+  {
+    key: "unassignedConversations" as const,
+    label: "Unassigned",
+    icon: UserX,
+    accent: "text-accent",
+    href: "/conversations?queue=unassigned",
+  },
+  {
+    key: "activeDeals" as const,
+    label: "Active Deals",
+    icon: TrendingUp,
+    accent: "text-chart-4",
+    href: "/pipeline",
+  },
+  {
+    key: "wonDeals" as const,
+    label: "Won Deals",
+    icon: Trophy,
+    accent: "text-primary",
+    href: "/pipeline",
+  },
 ];
+
+const ACTIVITY_CAP = 10;
 
 function MetricCard({
   label,
   value,
   icon: Icon,
   accent,
+  href,
 }: {
   label: string;
   value: number;
   icon: typeof MessageSquare;
   accent: string;
+  href: string;
 }) {
   return (
-    <Card className="border-border/80 shadow-card transition-shadow hover:shadow-elevated">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-        <div className={cn("rounded-lg bg-muted p-2", accent)}>
-          <Icon className="size-4" />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="font-display text-3xl font-semibold tabular-nums">{value}</p>
-      </CardContent>
-    </Card>
+    <Link to={href} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <Card className="border-border/80 shadow-card transition-shadow hover:shadow-elevated">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+          <div className={cn("rounded-lg bg-muted p-2", accent)}>
+            <Icon className="size-4" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="font-display text-3xl font-semibold tabular-nums">{value}</p>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
@@ -93,6 +123,9 @@ export function DashboardPage() {
     );
   }
 
+  const recent = data.recentActivity.slice(0, ACTIVITY_CAP);
+  const hiddenActivity = data.recentActivity.length - recent.length;
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -101,13 +134,14 @@ export function DashboardPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {METRICS.map(({ key, label, icon, accent }) => (
+        {METRICS.map(({ key, label, icon, accent, href }) => (
           <MetricCard
             key={key}
             label={label}
             value={data[key]}
             icon={icon}
             accent={accent}
+            href={href}
           />
         ))}
       </div>
@@ -143,30 +177,32 @@ export function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-base">Deals by Owner</CardTitle>
           </CardHeader>
-          <CardContent>
-            {data.dealsByOwner.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No deals yet.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Owner</TableHead>
-                    <TableHead className="text-right">Deals</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.dealsByOwner.map((row) => (
-                    <TableRow key={row.ownerId ?? "unassigned"}>
-                      <TableCell>{row.ownerName}</TableCell>
-                      <TableCell className="text-right font-medium tabular-nums">
-                        {row.count}
-                      </TableCell>
+          <ScrollArea className="max-h-64">
+            <CardContent>
+              {data.dealsByOwner.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No deals yet.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Owner</TableHead>
+                      <TableHead className="text-right">Deals</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
+                  </TableHeader>
+                  <TableBody>
+                    {data.dealsByOwner.map((row) => (
+                      <TableRow key={row.ownerId ?? "unassigned"}>
+                        <TableCell>{row.ownerName}</TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">
+                          {row.count}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </ScrollArea>
         </Card>
       </div>
 
@@ -175,19 +211,26 @@ export function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-base">Recent activity</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {data.recentActivity.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col gap-1 border-b border-border/60 pb-3 last:border-0 last:pb-0"
-              >
-                <p className="text-sm">{item.description}</p>
-                <Badge variant="secondary" className="w-fit font-normal">
-                  {new Date(item.createdAt).toLocaleString()}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
+          <ScrollArea className="max-h-64">
+            <CardContent className="flex flex-col gap-3">
+              {recent.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-col gap-1 border-b border-border/60 pb-3 last:border-0 last:pb-0"
+                >
+                  <p className="text-sm">{item.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(item.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              ))}
+              {hiddenActivity > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  + {hiddenActivity} older activities not shown
+                </p>
+              )}
+            </CardContent>
+          </ScrollArea>
         </Card>
       )}
     </div>
