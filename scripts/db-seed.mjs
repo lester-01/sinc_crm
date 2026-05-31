@@ -41,6 +41,12 @@ const CLIENTS = [
     assignedSales: 0,
     dealStage: "new_lead",
     threadSubject: "Canada business program",
+    clientMessage:
+      "Hi, I'm interested in Canada's business immigration pathways. With a commerce background from Kazakhstan, which programs should I look at first?",
+    teamMessage:
+      "Hi Aida — thanks for reaching out. I'll review your profile and send a short list of eligible programs within 24 hours.",
+    dealNote:
+      "PGWP-eligible programs under review. Follow up on IELTS target band and work experience docs.",
   },
   {
     email: "client2@demo.local",
@@ -50,6 +56,11 @@ const CLIENTS = [
     assignedSales: 1,
     dealStage: "contacted",
     threadSubject: "UK foundation year",
+    clientMessage:
+      "Hello, I finished school in Uzbekistan and want a UK foundation year before a business degree. What are the typical entry requirements?",
+    teamMessage:
+      "Thanks Bek — I've shared a checklist for transcripts and English scores. Let's schedule a quick call this week.",
+    dealNote: "Foundation route preferred. Waiting on school transcript translation.",
   },
   {
     email: "client3@demo.local",
@@ -59,6 +70,12 @@ const CLIENTS = [
     assignedSales: 2,
     dealStage: "consultation_booked",
     threadSubject: "German language prep",
+    clientMessage:
+      "I need help with German language prep before applying to universities in Germany. Do you offer structured A2/B1 courses?",
+    teamMessage:
+      "Yes Cara — your consultation is confirmed. We'll map your language timeline to the Fall 2026 intake.",
+    dealNote:
+      "Consultation booked — interested in Berlin and Munich options; prep timeline to Fall 2026.",
   },
   {
     email: "client4@demo.local",
@@ -69,6 +86,10 @@ const CLIENTS = [
     dealStage: null,
     threadSubject: "General admission questions",
     unassigned: true,
+    clientMessage:
+      "I have general questions about admission timelines and document preparation for studying abroad. Who can help me get started?",
+    teamMessage:
+      "Thanks Dana — a sales representative will pick this up from the queue shortly.",
   },
 ];
 
@@ -110,10 +131,9 @@ async function main() {
   if (await checkDatabaseHasData(ctx, root)) {
     fail(
       "Database is not empty (auth.users or public rows exist).\n\n" +
-        "To re-seed:\n" +
-        "  1. Dashboard → Authentication: delete users\n" +
-        "  2. Table Editor: delete/truncate public tables\n" +
-        "  3. Run: npm run db:seed\n\n" +
+        "To re-seed from scratch (manual — no auto-delete scripts):\n" +
+        "  See docs/database-setup.md → \"Demo video: full reset from schema\"\n" +
+        "  Then: npm run db:schema && npm run db:seed\n\n" +
         "Scripts never auto-delete data.",
     );
   }
@@ -195,15 +215,13 @@ async function main() {
       thread_id: thread.id,
       sender_id: row.profileId,
       sender_type: "client",
-      body: `Hello, I need help with ${row.threadSubject}.`,
+      body: row.clientMessage,
     });
     await admin.from("conversation_messages").insert({
       thread_id: thread.id,
       sender_id: assignee ?? sales1,
       sender_type: "team",
-      body: assignee
-        ? "Thanks for reaching out — we will help you shortly."
-        : "Thanks — a sales rep will pick this up from the queue soon.",
+      body: row.teamMessage,
     });
 
     if (row.dealStage) {
@@ -240,7 +258,7 @@ async function main() {
       await admin.from("deal_notes").insert({
         deal_id: deal.id,
         author_id: owner,
-        body: `Initial note for ${row.fullName}.`,
+        body: row.dealNote,
       });
     }
   }
