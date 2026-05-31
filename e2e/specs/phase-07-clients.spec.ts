@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { loginAs } from "../fixtures/auth";
 import { authHeaders, getAccessToken, getApiBase } from "../fixtures/api-auth";
 import { testLog } from "../helpers/log";
+import { openClientFromList } from "../helpers/ui";
 
 const apiBase = () => getApiBase();
 
@@ -14,7 +15,7 @@ test.describe("@phase7 Clients", () => {
     await expect(rows.first()).toBeVisible({ timeout: 15_000 });
     const count = await rows.count();
     expect(count).toBeGreaterThanOrEqual(5);
-    await expect(page.getByRole("link", { name: "Aida Client" })).toBeVisible();
+    await expect(page.getByRole("row").filter({ hasText: "Aida Client" })).toBeVisible();
     testLog("CLI-01", `Manager sees seeded clients (${count} rows)`, "PASS");
   });
 
@@ -28,6 +29,7 @@ test.describe("@phase7 Clients", () => {
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Target country").fill("Canada");
     await page.getByRole("button", { name: "Create client" }).click();
+    await page.getByRole("button", { name: "All" }).click();
     await expect(page.getByRole("row").filter({ hasText: email })).toBeVisible({
       timeout: 15_000,
     });
@@ -42,7 +44,7 @@ test.describe("@phase7 Clients", () => {
     await expect(page.locator("table")).toHaveCount(0);
     await expect(page.getByRole("heading", { level: 2, name: "Aida Client" })).toBeVisible();
     await expect(page.getByText("client1@demo.local")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Your applications" })).toBeVisible();
+    await expect(page.getByText("Your applications")).toBeVisible();
     testLog("CLI-03", "Client sees inline profile with applications", "PASS");
   });
 

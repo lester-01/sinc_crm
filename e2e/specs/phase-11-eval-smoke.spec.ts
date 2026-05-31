@@ -4,6 +4,11 @@ import { authHeaders, getAccessToken, getApiBase } from "../fixtures/api-auth";
 import { ensureCanadaDealForSales1 } from "../helpers/deals-setup";
 import { ensureUnassignedThread } from "../helpers/conversations-setup";
 import { testLog } from "../helpers/log";
+import {
+  openClientFromList,
+  selectConversationReassign,
+  selectDealStage,
+} from "../helpers/ui";
 
 const apiBase = () => getApiBase();
 
@@ -65,7 +70,7 @@ test.describe("@phase11 @smoke Core user paths", () => {
     });
     const sales1 = await meRes.json();
 
-    await page.getByLabel("Reassign to").selectOption(sales1.id);
+    await selectConversationReassign(page, sales1.fullName);
     await page.getByRole("button", { name: "Reassign" }).click();
     await expect(page.getByText(`open · Owner: ${sales1.fullName}`)).toBeVisible({
       timeout: 10_000,
@@ -79,7 +84,7 @@ test.describe("@phase11 @smoke Core user paths", () => {
 
     await loginAs(page, "sales", "EVAL-04");
     await page.goto("/clients");
-    await page.getByRole("link", { name: "Aida Client" }).click();
+    await openClientFromList(page, "Aida Client");
     await page.getByRole("button", { name: "New Deal" }).click();
     await page.getByLabel("Title").fill(title);
     await page.getByRole("button", { name: "Create deal" }).click();
@@ -93,7 +98,7 @@ test.describe("@phase11 @smoke Core user paths", () => {
           r.url().includes(`/api/deals/${deal.id}/stage`) && r.request().method() === "PATCH",
         { timeout: 15_000 },
       ),
-      page.locator("#deal-stage").selectOption("contacted"),
+      selectDealStage(page, "contacted"),
     ]);
     expect(patchRes.status()).toBe(200);
     testLog("EVAL-04", "Deal create + stage move (DEAL-01/02 path)", "PASS");

@@ -3,6 +3,12 @@ import { loginAs } from "../fixtures/auth";
 import { authHeaders, getAccessToken, getApiBase } from "../fixtures/api-auth";
 import { ensureCanadaDealForSales1 } from "../helpers/deals-setup";
 import { testLog } from "../helpers/log";
+import {
+  openClientFromList,
+  selectDealOwnerReassign,
+  selectDealStage,
+  selectPipelineDealStage,
+} from "../helpers/ui";
 
 const apiBase = () => getApiBase();
 
@@ -22,7 +28,7 @@ test.describe("@phase9 Deals & pipeline", () => {
     const title = `E2E Deal ${Date.now()}`;
     await loginAs(page, "sales", "DEAL-01");
     await page.goto("/clients");
-    await page.getByRole("link", { name: "Aida Client" }).click();
+    await openClientFromList(page, "Aida Client");
     await page.getByRole("button", { name: "New Deal" }).click();
     await page.getByLabel("Title").fill(title);
     await page.getByRole("button", { name: "Create deal" }).click();
@@ -43,7 +49,7 @@ test.describe("@phase9 Deals & pipeline", () => {
           r.url().includes(`/api/deals/${deal.id}/stage`) && r.request().method() === "PATCH",
         { timeout: 15_000 },
       ),
-      page.locator("#deal-stage").selectOption("contacted"),
+      selectDealStage(page, "contacted"),
     ]);
     expect(patchRes.status()).toBe(200);
     await expect(page.getByText(/new lead → contacted/i).first()).toBeVisible({ timeout: 10_000 });
@@ -56,7 +62,9 @@ test.describe("@phase9 Deals & pipeline", () => {
     const ukCard = page
       .locator("div.rounded-md")
       .filter({ has: page.getByRole("link", { name: "UK application" }) });
-    await expect(ukCard.locator("select")).toHaveCount(0);
+    await expect(
+      ukCard.getByRole("combobox", { name: /Move UK application to stage/i }),
+    ).toHaveCount(0);
     testLog("DEAL-03", "No stage select on another rep's deal", "PASS");
   });
 
@@ -96,7 +104,7 @@ test.describe("@phase9 Deals & pipeline", () => {
     });
     const sales2 = await meRes.json();
 
-    await page.getByLabel("Reassign owner").selectOption(sales2.id);
+    await selectDealOwnerReassign(page, sales2.fullName);
     await page.getByRole("button", { name: "Reassign owner" }).click();
     await expect(page.getByText(`Owner: ${sales2.fullName}`)).toBeVisible();
     testLog("DEAL-04", "Owner updated on deal detail", "PASS");
@@ -107,14 +115,13 @@ test.describe("@phase9 Deals & pipeline", () => {
 
     await loginAs(page, "sales", "PIPE-02");
     await page.goto("/pipeline");
-    const stageSelect = page.getByLabel(/Stage for Canada application/i);
     const [patchRes] = await Promise.all([
       page.waitForResponse(
         (r) =>
           r.url().includes(`/api/deals/${deal.id}/stage`) && r.request().method() === "PATCH",
         { timeout: 15_000 },
       ),
-      stageSelect.selectOption({ label: "consultation booked" }),
+      selectPipelineDealStage(page, "Canada application", "consultation booked"),
     ]);
     expect(patchRes.status()).toBe(200);
     const patched = (await patchRes.json()) as { stage: string };
@@ -181,12 +188,10 @@ test.describe("@phase9 Deals & pipeline", () => {
   test("PIPE-01 pipeline shows stages", async ({ page }) => {
     await loginAs(page, "manager", "PIPE-01");
     await page.goto("/pipeline");
-    const columnHeaders = page.locator(
-      "div.overflow-x-auto > div > div.border-b.font-medium",
-    );
+    const columnHeaders = page.locator("div.border-t-4 > div.shrink-0.border-b");
     await expect(columnHeaders).toHaveCount(STAGE_LABELS.length, { timeout: 15_000 });
-    for (const label of STAGE_LABELS) {
-      await expect(columnHeaders.filter({ hasText: label })).toHaveCount(1);
+    for (let i = 0; i < STAGE_LABELS.length; i++) {
+      await expect(columnHeaders.nth(i)).toContainText(STAGE_LABELS[i]!);
     }
     testLog("PIPE-01", "All 8 stage columns visible", "PASS");
   });

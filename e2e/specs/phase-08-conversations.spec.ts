@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { loginAs } from "../fixtures/auth";
 import { authHeaders, getAccessToken, getApiBase } from "../fixtures/api-auth";
 import { testLog } from "../helpers/log";
+import { selectConversationReassign } from "../helpers/ui";
 
 const apiBase = () => getApiBase();
 
@@ -186,7 +187,7 @@ test.describe("@phase8 Conversations & chat", () => {
     });
     const sales1 = await meRes.json();
 
-    await page.getByLabel("Reassign to").selectOption(sales1.id);
+    await selectConversationReassign(page, sales1.fullName);
     await page.getByRole("button", { name: "Reassign" }).click();
     await expect(page.getByText(`open · Owner: ${sales1.fullName}`)).toBeVisible({
       timeout: 10_000,
