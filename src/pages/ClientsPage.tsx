@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus, Search } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowDown, ArrowUp, ArrowUpDown, Plus, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,16 +25,80 @@ import {
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useClients, useCreateClient } from "@/features/clients/hooks";
+import type { ClientListItem, ClientListFilter } from "@/features/clients/types";
+
+const PAGE_SIZE = 25;
+type SortKey = "fullName" | "email" | "targetCountry" | "activeDealTitle" | "createdAt";
+type SalesFilter = ClientListFilter;
+
+function sortClients(
+  rows: ClientListItem[],
+  key: SortKey,
+  dir: "asc" | "desc",
+): ClientListItem[] {
+  const mul = dir === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const av = (a[key] ?? "") as string;
+    const bv = (b[key] ?? "") as string;
+    return av.localeCompare(bv) * mul;
+  });
+}
 
 export function ClientsPage() {
-  const { role } = useAuth();
+  const navigate = useNavigate();
+  const { role, profile } = useAuth();
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const { data: clients, isLoading, error } = useClients(search);
+  const [page, setPage] = useState(0);
+  const [sortKey, setSortKey] = useState<SortKey>("fullName");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [salesFilter, setSalesFilter] = useState<SalesFilter>("mine");
+
+  const clientFilter =
+    role === "sales"
+      ? salesFilter
+      : undefined;
+  const ownerId =
+    role === "sales" && salesFilter === "mine" ? profile?.id : undefined;
+
+  const { data: clients, isLoading, error } = useClients(search, { ownerId, clientFilter });
   const createMutation = useCreateClient();
 
   const canCreate = role === "manager" || role === "sales";
+
+  const description =
+    role === "client"
+      ? "View and update your student profile."
+      : role === "sales"
+        ? "Search and manage student profiles you work with."
+        : "Search and manage student profiles across your sales team.";
+
+  const sorted = useMemo(
+    () => sortClients(clients ?? [], sortKey, sortDir),
+    [clients, sortKey, sortDir],
+  );
+  const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, pageCount - 1);
+  const pageRows = sorted.slice(pageSafe * PAGE_SIZE, pageSafe * PAGE_SIZE + PAGE_SIZE);
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+    setPage(0);
+  }
+
+  function SortIcon({ column }: { column: SortKey }) {
+    if (sortKey !== column) return <ArrowUpDown className="ml-1 inline size-3 opacity-40" />;
+    return sortDir === "asc" ? (
+      <ArrowUp className="ml-1 inline size-3" />
+    ) : (
+      <ArrowDown className="ml-1 inline size-3" />
+    );
+  }
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -58,7 +122,12 @@ export function ClientsPage() {
       form.reset();
       setShowForm(false);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Failed to create client");
+      const msg = err instanceof Error ? err.message : "Failed to create client";
+      setFormError(
+        msg.toLowerCase().includes("already exists")
+          ? "A client with this email already exists."
+          : msg,
+      );
     }
   }
 
@@ -66,7 +135,7 @@ export function ClientsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Clients"
-        description="Search and manage student profiles across your sales team."
+        description={description}
         actions={
           canCreate ? (
             <Button type="button" onClick={() => setShowForm(true)}>
@@ -77,7 +146,38 @@ export function ClientsPage() {
         }
       />
 
-      <Dialog open={showForm} onOpenChange={setShowForm}>
+      {role === "sales" && (
+        <div className="flex gap-2 rounded-lg bg-muted/60 p-1 w-fit">
+          {(
+            [
+              { id: "mine" as const, label: "Mine" },
+              { id: "unassigned" as const, label: "Unassigned" },
+              { id: "all" as const, label: "All" },
+            ] as const
+          ).map((tab) => (
+            <Button
+              key={tab.id}
+              type="button"
+              size="sm"
+              variant={salesFilter === tab.id ? "default" : "outline"}
+              onClick={() => {
+                setSalesFilter(tab.id);
+                setPage(0);
+              }}
+            >
+              {tab.label}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          setShowForm(open);
+          if (!open) setFormError(null);
+        }}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>New client</DialogTitle>
@@ -128,7 +228,10 @@ export function ClientsPage() {
           placeholder="Name or email"
           className="pl-9"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(0);
+          }}
         />
       </div>
 
@@ -146,44 +249,116 @@ export function ClientsPage() {
       )}
 
       {!isLoading && !error && (
-        <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Target country</TableHead>
-                <TableHead>Active deal</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(clients ?? []).map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell>
-                    <Link
-                      to={`/clients/${c.id}`}
-                      className="font-medium text-primary hover:underline"
+        <>
+          <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-card">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead>
+                    <button type="button" className="font-medium" onClick={() => toggleSort("fullName")}>
+                      Name
+                      <SortIcon column="fullName" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button type="button" className="font-medium" onClick={() => toggleSort("email")}>
+                      Email
+                      <SortIcon column="email" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className="font-medium"
+                      onClick={() => toggleSort("targetCountry")}
                     >
-                      {c.fullName}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{c.email}</TableCell>
-                  <TableCell>{c.targetCountry ?? "—"}</TableCell>
-                  <TableCell>
-                    {c.activeDealTitle ? (
-                      <Badge variant="secondary">{c.activeDealTitle}</Badge>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">No active deal</span>
-                    )}
-                  </TableCell>
+                      Target country
+                      <SortIcon column="targetCountry" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className="font-medium"
+                      onClick={() => toggleSort("createdAt")}
+                    >
+                      Created
+                      <SortIcon column="createdAt" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className="font-medium"
+                      onClick={() => toggleSort("activeDealTitle")}
+                    >
+                      Active deal
+                      <SortIcon column="activeDealTitle" />
+                    </button>
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {(clients ?? []).length === 0 && (
-            <p className="px-4 py-8 text-center text-muted-foreground">No clients found.</p>
+              </TableHeader>
+              <TableBody>
+                {pageRows.map((c) => (
+                  <TableRow
+                    key={c.id}
+                    className="cursor-pointer"
+                    onClick={() => navigate(`/clients/${c.id}`)}
+                  >
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-primary">{c.fullName}</span>
+                        <span className="text-xs text-muted-foreground">{c.email}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{c.email}</TableCell>
+                    <TableCell>{c.targetCountry ?? "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {c.activeDealTitle ? (
+                        <Badge variant="secondary">{c.activeDealTitle}</Badge>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">No active deal</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {sorted.length === 0 && (
+              <p className="px-4 py-8 text-center text-muted-foreground">No clients found.</p>
+            )}
+          </div>
+          {sorted.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                Page {pageSafe + 1} of {pageCount} ({sorted.length} clients)
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={pageSafe <= 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                >
+                  Previous
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={pageSafe >= pageCount - 1}
+                  onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
