@@ -254,4 +254,72 @@ test.describe("@phase8 Conversations & chat", () => {
     expect(body.assignedTo).toBe(me.id);
     testLog("API-CONV-01", "Owner set", "PASS");
   });
+
+  test("API-CONV-03 manager POST message forbidden", async ({ request }) => {
+    const managerHeaders = {
+      ...(await authHeaders("manager")),
+      "Content-Type": "application/json",
+    };
+    const listRes = await request.get(`${apiBase()}/api/conversations`, { headers: managerHeaders });
+    const threads = (await listRes.json()) as { id: string }[];
+    expect(threads.length).toBeGreaterThan(0);
+    const res = await request.post(`${apiBase()}/api/conversations/${threads[0].id}/messages`, {
+      headers: managerHeaders,
+      data: { body: "Manager reply blocked" },
+    });
+    testLog("API-CONV-03", `POST message as manager → ${res.status()}`, "ASSERT");
+    expect(res.status()).toBe(403);
+    testLog("API-CONV-03", "Forbidden", "PASS");
+  });
+
+  test("API-CONV-04 manager assign to self forbidden", async ({ request }) => {
+    const managerHeaders = {
+      ...(await authHeaders("manager")),
+      "Content-Type": "application/json",
+    };
+    const meRes = await request.get(`${apiBase()}/api/me`, { headers: managerHeaders });
+    const manager = (await meRes.json()) as { id: string };
+    const listRes = await request.get(`${apiBase()}/api/conversations`, { headers: managerHeaders });
+    const threads = (await listRes.json()) as { id: string }[];
+    expect(threads.length).toBeGreaterThan(0);
+    const res = await request.patch(`${apiBase()}/api/conversations/${threads[0].id}/assign`, {
+      headers: managerHeaders,
+      data: { assignedTo: manager.id },
+    });
+    testLog("API-CONV-04", `PATCH assign to manager → ${res.status()}`, "ASSERT");
+    expect(res.status()).toBe(403);
+    testLog("API-CONV-04", "Forbidden", "PASS");
+  });
+
+  test("API-CONV-05 manager POST conversation forbidden", async ({ request }) => {
+    const managerHeaders = {
+      ...(await authHeaders("manager")),
+      "Content-Type": "application/json",
+    };
+    const clientsRes = await request.get(`${apiBase()}/api/clients`, { headers: managerHeaders });
+    const clients = (await clientsRes.json()) as { id: string }[];
+    const res = await request.post(`${apiBase()}/api/conversations`, {
+      headers: managerHeaders,
+      data: {
+        clientId: clients[0].id,
+        subject: "Manager thread blocked",
+        message: "Should not be allowed",
+      },
+    });
+    testLog("API-CONV-05", `POST conversation as manager → ${res.status()}`, "ASSERT");
+    expect(res.status()).toBe(403);
+    testLog("API-CONV-05", "Forbidden", "PASS");
+  });
+
+  test("CHAT-11 manager read-only conversation workspace", async ({ page }) => {
+    await loginAs(page, "manager", "CHAT-11");
+    await page.goto("/conversations");
+    await page.getByRole("button", { name: "All" }).click();
+    await page.getByRole("button", { name: "Canada business program" }).click();
+    await expect(page.getByText("Reassign only — managers do not reply")).toBeVisible();
+    await expect(page.getByLabel("Reply")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Send" })).toHaveCount(0);
+    await expect(page.getByRole("combobox", { name: "Reassign to" })).toBeVisible();
+    testLog("CHAT-11", "Manager sees reassign without reply composer", "PASS");
+  });
 });

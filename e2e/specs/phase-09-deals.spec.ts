@@ -131,14 +131,10 @@ test.describe("@phase9 Deals & pipeline", () => {
 
   test("DEAL-05 add deal note", async ({ page, request }) => {
     const noteText = `Note ${Date.now()}`;
-    const managerHeaders = await authHeaders("manager");
-    const listRes = await request.get(`${apiBase()}/api/deals`, { headers: managerHeaders });
-    const deals = (await listRes.json()) as { id: string }[];
-    const dealId = deals[0]?.id;
-    expect(dealId).toBeTruthy();
+    const deal = await ensureCanadaDealForSales1(request, "new_lead");
 
-    await loginAs(page, "manager", "DEAL-05");
-    await page.goto(`/deals/${dealId}`);
+    await loginAs(page, "sales", "DEAL-05");
+    await page.goto(`/deals/${deal.id}`);
     await page.getByLabel("Add note").fill(noteText);
     await page.getByRole("button", { name: "Add" }).click();
     await expect(page.getByText(noteText)).toBeVisible();
@@ -226,5 +222,55 @@ test.describe("@phase9 Deals & pipeline", () => {
     testLog("API-DEAL-02", `Manager PATCH stage → ${res.status()}`, "ASSERT");
     expect(res.status()).toBe(200);
     testLog("API-DEAL-02", "OK", "PASS");
+  });
+
+  test("API-DEAL-03 manager POST /api/deals forbidden", async ({ request }) => {
+    const managerHeaders = {
+      ...(await authHeaders("manager")),
+      "Content-Type": "application/json",
+    };
+    const clientsRes = await request.get(`${apiBase()}/api/clients`, { headers: managerHeaders });
+    const clients = (await clientsRes.json()) as { id: string }[];
+    const res = await request.post(`${apiBase()}/api/deals`, {
+      headers: managerHeaders,
+      data: { clientId: clients[0].id, title: "Blocked manager deal" },
+    });
+    testLog("API-DEAL-03", `POST as manager → ${res.status()}`, "ASSERT");
+    expect(res.status()).toBe(403);
+    testLog("API-DEAL-03", "Forbidden", "PASS");
+  });
+
+  test("API-DEAL-04 manager POST deal note forbidden", async ({ request }) => {
+    const managerHeaders = {
+      ...(await authHeaders("manager")),
+      "Content-Type": "application/json",
+    };
+    const listRes = await request.get(`${apiBase()}/api/deals`, { headers: managerHeaders });
+    const deals = (await listRes.json()) as { id: string }[];
+    const res = await request.post(`${apiBase()}/api/deals/${deals[0].id}/notes`, {
+      headers: managerHeaders,
+      data: { body: "Manager note blocked" },
+    });
+    testLog("API-DEAL-04", `POST note as manager → ${res.status()}`, "ASSERT");
+    expect(res.status()).toBe(403);
+    testLog("API-DEAL-04", "Forbidden", "PASS");
+  });
+
+  test("API-DEAL-05 manager PATCH owner to self forbidden", async ({ request }) => {
+    const managerHeaders = {
+      ...(await authHeaders("manager")),
+      "Content-Type": "application/json",
+    };
+    const meRes = await request.get(`${apiBase()}/api/me`, { headers: managerHeaders });
+    const manager = (await meRes.json()) as { id: string };
+    const listRes = await request.get(`${apiBase()}/api/deals`, { headers: managerHeaders });
+    const deals = (await listRes.json()) as { id: string }[];
+    const res = await request.patch(`${apiBase()}/api/deals/${deals[0].id}/owner`, {
+      headers: managerHeaders,
+      data: { ownerId: manager.id },
+    });
+    testLog("API-DEAL-05", `PATCH owner to manager → ${res.status()}`, "ASSERT");
+    expect(res.status()).toBe(403);
+    testLog("API-DEAL-05", "Forbidden", "PASS");
   });
 });

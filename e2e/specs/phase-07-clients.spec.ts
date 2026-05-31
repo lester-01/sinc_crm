@@ -130,4 +130,21 @@ test.describe("@phase7 Clients", () => {
     expect(res.status()).toBe(403);
     testLog("API-CLI-04", "403 Forbidden", "PASS");
   });
+
+  test("API-CLI-05 manager POST /api/clients forbidden", async ({ request }) => {
+    const headers = {
+      ...(await authHeaders("manager")),
+      "Content-Type": "application/json",
+    };
+    const res = await request.post(`${apiBase()}/api/clients`, {
+      headers,
+      data: {
+        fullName: "Blocked Manager Client",
+        email: `blocked-mgr-${Date.now()}@example.com`,
+      },
+    });
+    testLog("API-CLI-05", `POST as manager → ${res.status()}`, "ASSERT");
+    expect(res.status()).toBe(403);
+    testLog("API-CLI-05", "403 Forbidden", "PASS");
+  });
 });
