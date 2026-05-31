@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/features/auth/AuthContext";
+import { defaultPathForRole } from "@/features/auth/nav";
+import { useTeamMembers } from "@/features/conversations/hooks";
+import { allowedNextStages } from "@/lib/stage-transitions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DEAL_STAGES, stageLabel } from "@/features/deals/constants";
 import { useDeals, usePatchDealStage } from "@/features/deals/hooks";
 import type { DealListItem } from "@/features/deals/types";
@@ -15,12 +25,13 @@ import { cn } from "@/lib/utils";
 
 export function PipelinePage() {
   const { role, profile } = useAuth();
+  const { data: team } = useTeamMembers(role === "manager");
   const [search, setSearch] = useState("");
-  const [ownerFilter, setOwnerFilter] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("all");
   const [pendingStage, setPendingStage] = useState<Record<string, string>>({});
   const { data: deals, isLoading, error } = useDeals({
     q: search,
-    ownerId: ownerFilter || undefined,
+    ownerId: ownerFilter === "all" || !ownerFilter ? undefined : ownerFilter,
   });
   const patchStage = usePatchDealStage();
 
@@ -41,8 +52,12 @@ export function PipelinePage() {
     return false;
   }
 
+  if (role === "client") {
+    return <Navigate to={defaultPathForRole("client")} replace />;
+  }
+
   async function onStageSelect(deal: DealListItem, next: string) {
-    if (next === deal.stage || !canChangeStage(deal)) return;
+    if (!next || next === deal.stage || !canChangeStage(deal)) return;
     setPendingStage((m) => ({ ...m, [deal.id]: next }));
     try {
       await patchStage.mutateAsync({
@@ -79,14 +94,20 @@ export function PipelinePage() {
             </div>
             {role === "manager" && (
               <div className="flex flex-col gap-2">
-                <Label htmlFor="owner-filter">Owner ID (optional)</Label>
-                <Input
-                  id="owner-filter"
-                  className="w-48"
-                  placeholder="Filter by owner UUID"
-                  value={ownerFilter}
-                  onChange={(e) => setOwnerFilter(e.target.value)}
-                />
+                <Label htmlFor="owner-filter">Owner</Label>
+                <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                  <SelectTrigger id="owner-filter" className="w-48">
+                    <SelectValue placeholder="All owners" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All owners</SelectItem>
+                    {(team ?? []).map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>
@@ -107,22 +128,23 @@ export function PipelinePage() {
       )}
 
       {!isLoading && !error && (
-        <div className="flex gap-3 overflow-x-auto pb-4">
+        <div className="max-h-[calc(100vh-11rem)] overflow-x-auto pb-4">
+          <div className="flex h-full min-h-0 gap-3">
           {DEAL_STAGES.map((stage) => (
             <div
               key={stage}
               className={cn(
-                "flex w-52 shrink-0 flex-col rounded-xl border border-border/80 border-t-4 shadow-card",
+                "flex h-full max-h-[calc(100vh-11rem)] w-52 shrink-0 flex-col rounded-xl border border-border/80 border-t-4 shadow-card",
                 stageColumnClass(stage),
               )}
             >
-              <div className="border-b border-border/60 px-3 py-2.5 text-sm font-medium capitalize">
+              <div className="shrink-0 border-b border-border/60 px-3 py-2.5 text-sm font-medium capitalize">
                 {stageLabel(stage)}
                 <Badge variant="secondary" className="ml-2 font-normal">
                   {(byStage.get(stage) ?? []).length}
                 </Badge>
               </div>
-              <div className="flex flex-1 flex-col gap-2 p-2">
+              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">
                 {(byStage.get(stage) ?? []).map((deal) => (
                   <div
                     key={deal.id}
@@ -138,19 +160,31 @@ export function PipelinePage() {
                     <p className="text-xs text-muted-foreground">
                       {deal.ownerName ?? "Unassigned"}
                     </p>
-                    {canChangeStage(deal) ? (
-                      <select
-                        className="mt-2 h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
-                        value={pendingStage[deal.id] ?? deal.stage}
-                        aria-label={`Stage for ${deal.title}`}
-                        onChange={(e) => void onStageSelect(deal, e.target.value)}
-                      >
-                        {DEAL_STAGES.map((s) => (
-                          <option key={s} value={s}>
-                            {stageLabel(s)}
-                          </option>
-                        ))}
-                      </select>
+                    {canChangeStage(deal) &&
+                    allowedNextStages(deal.stage).filter((s) => s !== deal.stage).length > 0 ? (
+                      <div className="mt-2 flex flex-col gap-1">
+                        <Label className="text-xs text-muted-foreground">Move to</Label>
+                        <Select
+                          value={pendingStage[deal.id] ?? ""}
+                          onValueChange={(v) => void onStageSelect(deal, v)}
+                        >
+                          <SelectTrigger
+                            className="h-8 text-xs"
+                            aria-label={`Move ${deal.title} to stage`}
+                          >
+                            <SelectValue placeholder={stageLabel(deal.stage)} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allowedNextStages(deal.stage)
+                              .filter((s) => s !== deal.stage)
+                              .map((s) => (
+                                <SelectItem key={s} value={s}>
+                                  {stageLabel(s)}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     ) : (
                       <p className={cn("mt-2 text-xs capitalize text-muted-foreground")}>
                         {stageLabel(deal.stage)}
@@ -164,6 +198,7 @@ export function PipelinePage() {
               </div>
             </div>
           ))}
+          </div>
         </div>
       )}
     </div>
