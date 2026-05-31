@@ -100,3 +100,5 @@
 ### DB migration for FIX-080
 
 Apply on Supabase/local: `supabase/schema/06_client_read.sql`
+
+Clients mark threads read via `PATCH /api/conversations/:threadId/read` when opening a thread (not on every detail GET). The endpoint is idempotent; the frontend calls it once per thread selection and updates unread badges in the list cache without refetching the full thread list.

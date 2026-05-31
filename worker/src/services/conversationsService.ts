@@ -75,15 +75,43 @@ async function loadThread(supabase: SupabaseClient, threadId: string): Promise<T
   return data as ThreadRow;
 }
 
+async function latestTeamMessageAtByThreadId(
+  supabase: SupabaseClient,
+  threadIds: string[],
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (threadIds.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from("conversation_messages")
+    .select("thread_id, created_at")
+    .in("thread_id", threadIds)
+    .eq("sender_type", "team")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new HttpError(error.message, 500);
+
+  for (const row of data ?? []) {
+    const threadId = row.thread_id as string;
+    if (!map.has(threadId)) {
+      map.set(threadId, row.created_at as string);
+    }
+  }
+  return map;
+}
+
 function mapThreadListItem(
   row: ThreadRow & { clients?: { full_name: string } | { full_name: string }[] | null },
   assigneeNames: Map<string, string>,
   viewerRole: AppRole,
+  lastTeamMessageAt: string | null = null,
 ) {
   const client = Array.isArray(row.clients) ? row.clients[0] : row.clients;
+  const readCursor = row.client_last_read_at ?? "1970-01-01T00:00:00.000Z";
   const lastTeamReplyAfterRead =
     viewerRole === "client" &&
-    row.last_message_at > (row.client_last_read_at ?? "1970-01-01T00:00:00.000Z");
+    lastTeamMessageAt !== null &&
+    lastTeamMessageAt > readCursor;
   return {
     id: row.id,
     clientId: row.client_id,
@@ -153,7 +181,22 @@ export async function listConversations(
     }
   }
 
-  return rows.map((r) => mapThreadListItem(r, assigneeNames, profile.role));
+  const lastTeamByThreadId =
+    profile.role === "client"
+      ? await latestTeamMessageAtByThreadId(
+          supabase,
+          rows.map((r) => r.id),
+        )
+      : new Map<string, string>();
+
+  return rows.map((r) =>
+    mapThreadListItem(
+      r,
+      assigneeNames,
+      profile.role,
+      lastTeamByThreadId.get(r.id) ?? null,
+    ),
+  );
 }
 
 export async function createConversation(
@@ -222,14 +265,6 @@ export async function getConversation(
 
   if (!(await canAccessThread(supabase, profile, thread))) {
     throw new HttpError("Forbidden", 403);
-  }
-
-  if (profile.role === "client") {
-    const now = new Date().toISOString();
-    await supabase
-      .from("conversation_threads")
-      .update({ client_last_read_at: now })
-      .eq("id", threadId);
   }
 
   const [{ data: client }, assigneeRes, { data: messages }] = await Promise.all([
@@ -349,6 +384,59 @@ export async function patchConversationStatus(
 
   if (error) throw new HttpError(error.message, 500);
   return { id: data.id, status: data.status };
+}
+
+export async function markConversationRead(
+  supabase: SupabaseClient,
+  userId: string,
+  threadId: string,
+) {
+  const profile = await getProfile(supabase, userId);
+  if (profile.role !== "client") {
+    throw new HttpError("Forbidden", 403);
+  }
+
+  const thread = await loadThread(supabase, threadId);
+  if (!(await canAccessThread(supabase, profile, thread))) {
+    throw new HttpError("Forbidden", 403);
+  }
+
+  const { data: latestTeam, error: latestErr } = await supabase
+    .from("conversation_messages")
+    .select("created_at")
+    .eq("thread_id", threadId)
+    .eq("sender_type", "team")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latestErr) throw new HttpError(latestErr.message, 500);
+
+  const lastTeamAt = latestTeam?.created_at as string | undefined;
+  const readCursor = thread.client_last_read_at ?? "1970-01-01T00:00:00.000Z";
+
+  if (!lastTeamAt) {
+    return { id: thread.id, clientLastReadAt: thread.client_last_read_at };
+  }
+
+  if (readCursor >= lastTeamAt) {
+    return { id: thread.id, clientLastReadAt: thread.client_last_read_at };
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("conversation_threads")
+    .update({ client_last_read_at: now })
+    .eq("id", threadId)
+    .select("id, client_last_read_at")
+    .single();
+
+  if (error) throw new HttpError(error.message, 500);
+
+  return {
+    id: data.id,
+    clientLastReadAt: data.client_last_read_at as string,
+  };
 }
 
 export async function postMessage(

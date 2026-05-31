@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ArrowLeft, Send } from "lucide-react";
 import { fetchClients } from "@/features/clients/api";
@@ -27,6 +27,7 @@ import {
   useConversation,
   useConversations,
   useCreateConversation,
+  useMarkConversationRead,
   useSendMessage,
   useTeamMembers,
 } from "@/features/conversations/hooks";
@@ -58,6 +59,7 @@ export function ConversationPage() {
   const [newSubject, setNewSubject] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [reassignTo, setReassignTo] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const isClient = role === "client";
   const isManager = role === "manager";
@@ -69,6 +71,7 @@ export function ConversationPage() {
   const assignMutation = useAssignConversation();
   const sendMutation = useSendMessage();
   const createMutation = useCreateConversation();
+  const markReadMutation = useMarkConversationRead();
 
   const { data: myClients } = useQuery({
     queryKey: ["clients", "self"],
@@ -76,6 +79,22 @@ export function ConversationPage() {
     enabled: isClient,
   });
   const ownClientId = myClients?.[0]?.id;
+  const markedReadForRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isClient || !selectedId) {
+      markedReadForRef.current = null;
+      return;
+    }
+    const openThread = threads?.find((t) => t.id === selectedId);
+    if (openThread?.hasUnread) {
+      markedReadForRef.current = null;
+    }
+    if (markedReadForRef.current === selectedId) return;
+    markedReadForRef.current = selectedId;
+    markReadMutation.mutate(selectedId);
+    // Intentionally omit markReadMutation — its identity changes after each mutate and re-triggers this effect.
+  }, [isClient, selectedId, threads]);
 
   function selectThread(id: string) {
     setSearchParams({ thread: id });
@@ -101,8 +120,13 @@ export function ConversationPage() {
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedId || !reply.trim()) return;
-    await sendMutation.mutateAsync({ threadId: selectedId, body: reply.trim() });
-    setReply("");
+    setSendError(null);
+    try {
+      await sendMutation.mutateAsync({ threadId: selectedId, body: reply.trim() });
+      setReply("");
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Failed to send message");
+    }
   }
 
   async function handleNewConversation(e: React.FormEvent) {
@@ -376,6 +400,11 @@ export function ConversationPage() {
                     className="mt-auto flex flex-col gap-2 border-t border-border/60 pt-4 sm:flex-row"
                     onSubmit={handleSend}
                   >
+                    {sendError && (
+                      <p className="w-full text-sm text-destructive" role="alert">
+                        {sendError}
+                      </p>
+                    )}
                     <Textarea
                       placeholder="Reply…"
                       value={reply}

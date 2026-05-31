@@ -7,9 +7,31 @@ import {
   fetchConversation,
   fetchConversations,
   fetchTeamMembers,
+  markConversationRead,
   sendMessage,
 } from "./api";
-import type { ConversationQueue, CreateConversationInput } from "./types";
+import type {
+  ConversationDetail,
+  ConversationListItem,
+  ConversationMessage,
+  ConversationQueue,
+  CreateConversationInput,
+} from "./types";
+
+const detailKey = (threadId: string) => ["conversations", "detail", threadId] as const;
+
+function appendMessageToDetail(
+  detail: ConversationDetail | undefined,
+  message: ConversationMessage,
+): ConversationDetail | undefined {
+  if (!detail) return detail;
+  if (detail.messages.some((m) => m.id === message.id)) return detail;
+  return {
+    ...detail,
+    messages: [...detail.messages, message],
+    lastMessageAt: message.createdAt,
+  };
+}
 
 export function useConversations(queue?: ConversationQueue) {
   const qc = useQueryClient();
@@ -31,7 +53,7 @@ export function useConversations(queue?: ConversationQueue) {
 export function useConversation(threadId: string | undefined) {
   const qc = useQueryClient();
   const query = useQuery({
-    queryKey: ["conversations", "detail", threadId],
+    queryKey: detailKey(threadId ?? ""),
     queryFn: () => fetchConversation(threadId!),
     enabled: !!threadId,
   });
@@ -39,13 +61,30 @@ export function useConversation(threadId: string | undefined) {
   useEffect(() => {
     if (!threadId) return;
     const sub = subscribeToConversationMessages(threadId, () => {
-      void qc.invalidateQueries({ queryKey: ["conversations", "detail", threadId] });
+      void qc.cancelQueries({ queryKey: detailKey(threadId) });
+      void qc.invalidateQueries({ queryKey: detailKey(threadId) });
       void qc.invalidateQueries({ queryKey: ["conversations"] });
     });
     return () => sub.unsubscribe();
   }, [threadId, qc]);
 
   return query;
+}
+
+export function useMarkConversationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (threadId: string) => markConversationRead(threadId),
+    onSuccess: (_data, threadId) => {
+      qc.setQueriesData<ConversationListItem[]>(
+        { queryKey: ["conversations"] },
+        (current) =>
+          current?.map((thread) =>
+            thread.id === threadId ? { ...thread, hasUnread: false } : thread,
+          ),
+      );
+    },
+  });
 }
 
 export function useTeamMembers(enabled: boolean) {
@@ -73,7 +112,8 @@ export function useAssignConversation() {
       assignConversation(threadId, assignedTo),
     onSuccess: (_data, vars) => {
       void qc.invalidateQueries({ queryKey: ["conversations"] });
-      void qc.invalidateQueries({ queryKey: ["conversations", "detail", vars.threadId] });
+      void qc.cancelQueries({ queryKey: detailKey(vars.threadId) });
+      void qc.invalidateQueries({ queryKey: detailKey(vars.threadId) });
     },
   });
 }
@@ -83,8 +123,12 @@ export function useSendMessage() {
   return useMutation({
     mutationFn: ({ threadId, body }: { threadId: string; body: string }) =>
       sendMessage(threadId, body),
-    onSuccess: (_data, vars) => {
-      void qc.invalidateQueries({ queryKey: ["conversations", "detail", vars.threadId] });
+    onSuccess: (message, vars) => {
+      const key = detailKey(vars.threadId);
+      void qc.cancelQueries({ queryKey: key });
+      qc.setQueryData<ConversationDetail>(key, (current) =>
+        appendMessageToDetail(current, message),
+      );
       void qc.invalidateQueries({ queryKey: ["conversations"] });
     },
   });

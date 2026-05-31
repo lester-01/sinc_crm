@@ -11,6 +11,7 @@ import {
   createConversation,
   getConversation,
   listConversations,
+  markConversationRead,
   patchConversationStatus,
 } from "../services/conversationsService";
 import { HttpError } from "../services/clientsService";
@@ -53,6 +54,19 @@ conversationsRoutes.get("/:threadId", async (c) => {
       c.req.param("threadId"),
     );
     return c.json(detail);
+  } catch (e) {
+    return handleError(c, e);
+  }
+});
+
+conversationsRoutes.patch("/:threadId/read", async (c) => {
+  try {
+    const result = await markConversationRead(
+      c.get("supabase"),
+      c.get("userId"),
+      c.req.param("threadId"),
+    );
+    return c.json(result);
   } catch (e) {
     return handleError(c, e);
   }

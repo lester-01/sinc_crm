@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/apiClient";
 import type {
   ConversationDetail,
   ConversationListItem,
+  ConversationMessage,
   ConversationQueue,
   CreateConversationInput,
   TeamMember,
@@ -58,12 +59,26 @@ export async function assignConversation(
   if (!res.ok) await parseError(res, "Failed to assign conversation");
 }
 
-export async function sendMessage(threadId: string, body: string): Promise<void> {
+export async function sendMessage(
+  threadId: string,
+  body: string,
+): Promise<ConversationMessage> {
   const res = await apiFetch(`/api/conversations/${threadId}/messages`, {
     method: "POST",
     body: JSON.stringify({ body }),
   });
   if (!res.ok) await parseError(res, "Failed to send message");
+  return res.json();
+}
+
+export async function markConversationRead(
+  threadId: string,
+): Promise<{ id: string; clientLastReadAt: string }> {
+  const res = await apiFetch(`/api/conversations/${threadId}/read`, {
+    method: "PATCH",
+  });
+  if (!res.ok) await parseError(res, "Failed to mark conversation read");
+  return res.json();
 }
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {

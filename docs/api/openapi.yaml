@@ -441,7 +441,8 @@ paths:
       tags: [Conversations]
       summary: Conversation detail
       description: |
-        Thread with full message history.
+        Thread with full message history. Read-only — does **not** update `client_last_read_at`.
+        Clients should call `PATCH /api/conversations/{threadId}/read` once when opening a thread.
 
         | Role | Access |
         |------|--------|
@@ -487,6 +488,65 @@ paths:
                     senderType: team
                     body: Please upload them by end of next week.
                     createdAt: "2025-05-28T16:30:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: Conversation not found
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/conversations/{threadId}/read:
+    patch:
+      tags: [Conversations]
+      summary: Mark conversation read (client)
+      description: |
+        Updates `client_last_read_at` for the thread so unread badges clear after the client
+        opens it. Compares against the latest **team** message only (client's own sends do not
+        count as unread). Idempotent: returns **200** without writing when there are no team
+        messages or the thread is already read through the latest team reply. The SPA calls this
+        once per thread selection (not on every detail refetch).
+
+        | Role | Access |
+        |------|--------|
+        | client | Scoped — own threads only |
+        | sales | Deny |
+        | manager | Deny |
+      operationId: markConversationRead
+      x-permissions:
+        auth: bearer
+        roles:
+          client: { access: scoped, note: own threads; clears hasUnread for team replies }
+          sales: { access: deny }
+          manager: { access: deny }
+      parameters:
+        - $ref: "#/components/parameters/ThreadId"
+      responses:
+        "200":
+          description: Read cursor updated (or unchanged if already read)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, clientLastReadAt]
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  clientLastReadAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+              example:
+                id: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                clientLastReadAt: "2025-05-29T14:10:00.000Z"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -657,7 +717,7 @@ paths:
             example:
               body: Thanks, I will upload the documents today.
       responses:
-        "200":
+        "201":
           description: Message posted
           content:
             application/json:
