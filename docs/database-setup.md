@@ -148,7 +148,7 @@ Use a **throwaway Supabase project** for CI — schema/seed abort if the databas
 
 | Piece | Location | Purpose |
 |-------|----------|---------|
-| Schema SQL (ordered) | `supabase/schema/01` … `05` | Types, tables, indexes, profile bootstrap, RLS + Realtime |
+| Schema SQL (ordered) | `supabase/schema/01` … `06` | Types, tables, indexes, profile bootstrap, RLS + Realtime, client read tracking |
 | Apply schema | `npm run db:schema` | Supabase CLI `db query` on **empty** DB only |
 | Seed data | `npm run db:seed` | Demo auth users + CRM rows on **empty** DB only |
 | Verify | `npm run verify:stack:supabase` | Tables exist + secret key can read `profiles` |
@@ -205,10 +205,10 @@ Use this when you want a **fresh database on the same Supabase project** (same U
 
 | Goal | Reset level | Redeploy app? |
 |------|-------------|---------------|
-| **Demo video — clean slate (schema + seed)** | **Level B** (full `public` wipe) | No — unless app code changed |
+| **Demo video — clean slate (schema + seed)** | **Level B** (CRM schema teardown) | No — unless app code changed |
 | App already deployed; schema unchanged; only need demo users again | **Level A** (data only) | No — run `npm run db:seed` only |
 | App deployed with `deploy:all:skip-db`; schema already applied; testing login | **None** | No — open stable Pages URL (see [deploy-guide](./deploy-guide.md)) |
-| Changed files under `supabase/schema/` | **Level B** (full `public` wipe) | Optional — `npm run deploy:all:skip-db` if only DB changed |
+| Changed files under `supabase/schema/` | **Level B** (CRM schema teardown) | Optional — `npm run deploy:all:skip-db` if only DB changed |
 | First-time schema on empty project | **None** | `npm run db:schema` then `npm run deploy:all` |
 
 After a successful `npm run deploy:all:skip-db`, you usually **do not** need to wipe tables — verify the app at the **stable** Pages URL from the deploy summary (not the Wrangler preview hash URL).
@@ -217,8 +217,11 @@ After a successful `npm run deploy:all:skip-db`, you usually **do not** need to 
 
 - Supabase **project** (dashboard project, ref in `SUPABASE_URL`)
 - **Project Settings → API** keys (already in `.env` and `worker/.dev.vars`)
-- Auth provider settings you configured once (e.g. [email confirmation off for demo](#4-email-confirmation-disabled-demo-only))
+- **Dashboard Auth settings** you configured once — e.g. [email confirmation off for demo](#4-email-confirmation-disabled-demo-only), OAuth providers, SMTP. Level B removes CRM tables and the `auth.users` rows you delete manually; it does **not** reset Auth provider configuration.
+- The **`public` schema itself** (ownership and grants) — Level B drops only objects this repo created inside `public`, not the schema shell.
 - Cloudflare deploy (Worker + Pages) — unrelated to DB reset
+
+**Do not use `DROP SCHEMA public CASCADE`.** That removes the entire `public` schema and its grants. This repo uses a targeted teardown of CRM objects from `supabase/schema/*.sql` instead.
 
 ### Level A — Data only (re-run `db:seed`)
 
@@ -260,112 +263,188 @@ CASCADE;
 
 ```bash
 npm run db:seed
-npm run verify:stack:supabase   # optional check
+npm run verify:stack:supabase
 ```
 
 Redeploy only if you also changed Worker/Pages code: `npm run deploy:all:skip-db`.
 
-### Demo video: full reset from schema (Level B — manual only)
+### Level B — CRM schema teardown (re-run `db:schema` + `db:seed`)
 
-Use this when you want a **completely fresh database** before recording: no leftover conversations, deals, or test pollution. Everything is done **manually in the Supabase Dashboard** — this repo has **no** `db:reset` or auto-nuke script by design.
+Use this when you need a **completely fresh CRM** on the same Supabase project: demo recordings, test pollution, or after editing `supabase/schema/*.sql`. Everything is **manual in the Supabase Dashboard + npm** — this repo has **no** `db:reset` or auto-drop script.
 
-**Prerequisites:** `worker/.dev.vars` and `.env` already point at your dev/demo Supabase project.
+**Removes (reverse of `supabase/schema/01` … `06`):**
 
-#### Step 1 — Delete all Auth users (Dashboard)
+| Source | Objects removed |
+|--------|-----------------|
+| `01_types.sql` | Enums: `app_role`, `conversation_status`, `message_sender_type`, `deal_stage` |
+| `02_tables.sql` | Tables: `profiles`, `clients`, `conversation_threads`, `conversation_messages`, `deals`, `deal_stage_history`, `deal_notes` (+ all row data) |
+| `03_indexes.sql` | Indexes on those tables (dropped with tables) |
+| `04_profile_bootstrap.sql` | Function `handle_new_user()`, trigger `on_auth_user_created` on `auth.users` |
+| `05_rls_realtime.sql` | RLS policies, helper functions (`current_app_role`, …), Realtime publication entries |
+| `06_client_read.sql` | Column `conversation_threads.client_last_read_at` (dropped with table) |
 
-1. Open [Supabase Dashboard](https://supabase.com/dashboard) → your project.
-2. Go to **Authentication** → **Users**.
-3. Select **all** users and delete them (or delete one-by-one if bulk delete is unavailable).
+**Does not remove:** Auth provider settings (e.g. disabled email confirmation), extensions, `auth` / `storage` / other Supabase schemas, API keys, or the `public` schema shell.
 
-`db:seed` refuses to run while any auth user exists.
+#### Step 1 — Teardown SQL (SQL Editor)
 
-#### Step 2 — Drop the entire `public` schema (SQL Editor)
-
-1. Go to **SQL Editor** → **New query**.
-2. Paste and **Run**:
+Dashboard → **SQL Editor** → **New query** → paste and **Run**:
 
 ```sql
--- WARNING: destroys ALL objects in the public schema (tables, types, functions, policies).
--- Does NOT delete the Supabase project. Run only on a throwaway / dev project.
+-- WARNING: removes all CRM objects from this repo (supabase/schema/01 … 06).
+-- Does NOT drop the public schema. Does NOT change Auth provider settings.
+-- Run only on a throwaway / dev project.
 
-DROP SCHEMA public CASCADE;
+BEGIN;
 
-CREATE SCHEMA public;
+-- Realtime publication (reverse of 05_rls_realtime.sql)
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime DROP TABLE public.deal_notes;
+EXCEPTION WHEN undefined_table THEN NULL;
+         WHEN undefined_object THEN NULL;
+END $$;
 
-GRANT ALL ON SCHEMA public TO postgres;
-GRANT ALL ON SCHEMA public TO anon;
-GRANT ALL ON SCHEMA public TO authenticated;
-GRANT ALL ON SCHEMA public TO service_role;
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime DROP TABLE public.deal_stage_history;
+EXCEPTION WHEN undefined_table THEN NULL;
+         WHEN undefined_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime DROP TABLE public.deals;
+EXCEPTION WHEN undefined_table THEN NULL;
+         WHEN undefined_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime DROP TABLE public.conversation_threads;
+EXCEPTION WHEN undefined_table THEN NULL;
+         WHEN undefined_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime DROP TABLE public.conversation_messages;
+EXCEPTION WHEN undefined_table THEN NULL;
+         WHEN undefined_object THEN NULL;
+END $$;
+
+-- Auth trigger (reverse of 04_profile_bootstrap.sql)
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+-- Tables + indexes + RLS policies (reverse of 02, 03, 05, 06)
+DROP TABLE IF EXISTS
+  public.deal_notes,
+  public.deal_stage_history,
+  public.deals,
+  public.conversation_messages,
+  public.conversation_threads,
+  public.clients,
+  public.profiles
+CASCADE;
+
+-- Functions (reverse of 04 + 05)
+DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+DROP FUNCTION IF EXISTS public.current_app_role() CASCADE;
+DROP FUNCTION IF EXISTS public.current_client_id() CASCADE;
+DROP FUNCTION IF EXISTS public.can_access_thread(public.conversation_threads) CASCADE;
+DROP FUNCTION IF EXISTS public.can_access_deal(public.deals) CASCADE;
+
+-- Enums (reverse of 01_types.sql)
+DROP TYPE IF EXISTS public.deal_stage CASCADE;
+DROP TYPE IF EXISTS public.message_sender_type CASCADE;
+DROP TYPE IF EXISTS public.conversation_status CASCADE;
+DROP TYPE IF EXISTS public.app_role CASCADE;
+
+COMMIT;
 ```
 
-3. Confirm **Table Editor** shows no CRM tables (`profiles`, `clients`, etc.).
+If step “Functions” errors because tables are already gone, re-run only the remaining `DROP FUNCTION` / `DROP TYPE` lines.
 
-#### Step 3 — Confirm Auth is empty
+#### Step 2 — Verify teardown (required)
 
-**Authentication → Users** must show **0 users**.
+Run these **after** the teardown SQL. **Every query must return zero rows.** If anything appears, the live database still has CRM objects — do not run `db:schema` until resolved. If the object list does not match [what Level B removes](#level-b--crm-schema-teardown-re-run-dbschema--dbseed), update this doc (and the teardown script) to match `supabase/schema/*.sql`.
 
-#### Step 4 — Recreate schema and seed from your machine
+```sql
+-- CRM tables must be gone (db:schema aborts if profiles exists)
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_name IN (
+    'profiles', 'clients', 'conversation_threads', 'conversation_messages',
+    'deals', 'deal_stage_history', 'deal_notes'
+  );
+
+-- CRM enums must be gone
+SELECT typname
+FROM pg_type t
+JOIN pg_namespace n ON n.oid = t.typnamespace
+WHERE n.nspname = 'public'
+  AND typname IN (
+    'app_role', 'conversation_status', 'message_sender_type', 'deal_stage'
+  );
+
+-- Profile bootstrap trigger must be gone
+SELECT tgname
+FROM pg_trigger
+WHERE NOT tgisinternal
+  AND tgname = 'on_auth_user_created';
+
+-- CRM helper functions must be gone
+SELECT p.proname
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public'
+  AND p.proname IN (
+    'handle_new_user',
+    'current_app_role',
+    'current_client_id',
+    'can_access_thread',
+    'can_access_deal'
+  );
+```
+
+#### Step 3 — Delete Auth users (Dashboard, after SQL)
+
+**After** teardown verifies clean, delete users so `db:seed` can recreate demo accounts:
+
+1. [Supabase Dashboard](https://supabase.com/dashboard) → your project → **Authentication** → **Users**
+2. Delete **all** users
+
+`db:seed` refuses to run while any auth user exists. Deleting users here does **not** undo Auth provider settings (e.g. email confirmation still off).
+
+Confirm **Authentication → Users** shows **0 users**.
+
+#### Step 4 — Recreate from your machine
 
 From the repo root (Node 22+, `worker/.dev.vars` configured):
 
 ```bash
 npm run db:schema
 npm run db:seed
-npm run verify:stack:supabase   # optional check
+npm run verify:stack:supabase
 ```
 
-- `db:schema` applies `supabase/schema/01` … `05` on an **empty** `public` schema.
+- `db:schema` applies `supabase/schema/01` … `06` on an empty CRM footprint (`profiles` must not exist).
 - `db:seed` creates 9 demo users + CRM rows (password **`demo1234`** for all accounts).
 
-#### Step 5 — Before recording
+Redeploy only if you also changed Worker/Pages code: `npm run deploy:all:skip-db`.
 
+#### Demo video checklist
+
+Before recording:
+
+- Complete Level B steps 1–4 above.
 - Do **not** run `npm run test:e2e` against this project right before the demo (tests add rows and mutate deals/threads).
 - Spot-check login as `manager1@demo.local` or `sales1@demo.local`.
 
 ```mermaid
 flowchart TD
-  start[Polluted DB] --> deleteAuth["Dashboard: delete all Auth users"]
-  deleteAuth --> dropSchema["SQL Editor: DROP SCHEMA public CASCADE"]
-  dropSchema --> recreateSchema["CREATE SCHEMA public + GRANTs"]
-  recreateSchema --> npmSchema["npm run db:schema"]
+  start[Polluted DB] --> teardown["SQL Editor: CRM teardown script"]
+  teardown --> verify["Verify queries: all must return 0 rows"]
+  verify --> deleteAuth["Dashboard: delete all Auth users"]
+  deleteAuth --> npmSchema["npm run db:schema"]
   npmSchema --> npmSeed["npm run db:seed"]
-  npmSeed --> demo[Record demo video]
-```
-
-### Level B — Full schema reset (re-run `db:schema` + optional `db:seed`)
-
-**Keeps:** the Supabase project and API keys (see [What to keep](#what-to-keep-always)).
-
-**Clears:** everything `npm run db:schema` would create — tables, enums (`app_role`, `deal_stage`, …), functions (`handle_new_user`, `current_app_role`, …), trigger on `auth.users`, RLS policies, Realtime publication (`supabase/schema/01` … `05`).
-
-**Steps:**
-
-1. **Authentication → Users** — delete **all** users (hosted Supabase does not expose a simple “delete all users” SQL path for most roles).
-2. **SQL Editor** — run:
-
-```sql
--- WARNING: destroys ALL objects in the public schema (tables, types, functions, policies).
--- Does NOT delete the Supabase project. Run only on a throwaway / dev project.
-
-DROP SCHEMA public CASCADE;
-
-CREATE SCHEMA public;
-
-GRANT ALL ON SCHEMA public TO postgres;
-GRANT ALL ON SCHEMA public TO anon;
-GRANT ALL ON SCHEMA public TO authenticated;
-GRANT ALL ON SCHEMA public TO service_role;
-```
-
-3. Confirm **Authentication → Users** is empty.
-
-**Then:**
-
-```bash
-npm run db:schema
-npm run db:seed                    # optional demo users + CRM rows
-npm run deploy:all:skip-db         # if app already deployed; use deploy:all on first full stack setup
-npm run verify:stack:supabase
+  npmSeed --> npmVerify["npm run verify:stack:supabase"]
+  npmVerify --> demo[Record demo video]
 ```
 
 ### Never do this on the linked dev project
@@ -518,6 +597,7 @@ supabase/schema/
   03_indexes.sql
   04_profile_bootstrap.sql
   05_rls_realtime.sql
+  06_client_read.sql
 scripts/
   db-apply-schema.mjs      # wraps: supabase db query -f ...
   db-seed.mjs              # Auth Admin API + REST (secret key)

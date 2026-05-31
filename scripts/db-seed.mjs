@@ -132,7 +132,7 @@ async function main() {
     fail(
       "Database is not empty (auth.users or public rows exist).\n\n" +
         "To re-seed from scratch (manual — no auto-delete scripts):\n" +
-        "  See docs/database-setup.md → \"Demo video: full reset from schema\"\n" +
+        "  See docs/database-setup.md → Level B (CRM schema teardown)\n" +
         "  Then: npm run db:schema && npm run db:seed\n\n" +
         "Scripts never auto-delete data.",
     );
