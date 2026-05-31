@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useTeamMembers } from "@/features/conversations/hooks";
 import { DEAL_STAGES, stageLabel } from "@/features/deals/constants";
+import { MarkDealLostDialog } from "@/features/deals/MarkDealLostDialog";
 import { allowedNextStages } from "@/lib/stage-transitions";
 import {
   Select,
@@ -37,28 +38,20 @@ export function DealDetailPage() {
   const postNote = usePostDealNote();
 
   const [note, setNote] = useState("");
-  const [lostReason, setLostReason] = useState("");
   const [reassignTo, setReassignTo] = useState("");
   const [stageError, setStageError] = useState<string | null>(null);
   const [pendingStage, setPendingStage] = useState<string | null>(null);
+  const [lostDialogOpen, setLostDialogOpen] = useState(false);
 
   const canEditStage =
     deal &&
     (role === "manager" || (role === "sales" && deal.ownerId === profile?.id));
 
   const displayStage = pendingStage ?? deal?.stage ?? "";
-  const showLostReason = displayStage === "lost";
   const stageOptions = useMemo(
     () => (deal ? allowedNextStages(deal.stage) : DEAL_STAGES),
     [deal],
   );
-  const LOST_REASON_PRESETS = [
-    "Budget",
-    "Chose another school",
-    "No response",
-    "Visa denied",
-    "Other",
-  ] as const;
   const HISTORY_CAP = 12;
   const visibleHistory = deal?.stageHistory.slice(0, HISTORY_CAP) ?? [];
   const hiddenHistoryCount = Math.max(0, (deal?.stageHistory.length ?? 0) - HISTORY_CAP);
@@ -66,8 +59,8 @@ export function DealDetailPage() {
   async function handleStageChange(next: string) {
     if (!deal || next === deal.stage) return;
     setStageError(null);
-    if (next === "lost" && !lostReason.trim()) {
-      setStageError("Lost reason is required when marking a deal as lost.");
+    if (next === "lost" && deal.stage !== "lost") {
+      setLostDialogOpen(true);
       return;
     }
     setPendingStage(next);
@@ -75,7 +68,6 @@ export function DealDetailPage() {
       await patchStage.mutateAsync({
         dealId: deal.id,
         stage: next as (typeof DEAL_STAGES)[number],
-        lostReason: next === "lost" ? lostReason : undefined,
       });
     } catch (e) {
       setStageError(e instanceof Error ? e.message : "Stage update failed");
@@ -164,43 +156,11 @@ export function DealDetailPage() {
                 ))}
               </SelectContent>
             </Select>
-            {showLostReason && (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="lost-reason">Lost reason</Label>
-                <Select
-                  value={
-                    LOST_REASON_PRESETS.includes(
-                      lostReason as (typeof LOST_REASON_PRESETS)[number],
-                    )
-                      ? lostReason
-                      : lostReason.trim()
-                        ? "Other"
-                        : ""
-                  }
-                  onValueChange={(v) => setLostReason(v === "Other" ? "" : v)}
-                >
-                  <SelectTrigger id="lost-reason-preset">
-                    <SelectValue placeholder="Select reason…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LOST_REASON_PRESETS.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {(lostReason === "" ||
-                  !LOST_REASON_PRESETS.slice(0, -1).includes(
-                    lostReason as (typeof LOST_REASON_PRESETS)[number],
-                  )) && (
-                  <Input
-                    placeholder="Describe why the deal was lost"
-                    value={lostReason}
-                    onChange={(e) => setLostReason(e.target.value)}
-                  />
-                )}
-              </div>
+            {deal.stage === "lost" && deal.lostReason && (
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Lost reason: </span>
+                {deal.lostReason}
+              </p>
             )}
             {stageError && (
               <p className="text-sm text-destructive" role="alert">
@@ -210,6 +170,16 @@ export function DealDetailPage() {
           </div>
         )}
       </div>
+
+      {canEditStage && deal.stage !== "lost" && (
+        <MarkDealLostDialog
+          open={lostDialogOpen}
+          onOpenChange={setLostDialogOpen}
+          dealId={deal.id}
+          dealTitle={deal.title}
+          onMarkedLost={() => setLostDialogOpen(false)}
+        />
+      )}
 
       <Card className="border-border/80 shadow-card">
         <CardContent className="grid gap-4 pt-6 sm:grid-cols-3">

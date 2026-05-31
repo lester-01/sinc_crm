@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DEAL_STAGES, stageLabel } from "@/features/deals/constants";
+import { MarkDealLostDialog } from "@/features/deals/MarkDealLostDialog";
 import { useDeals, usePatchDealStage } from "@/features/deals/hooks";
 import type { DealListItem } from "@/features/deals/types";
 import { stageColumnClass } from "@/lib/stage-styles";
@@ -29,6 +30,8 @@ export function PipelinePage() {
   const [search, setSearch] = useState("");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [pendingStage, setPendingStage] = useState<Record<string, string>>({});
+  const [stageErrorByDealId, setStageErrorByDealId] = useState<Record<string, string>>({});
+  const [lostDialogDeal, setLostDialogDeal] = useState<DealListItem | null>(null);
   const { data: deals, isLoading, error } = useDeals({
     q: search,
     ownerId: ownerFilter === "all" || !ownerFilter ? undefined : ownerFilter,
@@ -58,12 +61,29 @@ export function PipelinePage() {
 
   async function onStageSelect(deal: DealListItem, next: string) {
     if (!next || next === deal.stage || !canChangeStage(deal)) return;
+    if (next === "lost") {
+      setStageErrorByDealId((m) => {
+        const { [deal.id]: _, ...rest } = m;
+        return rest;
+      });
+      setLostDialogDeal(deal);
+      return;
+    }
+    setStageErrorByDealId((m) => {
+      const { [deal.id]: _, ...rest } = m;
+      return rest;
+    });
     setPendingStage((m) => ({ ...m, [deal.id]: next }));
     try {
       await patchStage.mutateAsync({
         dealId: deal.id,
         stage: next as (typeof DEAL_STAGES)[number],
       });
+    } catch (e) {
+      setStageErrorByDealId((m) => ({
+        ...m,
+        [deal.id]: e instanceof Error ? e.message : "Stage update failed",
+      }));
     } finally {
       setPendingStage((m) => {
         const { [deal.id]: _, ...rest } = m;
@@ -184,6 +204,11 @@ export function PipelinePage() {
                               ))}
                           </SelectContent>
                         </Select>
+                        {stageErrorByDealId[deal.id] && (
+                          <p className="text-xs text-destructive" role="alert">
+                            {stageErrorByDealId[deal.id]}
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <p className={cn("mt-2 text-xs capitalize text-muted-foreground")}>
@@ -200,6 +225,18 @@ export function PipelinePage() {
           ))}
           </div>
         </div>
+      )}
+
+      {lostDialogDeal && (
+        <MarkDealLostDialog
+          open={!!lostDialogDeal}
+          onOpenChange={(open) => {
+            if (!open) setLostDialogDeal(null);
+          }}
+          dealId={lostDialogDeal.id}
+          dealTitle={lostDialogDeal.title}
+          onMarkedLost={() => setLostDialogDeal(null)}
+        />
       )}
     </div>
   );

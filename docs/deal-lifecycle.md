@@ -8,7 +8,7 @@
 
 ## Lost reason (UI)
 
-When stage becomes `lost`, users pick a preset (Budget, Chose another school, No response, Visa denied, Other) or enter custom copy for **Other**.
+When stage becomes `lost`, users pick a preset (Budget, Chose another school, No response, Visa denied, Other) or enter custom copy for **Other** via a dialog from the pipeline board or deal detail page.
 
 ## Reopen
 
