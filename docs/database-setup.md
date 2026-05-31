@@ -205,6 +205,7 @@ Use this when you want a **fresh database on the same Supabase project** (same U
 
 | Goal | Reset level | Redeploy app? |
 |------|-------------|---------------|
+| **Demo video — clean slate (schema + seed)** | **Level B** (full `public` wipe) | No — unless app code changed |
 | App already deployed; schema unchanged; only need demo users again | **Level A** (data only) | No — run `npm run db:seed` only |
 | App deployed with `deploy:all:skip-db`; schema already applied; testing login | **None** | No — open stable Pages URL (see [deploy-guide](./deploy-guide.md)) |
 | Changed files under `supabase/schema/` | **Level B** (full `public` wipe) | Optional — `npm run deploy:all:skip-db` if only DB changed |
@@ -263,6 +264,73 @@ npm run verify:stack:supabase   # optional check
 ```
 
 Redeploy only if you also changed Worker/Pages code: `npm run deploy:all:skip-db`.
+
+### Demo video: full reset from schema (Level B — manual only)
+
+Use this when you want a **completely fresh database** before recording: no leftover conversations, deals, or test pollution. Everything is done **manually in the Supabase Dashboard** — this repo has **no** `db:reset` or auto-nuke script by design.
+
+**Prerequisites:** `worker/.dev.vars` and `.env` already point at your dev/demo Supabase project.
+
+#### Step 1 — Delete all Auth users (Dashboard)
+
+1. Open [Supabase Dashboard](https://supabase.com/dashboard) → your project.
+2. Go to **Authentication** → **Users**.
+3. Select **all** users and delete them (or delete one-by-one if bulk delete is unavailable).
+
+`db:seed` refuses to run while any auth user exists.
+
+#### Step 2 — Drop the entire `public` schema (SQL Editor)
+
+1. Go to **SQL Editor** → **New query**.
+2. Paste and **Run**:
+
+```sql
+-- WARNING: destroys ALL objects in the public schema (tables, types, functions, policies).
+-- Does NOT delete the Supabase project. Run only on a throwaway / dev project.
+
+DROP SCHEMA public CASCADE;
+
+CREATE SCHEMA public;
+
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO anon;
+GRANT ALL ON SCHEMA public TO authenticated;
+GRANT ALL ON SCHEMA public TO service_role;
+```
+
+3. Confirm **Table Editor** shows no CRM tables (`profiles`, `clients`, etc.).
+
+#### Step 3 — Confirm Auth is empty
+
+**Authentication → Users** must show **0 users**.
+
+#### Step 4 — Recreate schema and seed from your machine
+
+From the repo root (Node 22+, `worker/.dev.vars` configured):
+
+```bash
+npm run db:schema
+npm run db:seed
+npm run verify:stack:supabase   # optional check
+```
+
+- `db:schema` applies `supabase/schema/01` … `05` on an **empty** `public` schema.
+- `db:seed` creates 9 demo users + CRM rows (password **`demo1234`** for all accounts).
+
+#### Step 5 — Before recording
+
+- Do **not** run `npm run test:e2e` against this project right before the demo (tests add rows and mutate deals/threads).
+- Spot-check login as `manager1@demo.local` or `sales1@demo.local`.
+
+```mermaid
+flowchart TD
+  start[Polluted DB] --> deleteAuth["Dashboard: delete all Auth users"]
+  deleteAuth --> dropSchema["SQL Editor: DROP SCHEMA public CASCADE"]
+  dropSchema --> recreateSchema["CREATE SCHEMA public + GRANTs"]
+  recreateSchema --> npmSchema["npm run db:schema"]
+  npmSchema --> npmSeed["npm run db:seed"]
+  npmSeed --> demo[Record demo video]
+```
 
 ### Level B — Full schema reset (re-run `db:schema` + optional `db:seed`)
 
