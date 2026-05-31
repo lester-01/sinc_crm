@@ -6,6 +6,8 @@ export interface ClientListItem {
   phone: string | null;
   country: string | null;
   targetCountry: string | null;
+  createdAt?: string;
+  updatedAt?: string;
   activeDealTitle: string | null;
 }
 
@@ -27,6 +29,8 @@ export interface ClientDetail extends ClientListItem {
   }[];
   activity: { type: string; description: string; createdAt: string }[];
 }
+
+export type ClientListFilter = "mine" | "unassigned" | "all";
 
 export interface CreateClientInput {
   fullName: string;

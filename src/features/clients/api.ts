@@ -1,9 +1,16 @@
 import { apiFetch } from "@/lib/apiClient";
 import type { ClientDetail, ClientListItem, CreateClientInput } from "./types";
 
-export async function fetchClients(q?: string): Promise<ClientListItem[]> {
+import type { ClientListFilter } from "./types";
+
+export async function fetchClients(
+  q?: string,
+  opts?: { ownerId?: string; clientFilter?: ClientListFilter },
+): Promise<ClientListItem[]> {
   const params = new URLSearchParams();
   if (q?.trim()) params.set("q", q.trim());
+  if (opts?.ownerId) params.set("ownerId", opts.ownerId);
+  if (opts?.clientFilter) params.set("filter", opts.clientFilter);
   const qs = params.toString();
   const res = await apiFetch(`/api/clients${qs ? `?${qs}` : ""}`);
   if (!res.ok) {

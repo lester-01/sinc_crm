@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, createClient, fetchClient, fetchClients } from "./api";
-import type { CreateClientInput } from "./types";
+import type { ClientListFilter, CreateClientInput } from "./types";
 
-export function useClients(search: string) {
+export function useClients(
+  search: string,
+  opts?: { ownerId?: string; clientFilter?: ClientListFilter },
+) {
   return useQuery({
-    queryKey: ["clients", search],
-    queryFn: () => fetchClients(search),
+    queryKey: ["clients", search, opts?.ownerId ?? "", opts?.clientFilter ?? ""],
+    queryFn: () => fetchClients(search, opts),
   });
 }
 

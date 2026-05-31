@@ -9,6 +9,8 @@ export interface ConversationListItem {
   assignedTo: string | null;
   assignedToName: string | null;
   lastMessageAt: string;
+  createdAt?: string;
+  hasUnread?: boolean;
 }
 
 export interface ConversationMessage {
