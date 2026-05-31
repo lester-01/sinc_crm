@@ -37,12 +37,13 @@ test.describe("@phase7 Clients", () => {
   test("CLI-03 client own profile", async ({ page }) => {
     await loginAs(page, "client", "CLI-03");
     await page.goto("/clients");
-    const rows = page.locator("table tbody tr");
-    await expect(rows).toHaveCount(1);
-    await page.getByRole("link", { name: "Aida Client" }).click();
+    await expect(page.getByRole("heading", { level: 2, name: "Profile" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Profile" })).toBeVisible();
+    await expect(page.locator("table")).toHaveCount(0);
     await expect(page.getByRole("heading", { level: 2, name: "Aida Client" })).toBeVisible();
     await expect(page.getByText("client1@demo.local")).toBeVisible();
-    testLog("CLI-03", "Client sees own profile only", "PASS");
+    await expect(page.getByRole("heading", { name: "Your applications" })).toBeVisible();
+    testLog("CLI-03", "Client sees inline profile with applications", "PASS");
   });
 
   test("CLI-04 client cannot open other client", async ({ page, request }) => {

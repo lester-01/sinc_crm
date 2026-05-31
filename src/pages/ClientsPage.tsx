@@ -24,7 +24,8 @@ import {
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/features/auth/AuthContext";
-import { useClients, useCreateClient } from "@/features/clients/hooks";
+import { ClientProfileView } from "@/features/clients/ClientProfileView";
+import { useClient, useClients, useCreateClient } from "@/features/clients/hooks";
 import type { ClientListItem, ClientListFilter } from "@/features/clients/types";
 
 const PAGE_SIZE = 25;
@@ -63,6 +64,12 @@ export function ClientsPage() {
     role === "sales" && salesFilter === "mine" ? profile?.id : undefined;
 
   const { data: clients, isLoading, error } = useClients(search, { ownerId, clientFilter });
+  const ownClientId = role === "client" ? clients?.[0]?.id : undefined;
+  const {
+    data: ownClientDetail,
+    isLoading: ownDetailLoading,
+    error: ownDetailError,
+  } = useClient(ownClientId);
   const createMutation = useCreateClient();
 
   const canCreate = role === "manager" || role === "sales";
@@ -129,6 +136,39 @@ export function ClientsPage() {
           : msg,
       );
     }
+  }
+
+  if (role === "client") {
+    const profileLoading = isLoading || ownDetailLoading;
+    const profileError = error ?? ownDetailError;
+
+    return (
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title="Profile"
+          description="Your student profile and applications."
+        />
+        {profileLoading && (
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-48 w-full rounded-xl" />
+          </div>
+        )}
+        {profileError && (
+          <p className="text-sm text-destructive" role="alert">
+            {profileError instanceof Error ? profileError.message : "Failed to load profile"}
+          </p>
+        )}
+        {!profileLoading && !profileError && ownClientDetail && ownClientId && (
+          <ClientProfileView
+            client={ownClientDetail}
+            clientId={ownClientId}
+            variant="client"
+          />
+        )}
+      </div>
+    );
   }
 
   return (

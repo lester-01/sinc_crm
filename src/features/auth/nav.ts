@@ -16,7 +16,10 @@ export function navItemsForRole(role: AppRole | null | undefined): NavItem[] {
   if (!role) return [];
   if (role === "manager") return allItems;
   if (role === "sales") return allItems.filter((i) => i.to !== "/dashboard");
-  return allItems.filter((i) => i.to === "/clients" || i.to === "/conversations");
+  return [
+    { to: "/clients", label: "Profile" },
+    { to: "/conversations", label: "Conversations" },
+  ];
 }
 
 export function defaultPathForRole(role: AppRole): string {

@@ -107,7 +107,9 @@ export function DealDetailPage() {
       <div className="flex flex-col gap-4">
         <h2 className="text-2xl font-semibold">Access denied</h2>
         <Button variant="outline" asChild>
-          <Link to="/pipeline">Back to pipeline</Link>
+          <Link to={role === "client" ? "/clients" : "/pipeline"}>
+            {role === "client" ? "Back to profile" : "Back to pipeline"}
+          </Link>
         </Button>
       </div>
     );
@@ -132,10 +134,19 @@ export function DealDetailPage() {
           </div>
           <h2 className="text-2xl font-semibold">{deal.title}</h2>
           <p className="text-sm text-muted-foreground">
-            Client:{" "}
-            <Link to={`/clients/${deal.clientId}`} className="font-medium text-primary hover:underline">
-              {deal.clientName}
-            </Link>
+            {role === "client" ? (
+              <>Your application</>
+            ) : (
+              <>
+                Client:{" "}
+                <Link
+                  to={`/clients/${deal.clientId}`}
+                  className="font-medium text-primary hover:underline"
+                >
+                  {deal.clientName}
+                </Link>
+              </>
+            )}
           </p>
         </div>
         {canEditStage && (
