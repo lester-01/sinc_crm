@@ -15,7 +15,7 @@ Links: [build-plan](../build-plan.md) · [testing-plan](../testing-plan.md)
 - [x] `GET /api/users` for manager reassign dropdown (team members)
 - [x] ConversationPage: queue tabs, thread view, assign/reassign, reply
 - [x] `src/lib/realtime.ts` — thread + message subscriptions with query invalidation
-- [x] New chat from client detail + client “New conversation” on Conversations page
+- [x] New conversation dialog (shared) from client detail + Conversations page header
 - [x] E2E/API: `CHAT-*`, `API-CONV-*` in `e2e/specs/phase-08-conversations.spec.ts`
 
 ---

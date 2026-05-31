@@ -7,8 +7,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -26,11 +24,11 @@ import {
   useAssignConversation,
   useConversation,
   useConversations,
-  useCreateConversation,
   useMarkConversationRead,
   useSendMessage,
   useTeamMembers,
 } from "@/features/conversations/hooks";
+import { StartConversationDialog } from "@/features/conversations/StartConversationDialog";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { cn } from "@/lib/utils";
 
@@ -55,9 +53,7 @@ export function ConversationPage() {
 
   const [queue, setQueue] = useState<ConversationQueue>("unassigned");
   const [reply, setReply] = useState("");
-  const [showNew, setShowNew] = useState(false);
-  const [newSubject, setNewSubject] = useState("");
-  const [newMessage, setNewMessage] = useState("");
+  const [showStartDialog, setShowStartDialog] = useState(false);
   const [reassignTo, setReassignTo] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
 
@@ -70,7 +66,6 @@ export function ConversationPage() {
   const { data: team } = useTeamMembers(isManager);
   const assignMutation = useAssignConversation();
   const sendMutation = useSendMessage();
-  const createMutation = useCreateConversation();
   const markReadMutation = useMarkConversationRead();
 
   const { data: myClients } = useQuery({
@@ -129,20 +124,6 @@ export function ConversationPage() {
     }
   }
 
-  async function handleNewConversation(e: React.FormEvent) {
-    e.preventDefault();
-    if (!ownClientId) return;
-    const result = await createMutation.mutateAsync({
-      clientId: ownClientId,
-      subject: newSubject,
-      message: newMessage,
-    });
-    setShowNew(false);
-    setNewSubject("");
-    setNewMessage("");
-    selectThread(result.id);
-  }
-
   const canReply =
     thread &&
     (isManager ||
@@ -160,46 +141,21 @@ export function ConversationPage() {
         title="Conversations"
         description="Respond to student inquiries and manage assignment queues."
         actions={
-          isClient ? (
-            <Button type="button" onClick={() => setShowNew((v) => !v)}>
-              {showNew ? "Cancel" : "New conversation"}
+          isClient && ownClientId ? (
+            <Button type="button" onClick={() => setShowStartDialog(true)}>
+              New conversation
             </Button>
           ) : undefined
         }
       />
 
-      {showNew && isClient && ownClientId && (
-        <Card className="border-border/80 shadow-card">
-          <CardHeader>
-            <CardTitle className="text-base">Start a conversation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form className="flex flex-col gap-3" onSubmit={handleNewConversation}>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="subject">Subject</Label>
-                <Input
-                  id="subject"
-                  value={newSubject}
-                  onChange={(e) => setNewSubject(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="message">Message</Label>
-                <Textarea
-                  id="message"
-                  rows={3}
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" disabled={createMutation.isPending}>
-                Start conversation
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+      {isClient && ownClientId && (
+        <StartConversationDialog
+          open={showStartDialog}
+          onOpenChange={setShowStartDialog}
+          clientId={ownClientId}
+          onCreated={(threadId) => selectThread(threadId)}
+        />
       )}
 
       {!isClient && (

@@ -13,14 +13,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
 import { ApiError } from "@/features/clients/api";
 import { useClient } from "@/features/clients/hooks";
-import { useCreateConversation } from "@/features/conversations/hooks";
+import { StartConversationDialog } from "@/features/conversations/StartConversationDialog";
 import { useCreateDeal } from "@/features/deals/hooks";
 import { stageLabel } from "@/features/deals/constants";
 
@@ -37,12 +36,9 @@ export function ClientDetailPage() {
   const { role } = useAuth();
   const { clientId } = useParams();
   const { data: client, isLoading, error } = useClient(clientId);
-  const createChat = useCreateConversation();
   const createDeal = useCreateDeal();
-  const [showChat, setShowChat] = useState(false);
+  const [showStartDialog, setShowStartDialog] = useState(false);
   const [showDeal, setShowDeal] = useState(false);
-  const [chatSubject, setChatSubject] = useState("");
-  const [chatMessage, setChatMessage] = useState("");
   const [dealTitle, setDealTitle] = useState("");
   const [dealIntake, setDealIntake] = useState("Fall 2026");
 
@@ -50,20 +46,6 @@ export function ClientDetailPage() {
   const canCreateDeal = role === "manager" || role === "sales";
   const activeDeal = client?.deals?.find((d) => d.stage !== "lost" && d.stage !== "won");
   const LIST_CAP = 5;
-
-  async function handleNewChat(e: React.FormEvent) {
-    e.preventDefault();
-    if (!clientId) return;
-    const thread = await createChat.mutateAsync({
-      clientId,
-      subject: chatSubject,
-      message: chatMessage,
-    });
-    setShowChat(false);
-    setChatSubject("");
-    setChatMessage("");
-    navigate(`/conversations?thread=${thread.id}`);
-  }
 
   async function handleNewDeal(e: React.FormEvent) {
     e.preventDefault();
@@ -135,9 +117,9 @@ export function ClientDetailPage() {
             </Button>
           )}
           {canStartChat && (
-            <Button variant="outline" type="button" onClick={() => setShowChat(true)}>
+            <Button variant="outline" type="button" onClick={() => setShowStartDialog(true)}>
               <MessageSquare className="mr-2 size-4" />
-              New Chat
+              New conversation
             </Button>
           )}
         </div>
@@ -190,42 +172,14 @@ export function ClientDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showChat} onOpenChange={setShowChat}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New conversation</DialogTitle>
-          </DialogHeader>
-          <form id="new-chat-form" className="flex flex-col gap-3" onSubmit={handleNewChat}>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="chat-subject">Subject</Label>
-              <Input
-                id="chat-subject"
-                value={chatSubject}
-                onChange={(e) => setChatSubject(e.target.value)}
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="chat-message">First message</Label>
-              <Textarea
-                id="chat-message"
-                rows={3}
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                required
-              />
-            </div>
-          </form>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setShowChat(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" form="new-chat-form" disabled={createChat.isPending}>
-              Start chat
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {clientId && (
+        <StartConversationDialog
+          open={showStartDialog}
+          onOpenChange={setShowStartDialog}
+          clientId={clientId}
+          onCreated={(threadId) => navigate(`/conversations?thread=${threadId}`)}
+        />
+      )}
 
       <Card className="border-border/80 shadow-card">
         <CardContent className="grid gap-4 pt-6 sm:grid-cols-2">
