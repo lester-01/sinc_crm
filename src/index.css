@@ -56,3 +56,9 @@
     text-wrap: balance;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up {
+    animation: none !important;
+  }
+}

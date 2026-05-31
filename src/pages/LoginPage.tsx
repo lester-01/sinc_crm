@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
-import { GraduationCap } from "lucide-react";
+import { ChevronDown, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/features/auth/AuthContext";
 import { defaultPathForRole } from "@/features/auth/nav";
+import { cn } from "@/lib/utils";
+
+const DEMO_ACCOUNTS = [
+  { role: "Manager", email: "manager1@demo.local" },
+  { role: "Sales", email: "sales1@demo.local" },
+  { role: "Client", email: "client1@demo.local" },
+] as const;
 
 export function LoginPage() {
   const { session, role, loading, signIn, signUpClient } = useAuth();
@@ -17,6 +24,7 @@ export function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
 
   if (!loading && session && role) {
     return <Navigate to={defaultPathForRole(role)} replace />;
@@ -43,6 +51,12 @@ export function LoginPage() {
     }
   }
 
+  function fillDemo(demoEmail: string) {
+    setEmail(demoEmail);
+    setPassword("demo1234");
+    setMode("signin");
+  }
+
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
@@ -62,12 +76,22 @@ export function LoginPage() {
             team aligned — all in one place.
           </p>
         </div>
-        <p className="relative text-sm text-primary-foreground/60">
-          Demo accounts available · Password: demo1234
-        </p>
+        <p className="relative text-sm text-primary-foreground/60">Password for all demos: demo1234</p>
       </div>
 
-      <div className="flex items-center justify-center px-4 py-12">
+      <div className="flex flex-col items-center justify-center gap-6 px-4 py-10 lg:py-12">
+        <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center lg:hidden">
+          <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-card">
+            <GraduationCap className="size-7" />
+          </div>
+          <div>
+            <p className="font-display text-lg font-semibold">SINC Sales CRM</p>
+            <p className="text-sm text-muted-foreground">
+              Education sales, from inquiry to enrollment
+            </p>
+          </div>
+        </div>
+
         <Card className="w-full max-w-sm border-border/80 shadow-elevated">
           <CardHeader className="space-y-1">
             <CardTitle className="font-display text-2xl">
@@ -126,7 +150,31 @@ export function LoginPage() {
             <Separator className="my-4" />
             <button
               type="button"
-              className="w-full text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="flex w-full items-center justify-center gap-1 text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+              onClick={() => setShowDemo((v) => !v)}
+            >
+              Demo accounts
+              <ChevronDown className={cn("size-4 transition-transform", showDemo && "rotate-180")} />
+            </button>
+            {showDemo && (
+              <ul className="mt-2 space-y-2 rounded-lg border border-border/80 bg-muted/40 p-3 text-sm">
+                {DEMO_ACCOUNTS.map((a) => (
+                  <li key={a.email} className="flex items-center justify-between gap-2">
+                    <span>
+                      <span className="font-medium">{a.role}</span>
+                      <span className="block text-xs text-muted-foreground">{a.email}</span>
+                    </span>
+                    <Button type="button" variant="outline" size="sm" onClick={() => fillDemo(a.email)}>
+                      Use
+                    </Button>
+                  </li>
+                ))}
+                <li className="text-xs text-muted-foreground">Password: demo1234</li>
+              </ul>
+            )}
+            <button
+              type="button"
+              className="mt-4 w-full text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
               onClick={() => {
                 setMode(mode === "signin" ? "signup" : "signin");
                 setError(null);
