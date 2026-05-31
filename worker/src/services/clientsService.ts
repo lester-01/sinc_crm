@@ -82,7 +82,7 @@ async function activeDealTitlesByClientId(
 export async function listClients(
   supabase: SupabaseClient,
   userId: string,
-  opts: { q?: string; ownerId?: string },
+  opts: { q?: string; ownerId?: string; filter?: "mine" | "unassigned" | "all" },
 ) {
   const profile = await getProfile(supabase, userId);
 
@@ -107,7 +107,24 @@ export async function listClients(
 
   let clients = (rows ?? []) as ClientRow[];
 
-  if (opts.ownerId && profile.role !== "client") {
+  if (profile.role === "sales" && opts.filter === "mine" && opts.ownerId) {
+    const { data: dealRows, error: dealErr } = await supabase
+      .from("deals")
+      .select("client_id")
+      .eq("owner_id", opts.ownerId);
+    if (dealErr) throw new HttpError(dealErr.message, 500);
+    const allowed = new Set((dealRows ?? []).map((d) => d.client_id as string));
+    clients = clients.filter((c) => allowed.has(c.id));
+  } else if (profile.role === "sales" && opts.filter === "unassigned") {
+    const { data: dealRows, error: dealErr } = await supabase
+      .from("deals")
+      .select("client_id, owner_id");
+    if (dealErr) throw new HttpError(dealErr.message, 500);
+    const withOwner = new Set(
+      (dealRows ?? []).filter((d) => d.owner_id).map((d) => d.client_id as string),
+    );
+    clients = clients.filter((c) => !withOwner.has(c.id));
+  } else if (opts.ownerId && profile.role !== "client") {
     const { data: dealRows, error: dealErr } = await supabase
       .from("deals")
       .select("client_id")

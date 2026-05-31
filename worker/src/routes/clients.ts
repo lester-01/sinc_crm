@@ -18,7 +18,8 @@ clientsRoutes.get("/", async (c) => {
   try {
     const q = c.req.query("q");
     const ownerId = c.req.query("ownerId");
-    const clients = await listClients(c.get("supabase"), c.get("userId"), { q, ownerId });
+    const filter = c.req.query("filter") as "mine" | "unassigned" | "all" | undefined;
+    const clients = await listClients(c.get("supabase"), c.get("userId"), { q, ownerId, filter });
     return c.json(clients);
   } catch (e) {
     if (e instanceof HttpError) return c.json({ error: e.message }, e.status);

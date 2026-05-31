@@ -19,6 +19,7 @@ type ThreadRow = {
   last_message_at: string;
   created_at: string;
   updated_at: string;
+  client_last_read_at: string | null;
 };
 
 async function getProfile(supabase: SupabaseClient, userId: string): Promise<ProfileRow> {
@@ -64,7 +65,9 @@ async function canAccessThread(
 async function loadThread(supabase: SupabaseClient, threadId: string): Promise<ThreadRow> {
   const { data, error } = await supabase
     .from("conversation_threads")
-    .select("id, client_id, assigned_to, subject, status, last_message_at, created_at, updated_at")
+    .select(
+      "id, client_id, assigned_to, subject, status, last_message_at, created_at, updated_at, client_last_read_at",
+    )
     .eq("id", threadId)
     .maybeSingle();
   if (error) throw new HttpError(error.message, 500);
@@ -75,8 +78,12 @@ async function loadThread(supabase: SupabaseClient, threadId: string): Promise<T
 function mapThreadListItem(
   row: ThreadRow & { clients?: { full_name: string } | { full_name: string }[] | null },
   assigneeNames: Map<string, string>,
+  viewerRole: AppRole,
 ) {
   const client = Array.isArray(row.clients) ? row.clients[0] : row.clients;
+  const lastTeamReplyAfterRead =
+    viewerRole === "client" &&
+    row.last_message_at > (row.client_last_read_at ?? "1970-01-01T00:00:00.000Z");
   return {
     id: row.id,
     clientId: row.client_id,
@@ -86,6 +93,8 @@ function mapThreadListItem(
     assignedTo: row.assigned_to,
     assignedToName: row.assigned_to ? (assigneeNames.get(row.assigned_to) ?? null) : null,
     lastMessageAt: row.last_message_at,
+    createdAt: row.created_at,
+    hasUnread: lastTeamReplyAfterRead,
   };
 }
 
@@ -99,7 +108,7 @@ export async function listConversations(
   let query = supabase
     .from("conversation_threads")
     .select(
-      "id, client_id, assigned_to, subject, status, last_message_at, created_at, updated_at, clients(full_name)",
+      "id, client_id, assigned_to, subject, status, last_message_at, created_at, updated_at, client_last_read_at, clients(full_name)",
     )
     .order("last_message_at", { ascending: false });
 
@@ -117,8 +126,13 @@ export async function listConversations(
     } else {
       query = query.or(`assigned_to.is.null,assigned_to.eq.${userId}`);
     }
+  } else if (profile.role === "manager") {
+    if (queue === "unassigned") {
+      query = query.is("assigned_to", null);
+    } else if (queue === "mine") {
+      query = query.eq("assigned_to", userId);
+    }
   }
-  // manager: no filter (all threads)
 
   const { data, error } = await query;
   if (error) throw new HttpError(error.message, 500);
@@ -139,7 +153,7 @@ export async function listConversations(
     }
   }
 
-  return rows.map((r) => mapThreadListItem(r, assigneeNames));
+  return rows.map((r) => mapThreadListItem(r, assigneeNames, profile.role));
 }
 
 export async function createConversation(
@@ -208,6 +222,14 @@ export async function getConversation(
 
   if (!(await canAccessThread(supabase, profile, thread))) {
     throw new HttpError("Forbidden", 403);
+  }
+
+  if (profile.role === "client") {
+    const now = new Date().toISOString();
+    await supabase
+      .from("conversation_threads")
+      .update({ client_last_read_at: now })
+      .eq("id", threadId);
   }
 
   const [{ data: client }, assigneeRes, { data: messages }] = await Promise.all([
