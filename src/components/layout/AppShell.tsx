@@ -51,7 +51,7 @@ export function AppShell() {
             </SheetTrigger>
             <SheetContent side="left" className="w-72">
               <SheetHeader>
-                <SheetTitle className="text-left">SINC Sales CRM</SheetTitle>
+                <SheetTitle className="text-left">SINC CRM</SheetTitle>
               </SheetHeader>
               <nav className="mt-6 flex flex-col gap-1">
                 {navItems.map((item) => (
@@ -80,7 +80,7 @@ export function AppShell() {
               <GraduationCap className="size-5" />
             </div>
             <h1 className="hidden text-lg font-semibold tracking-tight sm:block">
-              SINC Sales CRM
+              SINC CRM
             </h1>
           </div>
 

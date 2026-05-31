@@ -65,7 +65,7 @@ export function LoginPage() {
           <div className="flex size-11 items-center justify-center rounded-xl bg-primary-foreground/15 backdrop-blur-sm">
             <GraduationCap className="size-6" />
           </div>
-          <span className="font-display text-xl font-semibold">SINC Sales CRM</span>
+          <span className="font-display text-xl font-semibold">SINC CRM</span>
         </div>
         <div className="relative space-y-4">
           <h2 className="font-display text-4xl font-semibold leading-tight text-balance">
@@ -85,7 +85,7 @@ export function LoginPage() {
             <GraduationCap className="size-7" />
           </div>
           <div>
-            <p className="font-display text-lg font-semibold">SINC Sales CRM</p>
+            <p className="font-display text-lg font-semibold">SINC CRM</p>
             <p className="text-sm text-muted-foreground">
               Education sales, from inquiry to enrollment
             </p>
