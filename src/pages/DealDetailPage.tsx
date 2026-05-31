@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useTeamMembers } from "@/features/conversations/hooks";
 import { DEAL_STAGES, stageLabel } from "@/features/deals/constants";
+import { allowedNextStages } from "@/lib/stage-transitions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ApiError } from "@/features/deals/api";
 import {
   useDeal,
@@ -36,6 +45,23 @@ export function DealDetailPage() {
   const canEditStage =
     deal &&
     (role === "manager" || (role === "sales" && deal.ownerId === profile?.id));
+
+  const displayStage = pendingStage ?? deal?.stage ?? "";
+  const showLostReason = displayStage === "lost";
+  const stageOptions = useMemo(
+    () => (deal ? allowedNextStages(deal.stage) : DEAL_STAGES),
+    [deal],
+  );
+  const LOST_REASON_PRESETS = [
+    "Budget",
+    "Chose another school",
+    "No response",
+    "Visa denied",
+    "Other",
+  ] as const;
+  const HISTORY_CAP = 12;
+  const visibleHistory = deal?.stageHistory.slice(0, HISTORY_CAP) ?? [];
+  const hiddenHistoryCount = Math.max(0, (deal?.stageHistory.length ?? 0) - HISTORY_CAP);
 
   async function handleStageChange(next: string) {
     if (!deal || next === deal.stage) return;
@@ -123,24 +149,58 @@ export function DealDetailPage() {
         {canEditStage && (
           <div className="flex flex-col gap-2">
             <Label htmlFor="deal-stage">Stage</Label>
-            <select
-              id="deal-stage"
-              className="h-9 min-w-[200px] rounded-md border border-input bg-background px-2 text-sm"
-              value={pendingStage ?? deal.stage}
-              onChange={(e) => void handleStageChange(e.target.value)}
+            <Select
+              value={displayStage}
+              onValueChange={(v) => void handleStageChange(v)}
             >
-              {DEAL_STAGES.map((s) => (
-                <option key={s} value={s}>
-                  {stageLabel(s)}
-                </option>
-              ))}
-            </select>
-            {deal.stage !== "lost" && (
-              <Input
-                placeholder="Lost reason (required if stage is lost)"
-                value={lostReason}
-                onChange={(e) => setLostReason(e.target.value)}
-              />
+              <SelectTrigger id="deal-stage" className="min-w-[200px]">
+                <SelectValue placeholder="Stage" />
+              </SelectTrigger>
+              <SelectContent>
+                {stageOptions.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {stageLabel(s)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {showLostReason && (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="lost-reason">Lost reason</Label>
+                <Select
+                  value={
+                    LOST_REASON_PRESETS.includes(
+                      lostReason as (typeof LOST_REASON_PRESETS)[number],
+                    )
+                      ? lostReason
+                      : lostReason.trim()
+                        ? "Other"
+                        : ""
+                  }
+                  onValueChange={(v) => setLostReason(v === "Other" ? "" : v)}
+                >
+                  <SelectTrigger id="lost-reason-preset">
+                    <SelectValue placeholder="Select reason…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LOST_REASON_PRESETS.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {(lostReason === "" ||
+                  !LOST_REASON_PRESETS.slice(0, -1).includes(
+                    lostReason as (typeof LOST_REASON_PRESETS)[number],
+                  )) && (
+                  <Input
+                    placeholder="Describe why the deal was lost"
+                    value={lostReason}
+                    onChange={(e) => setLostReason(e.target.value)}
+                  />
+                )}
+              </div>
             )}
             {stageError && (
               <p className="text-sm text-destructive" role="alert">
@@ -175,19 +235,18 @@ export function DealDetailPage() {
           <CardContent className="flex flex-wrap items-end gap-3 pt-6">
             <div className="flex flex-col gap-2">
               <Label htmlFor="reassign-owner">Reassign owner</Label>
-              <select
-                id="reassign-owner"
-                className="h-9 min-w-[200px] rounded-md border border-input bg-background px-2 text-sm"
-                value={reassignTo}
-                onChange={(e) => setReassignTo(e.target.value)}
-              >
-                <option value="">Select team member…</option>
-                {(team ?? []).map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.fullName}
-                  </option>
-                ))}
-              </select>
+              <Select value={reassignTo || undefined} onValueChange={setReassignTo}>
+                <SelectTrigger id="reassign-owner" className="min-w-[200px]">
+                  <SelectValue placeholder="Select team member…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(team ?? []).map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <Button
               type="button"
@@ -239,23 +298,30 @@ export function DealDetailPage() {
           <CardHeader>
             <CardTitle className="text-base">Stage history</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            {deal.stageHistory.length === 0 && (
-              <p className="text-sm text-muted-foreground">No history yet.</p>
-            )}
-            {deal.stageHistory.map((h, i) => (
-              <div key={h.id}>
-                <p className="text-sm">
-                  {h.fromStage ? `${stageLabel(h.fromStage)} → ` : ""}
-                  <span className="font-medium">{stageLabel(h.toStage)}</span>
-                </p>
+          <ScrollArea className="max-h-72">
+            <CardContent className="flex flex-col gap-2">
+              {deal.stageHistory.length === 0 && (
+                <p className="text-sm text-muted-foreground">No history yet.</p>
+              )}
+              {visibleHistory.map((h, i) => (
+                <div key={h.id}>
+                  <p className="text-sm">
+                    {h.fromStage ? `${stageLabel(h.fromStage)} → ` : ""}
+                    <span className="font-medium">{stageLabel(h.toStage)}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {h.changedByName} · {new Date(h.createdAt).toLocaleString()}
+                  </p>
+                  {i < visibleHistory.length - 1 && <Separator className="mt-2" />}
+                </div>
+              ))}
+              {hiddenHistoryCount > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {h.changedByName} · {new Date(h.createdAt).toLocaleString()}
+                  + {hiddenHistoryCount} older entries not shown
                 </p>
-                {i < deal.stageHistory.length - 1 && <Separator className="mt-2" />}
-              </div>
-            ))}
-          </CardContent>
+              )}
+            </CardContent>
+          </ScrollArea>
         </Card>
       </div>
     </div>
