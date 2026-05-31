@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +49,7 @@ export function ClientDetailPage() {
   const canStartChat = role === "manager" || role === "sales" || role === "client";
   const canCreateDeal = role === "manager" || role === "sales";
   const activeDeal = client?.deals?.find((d) => d.stage !== "lost" && d.stage !== "won");
+  const LIST_CAP = 5;
 
   async function handleNewChat(e: React.FormEvent) {
     e.preventDefault();
@@ -205,8 +207,9 @@ export function ClientDetailPage() {
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="chat-message">First message</Label>
-              <Input
+              <Textarea
                 id="chat-message"
+                rows={3}
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
                 required
@@ -255,7 +258,7 @@ export function ClientDetailPage() {
             {client.conversations.length === 0 && (
               <p className="text-sm text-muted-foreground">No conversations yet.</p>
             )}
-            {client.conversations.map((t) => (
+            {client.conversations.slice(0, LIST_CAP).map((t) => (
               <Link
                 key={t.id}
                 to={`/conversations?thread=${t.id}`}
@@ -267,6 +270,14 @@ export function ClientDetailPage() {
                 </Badge>
               </Link>
             ))}
+            {client.conversations.length > LIST_CAP && (
+              <Link
+                to="/conversations"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                View all {client.conversations.length} conversations
+              </Link>
+            )}
           </CardContent>
         </Card>
 
@@ -278,7 +289,7 @@ export function ClientDetailPage() {
             {client.deals.length === 0 && (
               <p className="text-sm text-muted-foreground">No deals yet.</p>
             )}
-            {client.deals.map((d) => (
+            {client.deals.slice(0, LIST_CAP).map((d) => (
               <Link
                 key={d.id}
                 to={`/deals/${d.id}`}
@@ -290,6 +301,11 @@ export function ClientDetailPage() {
                 </Badge>
               </Link>
             ))}
+            {client.deals.length > LIST_CAP && (
+              <Link to="/pipeline" className="text-sm font-medium text-primary hover:underline">
+                View all {client.deals.length} deals in pipeline
+              </Link>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -305,6 +321,9 @@ export function ClientDetailPage() {
           {client.activity.map((a, i) => (
             <div key={`${a.createdAt}-${i}`}>
               <p className="text-sm">{a.description}</p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(a.createdAt).toLocaleString()}
+              </p>
               {i < client.activity.length - 1 && <Separator className="mt-2" />}
             </div>
           ))}
