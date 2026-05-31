@@ -1,14 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Send } from "lucide-react";
+import { ArrowLeft, Send } from "lucide-react";
 import { fetchClients } from "@/features/clients/api";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -22,6 +30,7 @@ import {
   useSendMessage,
   useTeamMembers,
 } from "@/features/conversations/hooks";
+import { formatRelativeTime } from "@/lib/relative-time";
 import { cn } from "@/lib/utils";
 
 const QUEUE_TABS: { id: ConversationQueue; label: string }[] = [
@@ -73,6 +82,11 @@ export function ConversationPage() {
     setReply("");
   }
 
+  function clearThread() {
+    setSearchParams({});
+    setReply("");
+  }
+
   async function handleAssignSelf() {
     if (!selectedId || !profile?.id) return;
     await assignMutation.mutateAsync({ threadId: selectedId, assignedTo: profile.id });
@@ -113,6 +127,8 @@ export function ConversationPage() {
 
   const showAssignSelf = isSales && thread && thread.assignedTo === null && selectedId;
   const showReassign = isManager && thread && selectedId;
+  const showQueueOnMobile = !selectedId;
+  const showThreadOnMobile = !!selectedId;
 
   return (
     <div className="flex flex-col gap-4">
@@ -146,8 +162,9 @@ export function ConversationPage() {
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="message">Message</Label>
-                <Input
+                <Textarea
                   id="message"
+                  rows={3}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   required
@@ -162,7 +179,7 @@ export function ConversationPage() {
       )}
 
       {!isClient && (
-        <div className="flex gap-2 rounded-lg bg-muted/60 p-1 w-fit">
+        <div className="flex w-fit gap-2 rounded-lg bg-muted/60 p-1">
           {QUEUE_TABS.map((tab) => (
             <Button
               key={tab.id}
@@ -178,7 +195,12 @@ export function ConversationPage() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(260px,1fr)_2fr]">
-        <Card className="min-h-[480px] border-border/80 shadow-card">
+        <Card
+          className={cn(
+            "min-h-[480px] border-border/80 shadow-card",
+            !showQueueOnMobile && "hidden lg:flex lg:flex-col",
+          )}
+        >
           <CardHeader className="border-b border-border/60 pb-3">
             <CardTitle className="text-base">
               {isClient ? "Your conversations" : "Queue"}
@@ -200,12 +222,27 @@ export function ConversationPage() {
                 className={cn(
                   "flex w-full flex-col gap-1 border-b border-border/60 px-4 py-3 text-left text-sm transition-colors hover:bg-muted/50",
                   selectedId === t.id && "border-l-2 border-l-primary bg-primary/5",
+                  t.hasUnread && "font-semibold",
                 )}
               >
-                <div className="font-medium">{t.subject}</div>
-                <div className="text-xs text-muted-foreground">
-                  {isClient ? t.status : t.assignedToName ?? "Unassigned"}
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{t.subject}</span>
+                  {t.hasUnread && (
+                    <Badge variant="default" className="h-5 px-1.5 text-[10px]">
+                      New
+                    </Badge>
+                  )}
                 </div>
+                <div className="text-xs text-muted-foreground">
+                  {isClient
+                    ? `${t.status} · ${formatRelativeTime(t.lastMessageAt)}`
+                    : `${t.assignedToName ?? "Unassigned"} · ${formatRelativeTime(t.lastMessageAt)}`}
+                </div>
+                {!isClient && t.createdAt && (
+                  <div className="text-xs text-muted-foreground/80">
+                    Started {formatRelativeTime(t.createdAt)}
+                  </div>
+                )}
               </button>
             ))}
             {!listLoading && (threads ?? []).length === 0 && (
@@ -214,7 +251,12 @@ export function ConversationPage() {
           </ScrollArea>
         </Card>
 
-        <Card className="flex min-h-[480px] flex-col border-border/80 shadow-card">
+        <Card
+          className={cn(
+            "flex min-h-[480px] flex-col border-border/80 shadow-card",
+            !showThreadOnMobile && "hidden lg:flex",
+          )}
+        >
           {!selectedId && (
             <CardContent className="flex flex-1 items-center justify-center text-muted-foreground">
               Select a conversation
@@ -231,6 +273,16 @@ export function ConversationPage() {
               <CardHeader className="border-b border-border/60">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex items-start gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="size-9 p-0 lg:hidden"
+                      onClick={clearThread}
+                      aria-label="Back to queue"
+                    >
+                      <ArrowLeft className="size-4" />
+                    </Button>
                     <Avatar className="size-9">
                       <AvatarFallback className="bg-secondary text-xs">
                         {initials(thread.subject)}
@@ -257,19 +309,18 @@ export function ConversationPage() {
                     )}
                     {showReassign && (
                       <>
-                        <select
-                          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                          value={reassignTo}
-                          onChange={(e) => setReassignTo(e.target.value)}
-                          aria-label="Reassign to"
-                        >
-                          <option value="">Reassign to…</option>
-                          {(team ?? []).map((u) => (
-                            <option key={u.id} value={u.id}>
-                              {u.fullName}
-                            </option>
-                          ))}
-                        </select>
+                        <Select value={reassignTo || undefined} onValueChange={setReassignTo}>
+                          <SelectTrigger className="h-9 w-[180px]" aria-label="Reassign to">
+                            <SelectValue placeholder="Reassign to…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(team ?? []).map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {u.fullName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <Button
                           type="button"
                           size="sm"
@@ -286,29 +337,39 @@ export function ConversationPage() {
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-4 overflow-y-auto py-4">
                 <div className="flex flex-col gap-3">
-                  {thread.messages.map((m) => (
-                    <div
-                      key={m.id}
-                      className={cn(
-                        "max-w-[85%] rounded-xl px-4 py-2.5 text-sm",
-                        m.senderType === "client"
-                          ? "mr-auto bg-muted"
-                          : "ml-auto bg-primary text-primary-foreground",
-                      )}
-                    >
+                  {thread.messages.map((m) => {
+                    const isMine = m.senderId === profile?.id;
+                    const isClientMsg = m.senderType === "client";
+                    return (
                       <div
+                        key={m.id}
                         className={cn(
-                          "mb-1 text-xs font-medium",
-                          m.senderType === "client"
-                            ? "text-muted-foreground"
-                            : "text-primary-foreground/80",
+                          "max-w-[85%] rounded-xl border px-4 py-2.5 text-sm shadow-sm",
+                          isClientMsg
+                            ? "mr-auto border-border/80 bg-muted"
+                            : "ml-auto border-primary/30 bg-primary text-primary-foreground",
                         )}
                       >
-                        {m.senderType === "client" ? "Client" : "Team"}: {m.senderName}
+                        <div
+                          className={cn(
+                            "mb-1 flex flex-wrap items-center gap-2 text-xs font-medium",
+                            isClientMsg
+                              ? "text-muted-foreground"
+                              : "text-primary-foreground/90",
+                          )}
+                        >
+                          <span>{isMine ? "You" : isClientMsg ? "Client" : "Team"}</span>
+                          {!isMine && !isClientMsg && (
+                            <span className="opacity-80">· {m.senderName}</span>
+                          )}
+                          <span className="font-normal opacity-70">
+                            {formatRelativeTime(m.createdAt)}
+                          </span>
+                        </div>
+                        <div>{m.body}</div>
                       </div>
-                      <div>{m.body}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 {canReply && (
                   <form
@@ -321,7 +382,7 @@ export function ConversationPage() {
                       onChange={(e) => setReply(e.target.value)}
                       aria-label="Reply"
                       className="min-h-[44px] resize-none sm:flex-1"
-                      rows={1}
+                      rows={2}
                     />
                     <Button
                       type="submit"
