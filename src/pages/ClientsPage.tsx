@@ -72,7 +72,7 @@ export function ClientsPage() {
   } = useClient(ownClientId);
   const createMutation = useCreateClient();
 
-  const canCreate = role === "manager" || role === "sales";
+  const canCreate = role === "sales";
 
   const description =
     role === "client"

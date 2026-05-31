@@ -81,7 +81,7 @@ export function ClientProfileView({
   const { role } = useAuth();
   const [showStartDialog, setShowStartDialog] = useState(false);
 
-  const canStartChat = role === "manager" || role === "sales" || role === "client";
+  const canStartChat = role === "sales" || role === "client";
   const isClientView = variant === "client";
 
   return (

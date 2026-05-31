@@ -247,7 +247,7 @@ export function DealDetailPage() {
             <CardTitle className="text-base">Notes</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            {(role === "manager" || role === "sales") && (
+            {role === "sales" && (
               <form className="flex flex-col gap-2 sm:flex-row" onSubmit={handleAddNote}>
                 <Input
                   placeholder="Add note…"

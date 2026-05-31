@@ -28,7 +28,7 @@ export function ClientDetailPage() {
   const [dealTitle, setDealTitle] = useState("");
   const [dealIntake, setDealIntake] = useState("Fall 2026");
 
-  const canCreateDeal = role === "manager" || role === "sales";
+  const canCreateDeal = role === "sales";
   const variant = role === "client" ? "client" : "team";
 
   async function handleNewDeal(e: React.FormEvent) {

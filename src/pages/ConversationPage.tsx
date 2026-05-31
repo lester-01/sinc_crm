@@ -126,8 +126,7 @@ export function ConversationPage() {
 
   const canReply =
     thread &&
-    (isManager ||
-      (isSales && thread.assignedTo === profile?.id) ||
+    ((isSales && thread.assignedTo === profile?.id) ||
       (isClient && thread.clientId === ownClientId));
 
   const showAssignSelf = isSales && thread && thread.assignedTo === null && selectedId;
@@ -351,6 +350,11 @@ export function ConversationPage() {
                     );
                   })}
                 </div>
+                {isManager && selectedId && thread && (
+                  <p className="mt-auto border-t border-border/60 pt-4 text-sm text-muted-foreground">
+                    Reassign only — managers do not reply in conversations.
+                  </p>
+                )}
                 {canReply && (
                   <form
                     className="mt-auto flex flex-col gap-2 border-t border-border/60 pt-4 sm:flex-row"
