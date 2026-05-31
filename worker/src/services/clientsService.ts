@@ -148,7 +148,7 @@ export async function createClient(
   body: CreateClientBody,
 ) {
   const profile = await getProfile(supabase, userId);
-  if (profile.role === "client") {
+  if (profile.role !== "sales") {
     throw new HttpError("Forbidden", 403);
   }
 

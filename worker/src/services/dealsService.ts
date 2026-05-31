@@ -163,14 +163,13 @@ export async function createDeal(
   body: CreateDealBody,
 ) {
   const profile = await getProfile(supabase, userId);
-  if (profile.role === "client") {
+  if (profile.role === "client" || profile.role === "manager") {
     throw new HttpError("Forbidden", 403);
   }
 
-  const ownerId =
-    profile.role === "sales" ? (body.ownerId ?? userId) : (body.ownerId ?? userId);
+  const ownerId = body.ownerId ?? userId;
 
-  if (profile.role === "sales" && ownerId !== userId) {
+  if (ownerId !== userId) {
     throw new HttpError("Sales can only create deals owned by themselves", 403);
   }
 
@@ -349,8 +348,8 @@ export async function patchDealOwner(
     .eq("id", body.ownerId)
     .maybeSingle();
   if (targetErr) throw new HttpError(targetErr.message, 500);
-  if (!target || (target.role !== "sales" && target.role !== "manager")) {
-    throw new HttpError("Owner must be a team member", 403);
+  if (!target || target.role !== "sales") {
+    throw new HttpError("Owner must be a sales rep", 403);
   }
 
   const { data, error } = await supabase
@@ -372,7 +371,7 @@ export async function postDealNote(
   body: PostNoteBody,
 ) {
   const profile = await getProfile(supabase, userId);
-  if (profile.role === "client") {
+  if (profile.role !== "sales") {
     throw new HttpError("Forbidden", 403);
   }
 

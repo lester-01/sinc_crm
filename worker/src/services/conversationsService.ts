@@ -206,6 +206,10 @@ export async function createConversation(
 ) {
   const profile = await getProfile(supabase, userId);
 
+  if (profile.role === "manager") {
+    throw new HttpError("Forbidden", 403);
+  }
+
   if (profile.role === "client") {
     const ownClientId = await getClientIdForUser(supabase, userId);
     if (!ownClientId || ownClientId !== body.clientId) {
@@ -333,8 +337,8 @@ export async function assignConversation(
       .eq("id", body.assignedTo)
       .maybeSingle();
     if (error) throw new HttpError(error.message, 500);
-    if (!target || (target.role !== "sales" && target.role !== "manager")) {
-      throw new HttpError("Assignee must be a team member", 403);
+    if (!target || target.role !== "sales") {
+      throw new HttpError("Assignee must be a sales rep", 403);
     }
   }
 
@@ -452,6 +456,14 @@ export async function postMessage(
     throw new HttpError("Forbidden", 403);
   }
 
+  if (profile.role === "manager") {
+    throw new HttpError("Forbidden", 403);
+  }
+
+  if (profile.role === "sales" && thread.assigned_to !== userId) {
+    throw new HttpError("Forbidden", 403);
+  }
+
   const senderType = profile.role === "client" ? "client" : "team";
   const now = new Date().toISOString();
 
@@ -494,7 +506,7 @@ export async function listTeamMembers(supabase: SupabaseClient, userId: string) 
   const { data, error } = await supabase
     .from("profiles")
     .select("id, full_name, role")
-    .in("role", ["sales", "manager"])
+    .in("role", ["sales"])
     .order("full_name");
 
   if (error) throw new HttpError(error.message, 500);
