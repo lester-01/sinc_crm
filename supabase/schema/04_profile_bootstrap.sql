@@ -1,5 +1,6 @@
 -- Auto-create profiles row when a new auth user registers (default role: client).
 -- Seeded demo users pass role + full_name in user_metadata.
+-- Client-role signups also link an existing CRM prospect by email or insert a clients row.
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -24,6 +25,27 @@ begin
     meta_role::app_role
   )
   on conflict (id) do nothing;
+
+  if meta_role = 'client' and new.email is not null then
+    update public.clients
+    set
+      profile_id = new.id,
+      full_name = coalesce(nullif(trim(meta_name), ''), full_name),
+      updated_at = now()
+    where lower(email) = lower(new.email)
+      and profile_id is null;
+
+    if not found then
+      insert into public.clients (profile_id, full_name, email)
+      values (new.id, meta_name, lower(new.email))
+      on conflict (email) do update
+      set
+        profile_id = excluded.profile_id,
+        full_name = excluded.full_name,
+        updated_at = now()
+      where public.clients.profile_id is null;
+    end if;
+  end if;
 
   return new;
 end;

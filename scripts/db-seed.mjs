@@ -150,15 +150,18 @@ async function main() {
     const c = CLIENTS[i];
     const { data, error } = await admin
       .from("clients")
-      .insert({
-        profile_id: clientProfileIds[i],
-        full_name: c.fullName,
-        email: c.email,
-        phone: "+1000000000" + String(i + 1),
-        country: c.country,
-        target_country: c.targetCountry,
-        created_by: sales1,
-      })
+      .upsert(
+        {
+          profile_id: clientProfileIds[i],
+          full_name: c.fullName,
+          email: c.email,
+          phone: "+1000000000" + String(i + 1),
+          country: c.country,
+          target_country: c.targetCountry,
+          created_by: sales1,
+        },
+        { onConflict: "email" },
+      )
       .select("id")
       .single();
     if (error) throw new Error(`clients: ${error.message}`);
