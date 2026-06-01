@@ -56,7 +56,7 @@ Implementation: `scripts/lib/load-stack-env.mjs` merges files then applies `STAC
 
 ### Supabase (tooling)
 
-- Scripts: `db:schema`, `db:seed`, E2E create/delete, `verify-stack-setup` supabase phases
+- Scripts: `db:schema`, `db:seed`, E2E create/delete, `verify-setup` supabase phases
 - Keys from merged stack env (files + env). See [database-setup.md](./database-setup.md).
 
 ### GitHub (optional)
@@ -78,10 +78,10 @@ See [testing-guide.md](./testing-guide.md#tooling-auth-ladder-auth-ladder--node-
 npm run test:scripts
 
 # Token only via env (no .cloudflare.env file on disk)
-CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... npm run verify:stack:cloudflare
+CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... npm run verify:cloudflare
 
 # CI simulation — OAuth must not run
 CI=true bash scripts/ensure-cloudflare-auth.sh   # exits 1 without token
 
-npm run setup:cloud
+npm run setup:cloudflare
 ```

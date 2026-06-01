@@ -27,7 +27,7 @@ main() {
   major="$(node_major)"
   if [[ -z "$major" || "$major" -lt "$MIN_NODE_MAJOR" ]]; then
     err "Node $(node -v 2>/dev/null || echo missing) is below ${MIN_NODE_MAJOR}."
-    err "Run: npm run install:linux   (or: nvm use 22)"
+    err "Run: npm run setup:node   (or: nvm use 22)"
     exit 1
   fi
   log "Node $(node -v) OK"
@@ -51,7 +51,7 @@ main() {
 
   log ""
   log "Worker dependencies ready."
-  log "Next: npm run verify:stack:scaffold"
+  log "Next: npm run verify:scaffold"
 }
 
 main "$@"

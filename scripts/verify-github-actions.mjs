@@ -156,6 +156,7 @@ export async function verifyGithubActions(options = {}) {
   const runInRoot = (cmd, args) =>
     spawnSync(cmd, args, { encoding: "utf8", shell: false, cwd: root });
 
+  console.log("[INFO] P2 GitHub Actions verify — partial stub; full CI wiring deferred.\n");
   console.log("GitHub Actions readiness (optional check)\n");
   console.log("Auth order: git access → GITHUB_TOKEN/GH_TOKEN → gh OAuth\n");
 

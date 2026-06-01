@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# Master installer — runs phase installers in order with progress output.
-# Linux/WSL: use after clone. Skips steps that are already satisfied where possible.
+# Master setup — runs cli + worker + frontend installers in order.
 #
-# Usage: npm run install:project
-#        INSTALL_PROJECT_PHASES=local,worker bash scripts/install-project.sh
+# Usage: npm run setup:project
+#        SETUP_PROJECT_PHASES=cli,worker bash scripts/setup-project.sh
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PHASES="${INSTALL_PROJECT_PHASES:-local,worker,frontend}"
+PHASES="${SETUP_PROJECT_PHASES:-cli,worker,frontend}"
 
 log() { printf '\n%s\n' "$*"; }
 step() { printf '>>> %s\n' "$*"; }
@@ -32,17 +31,17 @@ scaffold_present_frontend() {
 
 main() {
   log "=========================================="
-  log "SINC CRM — master project installer"
+  log "SINC CRM — setup:project"
   log "Repository: $ROOT"
   log "Phases: $PHASES"
   log "=========================================="
 
-  if phase_enabled "local"; then
+  if phase_enabled "cli"; then
     if [[ -x "$ROOT/worker/node_modules/.bin/wrangler" && -x "$ROOT/node_modules/.bin/supabase" ]]; then
-      step "Phase: local (skipped — CLIs already installed)"
-      npm run verify:stack:local || true
+      step "Phase: cli (skipped — CLIs already installed)"
+      npm run verify:cli || true
     else
-      run_phase "local — Node 22, wrangler, supabase CLI" bash "$ROOT/scripts/install-local-deps.sh"
+      run_phase "cli — wrangler + supabase CLI" bash "$ROOT/scripts/setup-cli.sh"
     fi
   fi
 
@@ -64,10 +63,10 @@ main() {
   fi
 
   log "=========================================="
-  log "Master installer finished."
-  log "  npm run verify:stack:scaffold  — backend/frontend structure"
-  log "  npm run setup:cloud            — Phase 4 (after env files + keys)"
-  log "  docs/stack-setup.md            — phase checklist"
+  log "setup:project finished."
+  log "  npm run verify:scaffold  — backend/frontend structure"
+  log "  npm run setup:supabase   — after .env + worker/.dev.vars"
+  log "  docs/stack-setup.md"
   log "=========================================="
 }
 

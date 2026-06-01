@@ -34,9 +34,6 @@ import {
 import {
   getProjectRef,
   getSupabaseUrl,
-  hasCloudflareStackKeys,
-  hasFrontendStackKeys,
-  hasWorkerStackKeys,
   isCiEnvironment,
   loadStackEnv,
 } from "./lib/load-stack-env.mjs";
@@ -105,23 +102,13 @@ function run(cmd, cmdArgs, { cwd = ROOT, env = process.env, label } = {}) {
   return result;
 }
 
-function requireStackEnv() {
+function requireDeployCredentials() {
+  run("node", ["scripts/lib/require-supabase.mjs"], { label: "require-supabase" });
+  run("node", ["scripts/lib/require-cloudflare.mjs"], {
+    label: "require-cloudflare",
+  });
+
   const { merged } = loadStackEnv();
-  if (!hasCloudflareStackKeys(merged)) {
-    fail(
-      "Missing Cloudflare credentials — set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in worker/.cloudflare.env or env.",
-    );
-  }
-  if (!hasWorkerStackKeys(merged)) {
-    fail(
-      "Missing Supabase worker keys — set SUPABASE_URL and SUPABASE_SECRET_KEY in worker/.dev.vars or env.",
-    );
-  }
-  if (!hasFrontendStackKeys(merged)) {
-    fail(
-      "Missing frontend keys — set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in .env or env.",
-    );
-  }
   if (!merged.CLOUDFLARE_ACCOUNT_ID) {
     fail("CLOUDFLARE_ACCOUNT_ID is required for API-based URL resolution.");
   }
@@ -170,14 +157,14 @@ async function ensurePagesProject(pagesProject, pagesRows) {
 
 async function main() {
   if (!existsSync(WRANGLER)) {
-    fail("Wrangler not found. Run: npm run setup:local");
+    fail("Wrangler not found. Run: npm run setup:cli");
   }
 
   if (isCiEnvironment()) {
     log("CI=true — OAuth will not be used; credentials must be in env.");
   }
 
-  const merged = requireStackEnv();
+  const merged = requireDeployCredentials();
   applyMergedToProcessEnv(merged);
 
   const accountId = merged.CLOUDFLARE_ACCOUNT_ID;
@@ -351,7 +338,7 @@ async function main() {
   log(`Pages=${pagesOrigin}`);
   log(`Supabase=${supabaseUrl}`);
 
-  log("\nOptional: npm run verify:stack:deploy");
+  log("\nOptional: npm run verify:deploy");
   log("Optional: DEPLOY_PAGES_URL + DEPLOY_API_URL playwright smoke (see deploy-guide.md)");
   log("\nDeploy complete.\n");
 }

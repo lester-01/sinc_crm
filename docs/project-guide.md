@@ -158,4 +158,4 @@ Post-MVP and deferred work: [roadmap.md](./roadmap.md).
 | Playwright browsers missing | `npm run playwright:install` |
 | WSL browser deps | [playwright-wsl-setup.md](./playwright-wsl-setup.md) |
 
-Stack verify: `npm run verify:stack:local`, `verify:stack:cloud`, `verify:stack:supabase`.
+Stack verify: `npm run verify:local`, `verify:all`, `verify:supabase`.

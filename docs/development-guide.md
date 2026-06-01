@@ -175,7 +175,7 @@ Read artifacts under `test-results/` ([e2e-artifacts.md](./e2e-artifacts.md)): s
 
 | Task | Command |
 |------|---------|
-| Install / CLIs | `npm run install:linux` or `npm run setup:local` |
+| Install / CLIs | `npm run setup:local` or `npm run setup:local` |
 | Apply schema (empty DB) | `npm run db:schema` |
 | Seed demo data | `npm run db:seed` |
 | Typecheck frontend | `npm run typecheck` |
@@ -184,7 +184,7 @@ Read artifacts under `test-results/` ([e2e-artifacts.md](./e2e-artifacts.md)): s
 | E2E on dev DB | `npm run test:e2e:dev` |
 | Worker unit tests | `npm run test:worker` |
 | Tooling auth tests | `npm run test:scripts` |
-| Stack verify | `npm run verify:stack:supabase` etc. |
+| Stack verify | `npm run verify:supabase` etc. |
 
 ---
 

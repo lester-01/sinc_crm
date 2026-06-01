@@ -49,7 +49,7 @@ ci_fail_fast() {
 
 main() {
   if ! wrangler_ready; then
-    err "Wrangler not found. Run: npm run setup:local"
+    err "Wrangler not found. Run: npm run setup:cli"
     exit 1
   fi
 
@@ -59,7 +59,7 @@ main() {
     exit 0
   fi
 
-  export_cloudflare_env || exit 1
+  _cf_merge_cloudflare_creds
 
   if token_configured; then
     log "Cloudflare auth: verifying scoped API token..."

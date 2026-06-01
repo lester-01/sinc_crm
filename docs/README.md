@@ -7,11 +7,11 @@
 | [api/openapi.yaml](./api/openapi.yaml) | **API reference (OpenAPI 3.1)** — routes, schemas, role permissions, examples |
 | [api/index.html](./api/index.html) | Interactive API docs (Scalar viewer; serve `docs/api/` locally) |
 | [api/authentication.md](./api/authentication.md) | Auth flow, demo users, error codes |
-| [quick-start.md](./quick-start.md) | **Canonical setup** — scripts, env files, cloud, database, dev servers |
+| [quick-start.md](./quick-start.md) | **Canonical P1 setup** — machine, Supabase, database, dev servers |
 | [development-guide.md](./development-guide.md) | How to work on the repo — features, tests, branch policy |
 | [project-guide.md](./project-guide.md) | Architecture, roles, troubleshooting |
-| [stack-setup.md](./stack-setup.md) | Installers and `verify:stack:*` commands |
-| [infrastructure-phases.md](./infrastructure-phases.md) | How setup scripts map to phases 1–5 |
+| [script-reference.md](./script-reference.md) | All `setup:*` and `verify:*` commands |
+| [infrastructure-phases.md](./infrastructure-phases.md) | P1 Local · P2 GitHub · P3 Cloudflare |
 | [database-setup.md](./database-setup.md) | Schema, seed, credentials, reset |
 | [external-auth.md](./external-auth.md) | Tooling auth ladder (env / files / CI) |
 | [cloudflare-auth.md](./cloudflare-auth.md) | Cloudflare token permissions, Pages hostname |

@@ -15,7 +15,7 @@ Human-readable catalog of automated tests, how to run them, and how to add new o
 | E2E UI + API | Playwright | `npm run test:e2e` | Login, nav, forms, chat, pipeline, dashboard |
 | E2E (dev DB) | Playwright | `npm run test:e2e:dev` | Same specs against your existing `.env` (no project create/delete) |
 | Worker unit | Vitest | `npm run test:worker` | Zod schemas, CORS helper, validation rules |
-| Stack verify | Node scripts | `npm run verify:stack:*` | Env, schema, Cloudflare token — not business rules |
+| Stack verify | Node scripts | `npm run verify:*` | Env, schema, Cloudflare token — not business rules |
 | Tooling auth ladder | Node test | `npm run test:scripts` | Env vs files, `CI=true` fail-fast (Phase 12) |
 
 **Default E2E:** isolated run via `scripts/e2e-run.mjs` — creates `sinc-ci-e2e-*` Supabase project, seeds, runs tests, deletes project. Artifacts: [e2e-artifacts.md](./e2e-artifacts.md).
@@ -34,7 +34,7 @@ Human-readable catalog of automated tests, how to run them, and how to add new o
 | `npm run test:worker` | 8 Vitest tests in `worker/` |
 | `npm run test:scripts` | 10 `AUTH-LADDER-*` tests (tooling auth) |
 | `npm run test:tooling` | `test:scripts` + `test:worker` |
-| `npm run verify:stack:supabase` | Schema + tables present |
+| `npm run verify:supabase` | Schema + tables present |
 
 **E2E-only env** (isolated runs): `SUPABASE_ACCESS_TOKEN`, `SUPABASE_ORG_SLUG` in `worker/.dev.vars` or environment — see [external-auth.md](./external-auth.md).
 
@@ -130,7 +130,7 @@ Specs live under `e2e/specs/`. Tags: `@phase6` … `@phase11`, `@smoke` for core
 
 ## Tooling auth ladder (`AUTH-LADDER-*`, Node test)
 
-Automated tests for Phase 12 script auth (`load-stack-env`, `ensure-cloudflare-auth.sh`, `require-stack-credentials.mjs`, `verify-github-actions.mjs` CI path).
+Automated tests for Phase 12 script auth (`load-stack-env`, `ensure-cloudflare-auth.sh`, `require-supabase.mjs`, `verify-github-actions.mjs` CI path).
 
 | ID | What it checks |
 |----|----------------|
@@ -141,7 +141,7 @@ Automated tests for Phase 12 script auth (`load-stack-env`, `ensure-cloudflare-a
 | AUTH-LADDER-05 | `hasFrontendStackKeys()` / `hasWorkerStackKeys()` |
 | AUTH-LADDER-06 | `process.env` overrides dotenv file in `loadStackEnv()` |
 | AUTH-LADDER-07 | `CI=true` + no token → `ensure-cloudflare-auth.sh` exits before OAuth |
-| AUTH-LADDER-08 | `require-stack-credentials.mjs` passes with env-only keys |
+| AUTH-LADDER-08 | `require-supabase.mjs` passes with env-only keys |
 | AUTH-LADDER-09 | Missing Cloudflare token fails with clear error |
 | AUTH-LADDER-10 | `verify-github-actions.mjs` skips gh OAuth when `CI=true` |
 

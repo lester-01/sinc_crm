@@ -28,7 +28,7 @@ main() {
   fi
 
   if [[ ! -x "$WRANGLER_BIN" ]]; then
-    err "Wrangler not found. Run: npm run setup:local"
+    err "Wrangler not found. Run: npm run setup:cli"
     exit 1
   fi
 
@@ -87,7 +87,7 @@ main() {
   log "Pass 2 (docs/deploy-guide.md):"
   log "  CORS_ORIGINS=$STABLE_ORIGIN"
   log "  Supabase Dashboard → Authentication → URL configuration → same origin"
-  log "Then: npm run verify:stack:deploy"
+  log "Then: npm run verify:deploy"
 }
 
 main "$@"

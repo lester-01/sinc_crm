@@ -46,6 +46,7 @@ Full catalog, commands, and how to add tests: [docs/testing-guide.md](docs/testi
 |-------|------------|
 | **API reference (OpenAPI)** | [docs/api/openapi.yaml](docs/api/openapi.yaml) · [interactive viewer](docs/api/index.html) |
 | Quick start (install, env, scripts) | [docs/quick-start.md](docs/quick-start.md#back-to-readme) |
+| **Script reference (setup / verify)** | [docs/script-reference.md](docs/script-reference.md) |
 | Database schema & seed | [docs/database-setup.md](docs/database-setup.md#back-to-readme) |
 | Tooling auth (Cloudflare / Supabase / GitHub) | [docs/external-auth.md](docs/external-auth.md#back-to-readme) |
 | **How to work on the codebase** | [docs/development-guide.md](docs/development-guide.md#back-to-readme) |

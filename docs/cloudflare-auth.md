@@ -6,7 +6,7 @@
 
 For local scripts, verification, and CI/CD, use **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`** in `worker/.cloudflare.env` or exported in the environment (env wins over file). Auth ladder: [external-auth.md](./external-auth.md). Setup: [quick-start.md](./quick-start.md).
 
-`scripts/ensure-cloudflare-auth.sh` and `npm run verify:stack:cloudflare` use this token path by default.
+`scripts/ensure-cloudflare-auth.sh` and `npm run verify:cloudflare` use this token path by default.
 
 ## Scoped token permissions (required for deploy)
 
@@ -43,7 +43,7 @@ Desktop **OAuth** (`wrangler login`) can work for Wrangler CLI alone, but **`dep
 
 ## Optional: desktop OAuth (`wrangler login`)
 
-On a **desktop** machine without a token, `ensure-cloudflare-auth.sh` can run **`wrangler login`** after the token ladder fails. This is useful for quick local experiments; it is **not** used in `verify:stack:cloudflare` and is **not** available when `CI=true` (fail fast — set env vars instead).
+On a **desktop** machine without a token, `ensure-cloudflare-auth.sh` can run **`wrangler login`** after the token ladder fails. This is useful for quick local experiments; it is **not** used in `verify:cloudflare` and is **not** available when `CI=true` (fail fast — set env vars instead).
 
 ## CI / headless
 

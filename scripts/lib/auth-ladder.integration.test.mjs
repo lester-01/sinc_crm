@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const ENSURE_CF = join(ROOT, "scripts/ensure-cloudflare-auth.sh");
-const REQUIRE_CREDS = join(ROOT, "scripts/lib/require-stack-credentials.mjs");
+const REQUIRE_SUPABASE = join(ROOT, "scripts/lib/require-supabase.mjs");
+const REQUIRE_CLOUDFLARE = join(ROOT, "scripts/lib/require-cloudflare.mjs");
 const VERIFY_GH = join(ROOT, "scripts/verify-github-actions.mjs");
 const CF_ENV = join(ROOT, "worker", ".cloudflare.env");
 
@@ -63,28 +64,28 @@ describe("auth ladder integration", () => {
     });
   });
 
-  describe("require-stack-credentials.mjs", () => {
+  describe("require-supabase.mjs", () => {
     const FAKE_URL = "https://abcdefgh.supabase.co";
     const FAKE_PUB = "eyJhbGciOiJIUzI1NiJ9.abcdefgh";
     const FAKE_SECRET = "eyJhbGciOiJIUzI1NiJ9.secretkey12";
-    const FAKE_CF = "cf-token-abcdefghijklmnopqrst";
-    const FAKE_ACCOUNT = "account-id-1234567890";
 
-    it("AUTH-LADDER-08: succeeds when required keys are only in environment", () => {
-      const r = runNode(REQUIRE_CREDS, {
+    it("AUTH-LADDER-08: succeeds when Supabase keys are only in environment", () => {
+      const r = runNode(REQUIRE_SUPABASE, {
         VITE_SUPABASE_URL: FAKE_URL,
         VITE_SUPABASE_PUBLISHABLE_KEY: FAKE_PUB,
         SUPABASE_URL: FAKE_URL,
         SUPABASE_SECRET_KEY: FAKE_SECRET,
-        CLOUDFLARE_API_TOKEN: FAKE_CF,
-        CLOUDFLARE_ACCOUNT_ID: FAKE_ACCOUNT,
       });
       assert.equal(
         r.status,
         0,
-        r.stderr || r.stdout || "require-stack-credentials failed",
+        r.stderr || r.stdout || "require-supabase failed",
       );
     });
+  });
+
+  describe("require-cloudflare.mjs", () => {
+    const FAKE_CF = "cf-token-abcdefghijklmnopqrst";
 
     it("AUTH-LADDER-09: fails when Cloudflare token missing from env and files", () => {
       let hideCf = null;
@@ -93,16 +94,10 @@ describe("auth ladder integration", () => {
         renameSync(CF_ENV, hideCf);
       }
       try {
-        const env = {
-          ...process.env,
-          VITE_SUPABASE_URL: FAKE_URL,
-          VITE_SUPABASE_PUBLISHABLE_KEY: FAKE_PUB,
-          SUPABASE_URL: FAKE_URL,
-          SUPABASE_SECRET_KEY: FAKE_SECRET,
-        };
+        const env = { ...process.env };
         delete env.CLOUDFLARE_API_TOKEN;
         delete env.CLOUDFLARE_ACCOUNT_ID;
-        const r = spawnSync(process.execPath, [REQUIRE_CREDS], {
+        const r = spawnSync(process.execPath, [REQUIRE_CLOUDFLARE], {
           cwd: ROOT,
           env,
           encoding: "utf8",
@@ -112,6 +107,13 @@ describe("auth ladder integration", () => {
       } finally {
         if (hideCf && existsSync(hideCf)) renameSync(hideCf, CF_ENV);
       }
+    });
+
+    it("AUTH-LADDER-09b: succeeds when Cloudflare token is in environment", () => {
+      const r = runNode(REQUIRE_CLOUDFLARE, {
+        CLOUDFLARE_API_TOKEN: FAKE_CF,
+      });
+      assert.equal(r.status, 0, r.stderr || r.stdout || "require-cloudflare failed");
     });
   });
 

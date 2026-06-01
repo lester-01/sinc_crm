@@ -1,87 +1,70 @@
-[← Back to README — Documentation](../README.md#documentation)
+[← Back to README](../README.md#documentation)
 
-# Stack setup & verification
+# Stack setup
 
-Verification commands and installer reference. **Onboarding:** start with [quick-start.md](./quick-start.md).
-
-Related: [database-setup.md](./database-setup.md), [external-auth.md](./external-auth.md), [testing-guide.md](./testing-guide.md)
+Phase checklist for local development and deploy. **Full command reference:** [script-reference.md](./script-reference.md).
 
 ---
 
-## Installers
+## P1 — Local development
 
-| Command | Purpose |
-|---------|---------|
-| `npm run install:linux` | nvm, Node 22, wrangler + supabase CLI, project deps |
-| `npm run setup:local` | CLIs + deps only (Node 22+ already active) |
-| `npm run install:project` | Master — local + worker + frontend deps |
-| `npm run setup:worker` | Worker runtime packages |
-| `npm run setup:frontend` | Vite/React packages at repo root |
-| `npm run setup:cloud` | Env check, Cloudflare auth, cloud verify |
-| `npm run db:schema` | Apply schema SQL (empty Supabase project) |
-| `npm run db:seed` | Demo users + CRM sample data |
-| `npm run test:e2e` | Isolated Playwright suite |
-| `npm run test:worker` | Vitest in `worker/` |
+| Step | Setup | Verify |
+|------|-------|--------|
+| Machine (Linux, Node, CLI) | `npm run setup:local` | `npm run verify:local` |
+| Supabase credentials | `npm run setup:supabase` | `npm run verify:supabase` |
+| Database | `npm run db:schema`, `npm run db:seed` | (included in verify:supabase) |
 
-Override install phases: `INSTALL_PROJECT_PHASES=local,worker npm run install:project`
+Happy path: [quick-start.md](./quick-start.md).
 
-Skip verify during install: `SKIP_VERIFY=1 npm run install:linux`
+**Skip verify while pasting keys:** `SKIP_VERIFY=1 npm run setup:supabase`
 
-Skip cloud verify while filling keys: `SKIP_CLOUD_VERIFY=1 npm run setup:cloud`
-
----
-
-## Verification commands
+**Atomic layers:**
 
 ```bash
-npm run verify:stack:local       # Node 22, wrangler, supabase CLI
-npm run verify:stack:scaffold    # Worker + frontend scaffold
-npm run verify:stack:env         # Env files and keys
-npm run verify:stack:cloudflare  # Cloudflare token / whoami
-npm run verify:stack:github      # GitHub remote configured
-npm run verify:stack:supabase    # Schema + tables + secret key
-npm run verify:stack:cloud       # Phase 4 bundle (env + cloud + github)
-npm run verify:stack:full        # All phases
-npm run verify:stack:deploy      # Production API health (after deploy)
-npm run verify:github-actions    # Optional — Actions readiness on origin
+npm run verify:linux
+npm run setup:node && npm run verify:node
+npm run setup:cli && npm run verify:cli
 ```
 
-Dev servers:
+**Optional:** `npm run setup:project` (cli + worker + frontend deps), `npm run verify:scaffold`
+
+---
+
+## P2 — GitHub (manual + stub verify)
 
 ```bash
-npm run dev                   # frontend :5173
-cd worker && npm run dev      # API :8787
+git remote add origin <your-public-repo-url>
+npm run verify:github              # WARN stub, exit 0
+npm run verify:github-actions      # optional CI readiness stub
 ```
 
 ---
 
-## Repo layout
+## P3 — Cloudflare deploy
 
-Per [architecture.md](../project_requirements/architecture.md):
+See [deploy-guide.md](./deploy-guide.md).
 
-```txt
-src/          # Vite + React SPA
-worker/       # Hono API at /api
-e2e/          # Playwright specs
-supabase/     # Schema SQL
-scripts/      # Install, deploy, E2E orchestration
+| Step | Setup | Verify |
+|------|-------|--------|
+| Cloudflare token | `npm run setup:cloudflare` | `npm run verify:cloudflare` |
+| Deploy | `npm run deploy:all` | `npm run verify:deploy` |
+
+**Skip verify while pasting token:** `SKIP_VERIFY=1 npm run setup:cloudflare`
+
+---
+
+## Maintainer checklist
+
+```bash
+npm run verify:all
 ```
 
-**Data flow:** CRM HTTP via **Worker** + TanStack Query; Supabase client for **Auth + Realtime** only.
+Includes machine, Supabase, Cloudflare, GitHub stub, and scaffold checks.
 
 ---
 
-## What's next
+## Related
 
-- **Deploy:** [deploy-guide.md](./deploy-guide.md)
-- **Deferred CI:** [ci-e2e-recipe.md](./ci-e2e-recipe.md), [roadmap.md](./roadmap.md)
-
----
-
-## Cost
-
-| Provider | MVP |
-|----------|-----|
-| Supabase Free | $0 |
-| Cloudflare Free | $0 |
-| GitHub public | $0 |
+- [script-reference.md](./script-reference.md) — every npm script
+- [external-auth.md](./external-auth.md) — credentials
+- [infrastructure-phases.md](./infrastructure-phases.md) — phase model

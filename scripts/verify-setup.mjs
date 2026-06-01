@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Stack setup verification for Student CRM.
- * Run: npm run verify:stack [-- --phase=all|local|cloud|cloudflare|env|supabase|supabase-connect|github|scaffold|deploy]
+ * Setup verification for Student CRM.
+ * Run: node scripts/verify-setup.mjs --phase=linux,node,cli
  */
 
 import { spawnSync } from "node:child_process";
@@ -20,6 +20,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const MIN_NODE_MAJOR = 22;
 const WRANGLER_BIN = join(ROOT, "worker", "node_modules", ".bin", "wrangler");
 const SUPABASE_BIN = join(ROOT, "node_modules", ".bin", "supabase");
+const STRICT = process.argv.includes("--strict");
 
 const CORE_TABLES = [
   "profiles",
@@ -37,6 +38,7 @@ const results = [];
 function parseArgs(argv) {
   const out = new Set(["all"]);
   for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--strict") continue;
     if (argv[i] === "--phase" && argv[i + 1]) {
       out.clear();
       argv[i + 1].split(",").forEach((p) => out.add(p.trim()));
@@ -51,25 +53,14 @@ function parseArgs(argv) {
   }
   if (out.has("all")) {
     return new Set([
-      "local",
-      "cloudflare",
+      "linux",
+      "node",
+      "cli",
       "env",
+      "supabase-connect",
       "supabase",
-      "github",
-    ]);
-  }
-  if (out.has("cloud")) {
-    return new Set(["env", "cloudflare", "github", "supabase-connect"]);
-  }
-  if (out.has("full")) {
-    return new Set([
-      "local",
       "cloudflare",
-      "env",
-      "supabase",
       "github",
-      "scaffold",
-      "deploy",
     ]);
   }
   return out;
@@ -79,9 +70,10 @@ function shouldRun(phase) {
   return phases.has(phase);
 }
 
-function record(name, ok, detail = "") {
-  results.push({ name, ok, detail });
-  const mark = ok ? "PASS" : "FAIL";
+function record(name, ok, detail = "", options = {}) {
+  const warn = options.warn === true || (options.optional === true && !ok);
+  results.push({ name, ok, detail, warn });
+  const mark = ok ? "PASS" : warn ? "WARN" : "FAIL";
   const suffix = detail ? ` — ${detail}` : "";
   console.log(`[${mark}] ${name}${suffix}`);
 }
@@ -158,40 +150,86 @@ function majorNodeVersion() {
   return m ? Number(m[1]) : null;
 }
 
-// --- Phase: local ---
-function verifyLocal() {
+function readProcVersion() {
+  try {
+    return readFileSync("/proc/version", "utf8");
+  } catch {
+    return "";
+  }
+}
+
+// --- Phase: linux ---
+function verifyLinux() {
+  const isLinux = run("uname", ["-s"]).stdout?.trim() === "Linux";
+  record(
+    "Platform: Linux",
+    isLinux,
+    isLinux ? "" : "Linux or WSL required — see docs/quick-start.md",
+  );
+  if (!isLinux) return;
+
+  const procVersion = readProcVersion();
+  const isWsl = /microsoft/i.test(procVersion);
+  record(
+    "Platform: WSL vs native",
+    true,
+    isWsl ? "WSL detected" : "native Linux",
+  );
+
+  record("git available", commandExists("git", ["--version"]));
+  record(
+    "curl available",
+    commandExists("curl", ["--version"]),
+    commandExists("curl", ["--version"]) ? "" : "required for setup:node (nvm install)",
+  );
+}
+
+// --- Phase: node ---
+function verifyNode() {
   const nodeMajor = majorNodeVersion();
   record(
     "Node.js installed",
     nodeMajor !== null,
-    nodeMajor === null ? "node not found" : `v${nodeMajor}`,
+    nodeMajor === null ? "node not found — run: npm run setup:node" : `v${nodeMajor}`,
   );
   record(
     `Node.js >= ${MIN_NODE_MAJOR}`,
     nodeMajor !== null && nodeMajor >= MIN_NODE_MAJOR,
-    nodeMajor === null ? "" : `need >= ${MIN_NODE_MAJOR}`,
+    nodeMajor === null ? "" : `need >= ${MIN_NODE_MAJOR} — run: npm run setup:node`,
   );
   record("npm available", commandExists("npm", ["-v"]));
-  record("git available", commandExists("git", ["--version"]));
+
+  const nvmDir = process.env.NVM_DIR || join(process.env.HOME || "", ".nvm");
+  const nvmPresent = existsSync(join(nvmDir, "nvm.sh"));
+  record(
+    "nvm available (optional)",
+    true,
+    nvmPresent ? `found at ${nvmDir}` : "not detected — OK if Node 22+ is active",
+    { optional: true },
+  );
+}
+
+// --- Phase: cli ---
+function verifyCli() {
   const wranglerOk = localCli(WRANGLER_BIN);
   record(
-    "wrangler CLI (worker/, local)",
+    "wrangler CLI (worker/)",
     wranglerOk,
-    wranglerOk ? WRANGLER_BIN : "run: npm run setup:local",
+    wranglerOk ? WRANGLER_BIN : "run: npm run setup:cli",
   );
 
   const supabaseOk = localCli(SUPABASE_BIN);
   record(
-    "supabase CLI (root/, local)",
+    "supabase CLI (root/)",
     supabaseOk,
-    supabaseOk ? SUPABASE_BIN : "run: npm run setup:local",
+    supabaseOk ? SUPABASE_BIN : "run: npm run setup:cli",
   );
 }
 
 // --- Phase: cloudflare ---
 function verifyCloudflare() {
   if (!localCli(WRANGLER_BIN)) {
-    record("wrangler CLI available", false, "run: npm run setup:local");
+    record("wrangler CLI available", false, "run: npm run setup:cli");
     return;
   }
 
@@ -215,7 +253,7 @@ function verifyCloudflare() {
     hasCfKeys,
     hasCfKeys
       ? "set (env or file)"
-      : "export CLOUDFLARE_API_TOKEN or use worker/.cloudflare.env — see docs/external-auth.md",
+      : "export CLOUDFLARE_API_TOKEN or use worker/.cloudflare.env — see docs/deploy-guide.md",
   );
 
   if (!hasCfKeys) {
@@ -273,14 +311,16 @@ function verifyEnv() {
 
   const cloudflareEnvPath = join(ROOT, "worker", ".cloudflare.env");
   const hasCf = hasCloudflareStackKeys(env);
+  const cfPresent = existsSync(cloudflareEnvPath) || hasCf;
   record(
-    "worker/.cloudflare.env exists (optional if env has token)",
-    existsSync(cloudflareEnvPath) || hasCf,
-    existsSync(cloudflareEnvPath)
-      ? cloudflareEnvPath
-      : hasCf
-        ? "CLOUDFLARE_API_TOKEN from environment"
-        : "copy worker/.cloudflare.env.example or export token",
+    "worker/.cloudflare.env (optional for local dev)",
+    true,
+    cfPresent
+      ? cfPresent && existsSync(cloudflareEnvPath)
+        ? cloudflareEnvPath
+        : "CLOUDFLARE_API_TOKEN from environment"
+      : "not set — OK for P1 local dev; required for deploy (P3)",
+    { optional: true },
   );
 
   const rootEnvOnly = envExists ? parseEnvFile(envPath) : {};
@@ -343,7 +383,7 @@ function verifyEnv() {
   }
 }
 
-// --- Phase: supabase-connect (Phase 4 — keys only, no schema) ---
+// --- Phase: supabase-connect ---
 async function verifySupabaseConnect() {
   const env = loadEnv();
   const url = (env.VITE_SUPABASE_URL || env.SUPABASE_URL || "").replace(/\/$/, "");
@@ -406,7 +446,7 @@ async function verifySupabaseConnect() {
       record(
         "Supabase secret key (API reachable)",
         true,
-        "schema not applied yet — expected before Phase 5 (database)",
+        "schema not applied yet — run npm run db:schema",
       );
       return;
     }
@@ -420,8 +460,8 @@ async function verifySupabaseConnect() {
   }
 }
 
-// --- Phase: supabase (full — includes schema tables) ---
-async function verifySupabase() {
+// --- Phase: supabase ---
+async function verifySupabaseSchema() {
   const env = loadEnv();
   const url = (env.VITE_SUPABASE_URL || env.SUPABASE_URL || "").replace(/\/$/, "");
   const publicKey = supabasePublicKey(env);
@@ -467,13 +507,13 @@ async function verifySupabase() {
       const rlsOnly =
         res.status === 401 ||
         (res.status === 200 && !missing) ||
-        (res.status === 406);
+        res.status === 406;
       const ok = res.ok || rlsOnly || (res.status === 200 && !missing);
       record(
         `Supabase table: ${table}`,
         ok && !missing,
         missing
-          ? "table missing — run schema SQL"
+          ? "table missing — run npm run db:schema"
           : res.ok
             ? "OK"
             : `HTTP ${res.status} (table may exist; RLS can block publishable reads)`,
@@ -509,8 +549,13 @@ async function verifySupabase() {
   }
 }
 
-// --- Phase: github ---
+// --- Phase: github (P2 stub — WARN, exit 0 unless --strict) ---
 function verifyGithub() {
+  console.log(
+    "\n[INFO] P2 GitHub verify — partial stub; full CI/OAuth wiring deferred.",
+  );
+  console.log("[INFO] Manual step: git remote add origin <your-public-repo-url>\n");
+
   const r = run("git", ["remote", "-v"]);
   const hasOrigin =
     r.status === 0 && (r.stdout || "").includes("origin");
@@ -518,6 +563,7 @@ function verifyGithub() {
     "git remote origin configured",
     hasOrigin,
     hasOrigin ? "" : "git remote add origin <your-public-repo-url>",
+    { warn: !hasOrigin },
   );
 
   if (hasOrigin) {
@@ -526,6 +572,7 @@ function verifyGithub() {
       "git origin URL (heuristic)",
       true,
       url || "verify this is your public fork/repo",
+      { optional: true },
     );
 
     const fetch = run("git", ["fetch", "origin", "--dry-run"]);
@@ -536,6 +583,7 @@ function verifyGithub() {
       fetchOk
         ? "remote reachable"
         : (fetch.stderr || fetch.stdout || "fetch failed").trim().split("\n")[0],
+      { warn: !fetchOk },
     );
   }
 }
@@ -549,12 +597,12 @@ function verifyScaffold() {
   record(
     "worker/wrangler.toml exists",
     existsSync(workerToml),
-    existsSync(workerToml) ? "" : "run Phase 2 backend scaffold",
+    existsSync(workerToml) ? "" : "run: npm run setup:worker",
   );
   record(
     "worker/src/index.ts exists",
     existsSync(workerIndex),
-    existsSync(workerIndex) ? "" : "run Phase 2 backend scaffold",
+    existsSync(workerIndex) ? "" : "run: npm run setup:worker",
   );
 
   let hasHono = false;
@@ -580,7 +628,7 @@ function verifyScaffold() {
   );
 
   if (!hasWorker || !hasHono) {
-    record("worker backend scaffold", false, "complete Phase 2");
+    record("worker backend scaffold", false, "run: npm run setup:worker");
   } else {
     record("worker backend scaffold", true);
   }
@@ -636,7 +684,7 @@ function verifyScaffold() {
   record(
     "frontend SPA scaffold (root src/)",
     hasFrontend,
-    hasFrontend ? "" : "complete Phase 3",
+    hasFrontend ? "" : "run: npm run setup:frontend",
   );
 }
 
@@ -668,16 +716,17 @@ async function verifyDeploy() {
 }
 
 function summarize() {
-  const failed = results.filter((r) => !r.ok);
-  const optionalFails = failed.filter((r) =>
-    r.name.includes("optional") || r.name.includes("heuristic"),
-  );
-  const requiredFails = failed.filter(
-    (r) => !optionalFails.includes(r),
-  );
+  const requiredFails = results.filter((r) => !r.ok && !r.warn);
+  const warns = results.filter((r) => !r.ok && r.warn);
 
   console.log("\n--- Summary ---");
   console.log(`Passed: ${results.filter((r) => r.ok).length}/${results.length}`);
+  if (warns.length) {
+    console.log(`Warnings: ${warns.length}`);
+    for (const w of warns) {
+      console.log(`  - ${w.name}${w.detail ? `: ${w.detail}` : ""}`);
+    }
+  }
   if (requiredFails.length) {
     console.log(`Failed (action required): ${requiredFails.length}`);
     for (const f of requiredFails) {
@@ -685,20 +734,23 @@ function summarize() {
     }
     process.exit(1);
   }
-  if (optionalFails.length) {
-    console.log(`Optional/skipped: ${optionalFails.length}`);
+  if (STRICT && warns.length) {
+    console.log("Strict mode: treating warnings as failures.");
+    process.exit(1);
   }
-  console.log("Stack verification complete for selected phase(s).");
+  console.log("Verification complete for selected phase(s).");
 }
 
 async function main() {
-  console.log(`Verifying stack setup (phases: ${[...phases].join(", ")})...\n`);
+  console.log(`Verifying setup (phases: ${[...phases].join(", ")})...\n`);
 
-  if (shouldRun("local")) verifyLocal();
+  if (shouldRun("linux")) verifyLinux();
+  if (shouldRun("node")) verifyNode();
+  if (shouldRun("cli")) verifyCli();
   if (shouldRun("cloudflare")) verifyCloudflare();
   if (shouldRun("env")) verifyEnv();
   if (shouldRun("supabase-connect")) await verifySupabaseConnect();
-  if (shouldRun("supabase")) await verifySupabase();
+  if (shouldRun("supabase")) await verifySupabaseSchema();
   if (shouldRun("github")) verifyGithub();
   if (shouldRun("scaffold")) verifyScaffold();
   if (shouldRun("deploy")) await verifyDeploy();

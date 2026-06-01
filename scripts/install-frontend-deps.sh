@@ -69,7 +69,7 @@ main() {
   log ""
   log "Frontend dependencies ready."
   log "  npm run dev          — Vite on http://localhost:5173"
-  log "  npm run verify:stack:scaffold"
+  log "  npm run verify:scaffold"
 }
 
 main "$@"

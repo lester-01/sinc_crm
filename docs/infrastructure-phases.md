@@ -1,17 +1,28 @@
-[← Back to README — Documentation](../README.md#documentation)
+# Infrastructure phases
 
-# Infrastructure phases (1–5)
+Three user-facing phases plus optional checks. Script details: [script-reference.md](./script-reference.md).
 
-How setup scripts map to bootstrap steps. **Canonical walkthrough:** [quick-start.md](./quick-start.md).
+| Phase | Purpose | Needs account? | Setup | Verify |
+|-------|---------|----------------|-------|--------|
+| **P1 Local** | Run app on localhost | Supabase (free) | `setup:local` → `setup:supabase` → `db:*` | `verify:local`, `verify:supabase` |
+| **P2 GitHub** | Remote + future CI | GitHub (when pushing) | Manual `git remote` | `verify:github` (stub, WARN) |
+| **P3 Cloudflare** | Deploy Worker + Pages | Cloudflare | `setup:cloudflare` → `deploy:*` | `verify:cloudflare`, `verify:deploy` |
 
-| Phase | Goal | Scripts | Verify |
-|-------|------|---------|--------|
-| 1 — Local tools | Node 22, npm, git, wrangler, supabase CLI | `install:linux`, `setup:local` | `verify:stack:local` |
-| 2 — Worker | Hono API scaffold in `worker/` | `setup:worker` | `verify:stack:scaffold` |
-| 3 — Frontend | Vite/React in `src/` | `setup:frontend` | `verify:stack:scaffold` |
-| 4 — Cloud env | `.env`, `worker/.dev.vars`, Cloudflare token | `setup:cloud` | `verify:stack:cloud` |
-| 5 — Database | Schema + seed | `db:schema`, `db:seed` | `verify:stack:supabase` |
+## P1 layers (machine)
 
-Auth ladder for scripts: [external-auth.md](./external-auth.md). Database detail: [database-setup.md](./database-setup.md).
+| Layer | Setup | Verify |
+|-------|-------|--------|
+| Platform | — | `verify:linux` |
+| Node 22 | `setup:node` | `verify:node` |
+| CLI tooling | `setup:cli` | `verify:cli` |
+| Bundle | **`setup:local`** | **`verify:local`** |
 
-Application features and tests: [testing-guide.md](./testing-guide.md), [development-guide.md](./development-guide.md).
+## Optional
+
+| Check | Command |
+|-------|---------|
+| Repo scaffold | `verify:scaffold` |
+| Full maintainer | `verify:all` |
+| GitHub Actions readiness | `verify:github-actions` (stub) |
+
+Local dev does **not** require Cloudflare or GitHub.

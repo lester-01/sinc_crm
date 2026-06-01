@@ -16,14 +16,14 @@ Related: [project_requirements/database.md](../project_requirements/database.md)
 npm run setup:local    # installs Supabase CLI at repo root
 npm run db:schema      # Supabase CLI: db query --file (empty DB only)
 npm run db:seed        # Supabase HTTP API via service role key (empty DB only)
-npm run verify:stack:supabase
+npm run verify:supabase
 ```
 
 | Step | Tool | Needs Cursor/MCP? |
 |------|------|-------------------|
 | Schema + empty/exists checks | **Supabase CLI** (`npx supabase db query`) | **No** |
 | Seed demo users | **@supabase/supabase-js** + `SUPABASE_SECRET_KEY` | **No** |
-| Verify tables | `node scripts/verify-stack-setup.mjs` | **No** |
+| Verify tables | `node scripts/verify-setup.mjs` | **No** |
 
 MCP/skills in Cursor are for **development convenience only** — they are not required for install or CI.
 
@@ -137,7 +137,7 @@ Check out repo, create env files from secrets, then:
     EOF
 - run: npm run db:schema
 - run: npm run db:seed
-- run: npm run verify:stack:supabase
+- run: npm run verify:supabase
 ```
 
 Use a **throwaway Supabase project** for CI — schema/seed abort if the database is not empty.
@@ -151,7 +151,7 @@ Use a **throwaway Supabase project** for CI — schema/seed abort if the databas
 | Schema SQL (ordered) | `supabase/schema/01` … `06` | Types, tables, indexes, profile bootstrap, RLS + Realtime, client read tracking |
 | Apply schema | `npm run db:schema` | Supabase CLI `db query` on **empty** DB only |
 | Seed data | `npm run db:seed` | Demo auth users + CRM rows on **empty** DB only |
-| Verify | `npm run verify:stack:supabase` | Tables exist + secret key can read `profiles` |
+| Verify | `npm run verify:supabase` | Tables exist + secret key can read `profiles` |
 
 We **do not** use Supabase CLI migration history (`supabase/migrations/`) in this phase. The product README documents “migrations” in the sense of **versioned SQL you can re-apply on a fresh project**. See [Schema scripts vs migrations](#schema-scripts-vs-migrations) below.
 
@@ -263,7 +263,7 @@ CASCADE;
 
 ```bash
 npm run db:seed
-npm run verify:stack:supabase
+npm run verify:supabase
 ```
 
 Redeploy only if you also changed Worker/Pages code: `npm run deploy:all:skip-db`.
@@ -420,7 +420,7 @@ From the repo root (Node 22+, `worker/.dev.vars` configured):
 ```bash
 npm run db:schema
 npm run db:seed
-npm run verify:stack:supabase
+npm run verify:supabase
 ```
 
 - `db:schema` applies `supabase/schema/01` … `06` on an empty CRM footprint (`profiles` must not exist).
@@ -443,7 +443,7 @@ flowchart TD
   verify --> deleteAuth["Dashboard: delete all Auth users"]
   deleteAuth --> npmSchema["npm run db:schema"]
   npmSchema --> npmSeed["npm run db:seed"]
-  npmSeed --> npmVerify["npm run verify:stack:supabase"]
+  npmSeed --> npmVerify["npm run verify:supabase"]
   npmVerify --> demo[Record demo video]
 ```
 
@@ -532,7 +532,7 @@ When you read up on migrations later, you can adopt `supabase/migrations/` and m
 
 ## Prerequisites
 
-- Phase 4 complete (`verify:stack:cloud` passed).
+- Phase 4 complete (`verify:all` passed).
 - `.env` and `worker/.dev.vars` filled per [Credentials](#credentials-what-to-get-where-to-paste) above.
 - Supabase CLI installed: `npm run setup:local`.
 
@@ -550,7 +550,7 @@ npm run db:schema
 npm run db:seed
 
 # 4. Verify
-npm run verify:stack:supabase
+npm run verify:supabase
 ```
 
 ---
@@ -580,7 +580,7 @@ Follow [Reset database without deleting the project](#reset-database-without-del
 **`db:seed` — database is not empty**  
 Follow [Reset database without deleting the project](#reset-database-without-deleting-the-project) — Level A.
 
-**`verify:stack:supabase` — table missing**  
+**`verify:supabase` — table missing**  
 Run `db:schema` on an empty project.
 
 **Realtime not firing**  

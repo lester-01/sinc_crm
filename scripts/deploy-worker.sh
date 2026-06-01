@@ -25,7 +25,7 @@ main() {
   log "Cloudflare API token active in this shell (not a child process)."
 
   if [[ ! -x "$ROOT/worker/node_modules/.bin/wrangler" ]]; then
-    err "Wrangler not found. Run: npm run setup:local"
+    err "Wrangler not found. Run: npm run setup:cli"
     exit 1
   fi
 

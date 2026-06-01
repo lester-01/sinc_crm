@@ -264,7 +264,7 @@ async function main() {
   }
 
   console.log("\nSeed complete.");
-  console.log("  npm run verify:stack:supabase");
+  console.log("  npm run verify:supabase");
 }
 
 main().catch((err) => {

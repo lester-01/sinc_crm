@@ -13,7 +13,7 @@ Related: [e2e-artifacts.md](./e2e-artifacts.md), [ci-e2e-recipe.md](./ci-e2e-rec
 | **A. E2E UI** | End-to-end | Playwright — real Chromium | Login, navigation, forms, chat, pipeline, dashboard |
 | **B. API authorization** | Integration | Playwright `request` | Worker status codes; **role constraints** without UI selectors |
 | **C. Worker unit** | Unit | Vitest in `worker/` | Zod schemas, CORS helper, validation rules |
-| **D. Stack verify** | Smoke / infra | `npm run verify:stack:*` | Env, schema, deploy reachability — not business rules |
+| **D. Stack verify** | Smoke / infra | `npm run verify:*` | Env, schema, deploy reachability — not business rules |
 | **E. Tooling auth** | Integration | `npm run test:scripts` | Env vs files auth ladder |
 
 **Summary:** Browser regression = **Playwright E2E**. Cursor IDE browser (MCP) does **not** run `*.spec.ts` files.

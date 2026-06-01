@@ -94,7 +94,7 @@ Pass 1 — Deploy what you can
 Pass 2 — Wire URLs (no full redeploy required for CORS secret alone)
   6. Worker: CORS_ORIGINS = stable Pages origin only (exact, no trailing slash)
   7. Supabase Auth URLs via Management API (`SUPABASE_ACCESS_TOKEN`) — or dashboard fallback
-  8. npm run verify:stack:deploy (+ optional Playwright smoke)
+  8. npm run verify:deploy (+ optional Playwright smoke)
   9. Record URLs in README (and optional local notes file)
 ```
 
@@ -334,7 +334,7 @@ Or update via `wrangler secret bulk` / `--secrets-file` (see Step 2).
 ### Step 8 — Verify deployment
 
 ```bash
-npm run verify:stack:deploy
+npm run verify:deploy
 ```
 
 Requires `.env.production` with a non-local `VITE_API_BASE_URL`. Checks `GET <VITE_API_BASE_URL>/api/health` → `200`.
@@ -366,7 +366,7 @@ Do not commit secrets or `.env.production`.
 | `npm run deploy:worker` | Deploy API (`wrangler deploy`) |
 | `npm run deploy:pages` | `npm run build` + `wrangler pages deploy dist` |
 | `npm run deploy` | Worker, then Pages (Pass 1 steps 3 + 5 only — still do Pass 2 manually) |
-| `npm run verify:stack:deploy` | Health check against `VITE_API_BASE_URL` |
+| `npm run verify:deploy` | Health check against `VITE_API_BASE_URL` |
 
 ---
 
