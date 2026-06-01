@@ -4,15 +4,16 @@
 
 Deploy the **Cloudflare Worker API** and **Cloudflare Pages** frontend against your **production Supabase** project.
 
-This guide is for a **first manual deploy** using the existing npm scripts. A future **two-pass deploy script** (fill gaps after URLs exist) is planned but **not included yet** — follow this guide step by step for now.
+This guide covers deploy using the existing npm scripts. Use **`npm run deploy:all`** for the automated two-pass flow, or follow the manual steps below.
 
 | Component | Host | Where config lives |
 |-----------|------|-------------------|
-| Frontend (Vite SPA) | Cloudflare Pages | `.env.production` — **baked in at build time** |
+| Frontend (Vite SPA) | Cloudflare Pages | Root **`.env`** — read at build time via [`load-stack-env.mjs`](../scripts/lib/load-stack-env.mjs) (`SUPABASE_*` → Vite defines) |
 | API (Hono) | Cloudflare Workers | Wrangler **secrets** (runtime; not in git) |
 | Database | Supabase | `npm run db:schema` (+ optional seed) |
-| Auth redirects | **Supabase Dashboard** | Authentication → URL configuration |
+| Auth redirects | **Supabase Dashboard** | Authentication → URL configuration (or `deploy:all` API sync) |
 | Browser → API CORS | **Worker code + secret** | `CORS_ORIGINS` secret (not Cloudflare Pages settings) |
+| Cloudflare CLI auth | Root **`.env`** | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` |
 
 Related: [external-auth.md](./external-auth.md) · [cloudflare-auth.md](./cloudflare-auth.md) · [database-setup.md](./database-setup.md)
 
@@ -35,9 +36,9 @@ They can differ: deploy with **`sinc-crm`**, browse at **`https://<project-domai
 
 | Approach | Status | Notes |
 |----------|--------|--------|
-| **Manual / scripted CLI** (this guide) | **Current** | `npm run deploy:worker`, `deploy:pages`, Wrangler token in `worker/.cloudflare.env` or env vars |
-| **GitHub → Cloudflare** (git push triggers Pages; Actions for Worker) | **Valid, not wired in repo yet** | Cloudflare can connect a GitHub repo for Pages builds; Worker deploy via GitHub Actions + secrets. Planned for a later phase alongside the CLI path. |
-| **End-to-end deploy script** (two passes) | **Planned** | Automate Pass 1 + Pass 2 below after manual deploy is proven |
+| **`npm run deploy:all`** | **Current (recommended)** | Automated Pass 1 + Pass 2 — schema (optional), Worker, Pages, CORS, Supabase Auth URLs |
+| **Manual CLI** (this guide) | **Current** | `deploy:worker`, `deploy:pages` step-by-step; token in root `.env` |
+| **GitHub → Cloudflare** | **Valid, not wired in repo yet** | Cloudflare Git integration or GitHub Actions — see CI section below |
 
 Both **CLI** and **GitHub CI** deployments are valid for production. This repository **chooses the CLI path for now** so you can deploy without enabling GitHub integrations. Future docs and automation will support **both**.
 
@@ -88,7 +89,7 @@ Pass 1 — Deploy what you can
   1. Supabase: schema (required); seed (optional, demo only)
   2. Worker: secrets SUPABASE_URL + SUPABASE_SECRET_KEY (CORS can wait)
   3. npm run deploy:worker  →  copy workers.dev URL
-  4. .env.production with Worker URL
+  4. Set `VITE_API_BASE_URL` in root `.env` to the Worker URL
   5. npm run deploy:pages   →  note stable Pages URL (script footer; not preview hash URL)
 
 Pass 2 — Wire URLs (no full redeploy required for CORS secret alone)
@@ -106,7 +107,7 @@ Pass 2 — Wire URLs (no full redeploy required for CORS secret alone)
 npm run deploy:all
 ```
 
-Runs Pass 1 + Pass 2 (Worker, Pages build/deploy, CORS secret bulk, Supabase Auth URLs via API). Requires `worker/.cloudflare.env`, `worker/.dev.vars` (including `SUPABASE_ACCESS_TOKEN`), and `.env`.
+Runs Pass 1 + Pass 2 (Worker, Pages build/deploy, CORS secret bulk, Supabase Auth URLs via API). Requires root **`.env`** with Supabase keys, `CLOUDFLARE_*`, and `SUPABASE_ACCESS_TOKEN` (for Auth URL sync).
 
 **Skip database** when schema already exists (your case after a prior `db:schema`):
 
@@ -135,8 +136,8 @@ After deploy, open the **stable** Pages URL from the summary or `wrangler pages 
 
 ## Prerequisites
 
-- **Cloudflare:** scoped API token — `worker/.cloudflare.env` or `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` ([external-auth.md](./external-auth.md), [cloudflare-auth.md](./cloudflare-auth.md)).
-- **Supabase:** a project for production (one project for demo + prod is fine for a portfolio deploy). Keys in `worker/.dev.vars` or exported env ([database-setup.md](./database-setup.md)).
+- **Cloudflare:** scoped API token — `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` in root `.env` ([external-auth.md](./external-auth.md), [cloudflare-auth.md](./cloudflare-auth.md)).
+- **Supabase:** a project for production (one project for demo + prod is fine for a portfolio deploy). Keys in root `.env` ([database-setup.md](./database-setup.md)).
 - **Empty database** for `npm run db:schema` on first setup (script refuses if tables already exist). Re-deploy with `npm run deploy:all:skip-db` when schema is already applied. To wipe and re-apply schema or re-seed on the **same** project, see [database-setup.md — Reset database](./database-setup.md#reset-database-without-deleting-the-project).
 - **Node 22+** and `npm run setup:local` (Wrangler available under `worker/`).
 
@@ -153,7 +154,7 @@ After deploy, open the **stable** Pages URL from the summary or `wrangler pages 
 
 ### Step 1 — Supabase database (production project)
 
-Use a **dedicated** Supabase project (recommended). Point `worker/.dev.vars` at that project’s URL, secret key, and `SUPABASE_DB_URL` (transaction pooler) — same as local setup.
+Use a **dedicated** Supabase project (recommended). Set `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `SUPABASE_DB_URL` (transaction pooler) in root `.env` — same as local setup.
 
 **Required (empty DB only):**
 
@@ -182,7 +183,7 @@ You need the **Cloudflare Pages** URL first. Skip Step 7 in Pass 2 until after `
 ### Step 2 — Worker secrets (one-time per Worker name)
 
 Production secrets are stored in **Cloudflare**, not in `wrangler.toml` or git.  
-`worker/.dev.vars` is for **`wrangler dev` only** — it is **not** uploaded when you run `deploy:worker`.
+Local dev loads root `.env` via `wrangler dev --env-file ../.env` — that file is **not** uploaded when you run `deploy:worker`.
 
 **Required before first Worker deploy:**
 
@@ -252,19 +253,15 @@ If you miss the URL: Cloudflare Dashboard → **Workers & Pages** → **sinc-crm
 
 ### Step 4 — Production frontend env (build-time)
 
-```bash
-cp .env.production.example .env.production
-```
-
-Edit `.env.production`:
+Set in root **`.env`** (same file as local dev):
 
 ```env
-VITE_SUPABASE_URL=https://<ref>.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=<publishable-key>
+SUPABASE_URL=https://<ref>.supabase.co
+SUPABASE_PUBLISHABLE_KEY=<publishable-key>
 VITE_API_BASE_URL=https://sinc-crm-api.<your-subdomain>.workers.dev
 ```
 
-`VITE_*` values are **embedded in the static bundle** when you build. If you change them, run **`npm run deploy:pages` again** (rebuild). There is no runtime override on Pages for these variables.
+`deploy:pages` and `deploy:all` derive Vite build vars from `SUPABASE_*` via [`load-stack-env.mjs`](../scripts/lib/load-stack-env.mjs). Values are **embedded in the static bundle** when you build. If you change them, run **`npm run deploy:pages` again** (rebuild).
 
 ---
 
@@ -321,7 +318,7 @@ Or update via `wrangler secret bulk` / `--secrets-file` (see Step 2).
 - Sets **Site URL** to the stable Pages origin from the Cloudflare API
 - Merges **Redirect URLs** (`uri_allow_list`) with production origin plus `http://localhost:5173` for local dev
 
-**Requires** `SUPABASE_ACCESS_TOKEN` in `worker/.dev.vars` (personal access token with **auth_config_write**). Create at [Account tokens](https://supabase.com/dashboard/account/tokens). This is **not** the same as `SUPABASE_SECRET_KEY`.
+**Requires** `SUPABASE_ACCESS_TOKEN` in root `.env` (personal access token with **auth_config_write**). Create at [Account tokens](https://supabase.com/dashboard/account/tokens). This is **not** the same as `SUPABASE_SECRET_KEY`.
 
 **Not** configured in Cloudflare. Use your **Pages** URL, not the Worker URL.
 
@@ -337,7 +334,7 @@ Or update via `wrangler secret bulk` / `--secrets-file` (see Step 2).
 npm run verify:deploy
 ```
 
-Requires `.env.production` with a non-local `VITE_API_BASE_URL`. Checks `GET <VITE_API_BASE_URL>/api/health` → `200`.
+Requires root `.env` with a non-local `VITE_API_BASE_URL`. Checks `GET <VITE_API_BASE_URL>/api/health` → `200`.
 
 **Optional** production smoke (needs demo seed for DEPLOY-02 login):
 
@@ -355,7 +352,7 @@ Update the root [README.md](../README.md#deployment) table with your live URLs (
 
 After `deploy:all`, the script prints **Worker**, **Pages**, and **Supabase** URLs from the Cloudflare API. Re-fetch the stable Pages hostname with a token that has **Pages Read** (see [cloudflare-auth.md](./cloudflare-auth.md)).
 
-Do not commit secrets or `.env.production`.
+Do not commit secrets or `.env`.
 
 ---
 
@@ -378,9 +375,9 @@ Do not commit secrets or `.env.production`.
 | Demo users/data | CLI `npm run db:seed` (optional) | Demo / walkthrough only |
 | API Supabase keys | Worker secrets | `SUPABASE_URL`, `SUPABASE_SECRET_KEY` |
 | Browser → API CORS | Worker secret `CORS_ORIGINS` | Stable Pages URL only (see [stable vs preview](#pages-url-stable-vs-deployment-preview-read-before-pass-2)) |
-| SPA Supabase + API URL | `.env.production` → rebuild Pages | `VITE_*` |
-| Auth redirect allowlist | **Supabase Dashboard** → Authentication → URL configuration | Pages URL |
-| Cloudflare login for CLI | `worker/.cloudflare.env` or env | Token + account ID |
+| SPA Supabase + API URL | Root `.env` → rebuild Pages | `SUPABASE_*`, `VITE_API_BASE_URL` |
+| Auth redirect allowlist | **Supabase Dashboard** or `deploy:all` API | Pages URL |
+| Cloudflare login for CLI | Root `.env` or env | Token + account ID |
 
 ---
 
@@ -390,12 +387,12 @@ Do not commit secrets or `.env.production`.
 
 **Later (both supported):**
 
-- **GitHub Actions:** `CI=true`, inject `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, write `.env.production` from secrets, `wrangler deploy` + `wrangler pages deploy`, Worker secrets via `wrangler secret bulk` or dashboard.
+- **GitHub Actions:** `CI=true`, inject secrets into root `.env`, `wrangler deploy` + `wrangler pages deploy`, Worker secrets via `wrangler secret bulk` or dashboard.
 - **Cloudflare Git integration:** connect the repo in the Cloudflare dashboard so **pushes build Pages**; Worker still needs a workflow or manual deploy unless you add Actions.
 
 E2E in CI is documented separately ([ci-e2e-recipe.md](./ci-e2e-recipe.md)) — that is **testing**, not production deploy.
 
-Do not commit `.env.production`, `worker/.dev.vars`, or secret files.
+Do not commit `.env`, legacy `worker/.dev.vars`, or secret files.
 
 ---
 
@@ -410,7 +407,7 @@ Do not commit `.env.production`, `worker/.dev.vars`, or secret files.
 | Login works but stay on login page | Session exists but `/api/me` failed (CORS or 503) — `role` never loads; fix Worker secrets + stable origin |
 | Login redirect / auth URL errors | **Supabase Dashboard** → Authentication → URL configuration — Site URL + Redirect URLs must include the Pages URL |
 | API 401 on `/api/me` without login | Expected — use `/api/health` for smoke |
-| UI still calls old API | Update `.env.production` → `npm run deploy:pages` (rebuild) |
+| UI still calls old API | Update `VITE_API_BASE_URL` in `.env` → `npm run deploy:pages` (rebuild) |
 | `wrangler deploy` auth fail | Token permissions; [cloudflare-auth.md](./cloudflare-auth.md) |
 | `db:schema` / `db:seed` refused | DB not empty — [Reset database (same project)](./database-setup.md#reset-database-without-deleting-the-project) (Level A or B) |
 | DEPLOY-02 smoke fails | Run `db:seed` or sign in with a real manager account |

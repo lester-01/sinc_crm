@@ -4,7 +4,7 @@
 
 ## Recommended: scoped API token
 
-For local scripts, verification, and CI/CD, use **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`** in `worker/.cloudflare.env` or exported in the environment (env wins over file). Auth ladder: [external-auth.md](./external-auth.md). Setup: [quick-start.md](./quick-start.md).
+For local scripts, verification, and CI/CD, use **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`** in root **`.env`** or exported in the environment (env wins over file). Auth ladder: [external-auth.md](./external-auth.md). Setup: [quick-start.md](./quick-start.md).
 
 `scripts/ensure-cloudflare-auth.sh` and `npm run verify:cloudflare` use this token path by default.
 
@@ -39,7 +39,7 @@ You can ignore these warnings if `whoami` still shows your **Account Name** and 
 
 **Pages project name vs URL:** deploy uses project name `sinc-crm` (from `worker/wrangler.toml`: `sinc-crm-api` → `sinc-crm`). The browser URL may differ (e.g. `https://sinc-crm-esg.pages.dev`) — that comes from the API **subdomain** field. See [deploy-guide.md](./deploy-guide.md#pages-url-stable-vs-deployment-preview-read-before-pass-2).
 
-Desktop **OAuth** (`wrangler login`) can work for Wrangler CLI alone, but **`deploy:all` requires a token with the permissions above** in `worker/.cloudflare.env` (or env) so URL resolution does not depend on OAuth.
+Desktop **OAuth** (`wrangler login`) can work for Wrangler CLI alone, but **`deploy:all` requires a token with the permissions above** in root `.env` (or env) so URL resolution does not depend on OAuth.
 
 ## Optional: desktop OAuth (`wrangler login`)
 
@@ -53,5 +53,5 @@ When `CI=true`, scripts **do not** open a browser. Export `CLOUDFLARE_API_TOKEN`
 
 `npm run deploy:worker` and `deploy:pages` use the same token ladder via `ensure-cloudflare-auth.sh`.
 
-- **Today:** manual CLI deploy — [deploy-guide.md](./deploy-guide.md) (two-pass: Worker → Pages → CORS + Supabase Auth URLs).
+- **Today:** CLI deploy via `npm run deploy:all` or manual steps — [deploy-guide.md](./deploy-guide.md).
 - **Later:** GitHub push → Cloudflare Pages and/or GitHub Actions for Worker — valid alternative, not checked into this repo yet; both paths will be documented.

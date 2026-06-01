@@ -18,7 +18,7 @@ Human-readable catalog of automated tests, how to run them, and how to add new o
 | Stack verify | Node scripts | `npm run verify:*` | Env, schema, Cloudflare token — not business rules |
 | Tooling auth ladder | Node test | `npm run test:scripts` | Env vs files, `CI=true` fail-fast (Phase 12) |
 
-**Default E2E:** isolated run via `scripts/e2e-run.mjs` — creates `sinc-ci-e2e-*` Supabase project, seeds, runs tests, deletes project. Artifacts: [e2e-artifacts.md](./e2e-artifacts.md).
+**Default E2E:** isolated run via `scripts/e2e-run.mjs` — creates `sinc-ci-e2e-*` Supabase project, seeds, runs tests, deletes project. Last verified: **58 passed**, 2 deploy-only skipped (`@deploy` needs live URLs). Artifacts: [e2e-artifacts.md](./e2e-artifacts.md).
 
 ---
 

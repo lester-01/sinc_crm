@@ -34,8 +34,7 @@ async function main() {
   if (!url || !secret) {
     fail(
       "Missing Supabase API keys.\n" +
-        "  .env: VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY\n" +
-        "  worker/.dev.vars: SUPABASE_URL, SUPABASE_SECRET_KEY\n" +
+        "  .env: SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SECRET_KEY\n" +
         "See docs/database-setup.md — Credentials",
     );
   }

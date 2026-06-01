@@ -36,6 +36,7 @@ Install, env files, schema, and seed:
 - [stack-setup.md](./stack-setup.md) — verify commands and installers
 - [infrastructure-phases.md](./infrastructure-phases.md) — phases 1–5 summary
 - [database-setup.md](./database-setup.md) — schema, seed, demo users
+- [security-architecture.md](./security-architecture.md) — RLS, keys, role assignment
 
 ---
 
@@ -82,7 +83,7 @@ npm run dev              # :5173
 cd worker && npm run dev   # :8787
 ```
 
-Env: `.env` + `worker/.dev.vars` (or exported vars). Seed: `npm run db:schema && npm run db:seed`.
+Env: root `.env` only (or exported vars). Seed: `npm run db:schema && npm run db:seed`.
 
 Demo users: `manager1@demo.local` / `demo1234` (see [README](../README.md#demo-users)).
 
@@ -121,13 +122,13 @@ Run smoke: `npm run test:e2e -- --grep @smoke`.
 
 ## 10. Deployment
 
-Deploy: [deploy-guide.md](./deploy-guide.md) — **two-pass manual procedure** (Pass 1: schema/worker/pages; Pass 2: CORS secret + Supabase Auth URLs). Optional `db:seed` for demo logins only.
+Deploy: [deploy-guide.md](./deploy-guide.md) — **`npm run deploy:all`** (automated two-pass) or manual Worker/Pages steps. Optional `db:seed` for demo logins only.
 
-**How we deploy today:** Wrangler CLI (`npm run deploy:worker`, `deploy:pages`) with a Cloudflare API token.
+**How we deploy today:** Wrangler CLI (`npm run deploy:all`, `deploy:worker`, `deploy:pages`) with Cloudflare API token in root `.env`.
 
 **Also valid (not wired in this repo yet):** GitHub push → Cloudflare Pages build, plus GitHub Actions for Worker secrets and deploy. We plan to support **both** CLI and CI paths; use the deploy guide’s CLI steps for now.
 
-Record production URLs in [README](../README.md#deployment) after deploy. A future two-pass automation script is planned after manual deploy is verified.
+Record production URLs in [README](../README.md#live-application) after deploy.
 
 ---
 

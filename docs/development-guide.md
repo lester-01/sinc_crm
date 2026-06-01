@@ -34,7 +34,7 @@ npm run dev
 cd worker && npm run dev
 ```
 
-Use `.env` + `worker/.dev.vars` (or env vars per [external-auth.md](./external-auth.md)). Demo logins: [README § Demo users](../README.md#demo-users).
+Use root `.env` only (or env vars per [external-auth.md](./external-auth.md)). Demo logins: [README § Demo users](../README.md#demo-users).
 
 **Before opening a PR or finishing a feature**, run the checks in [Pre-merge checklist](#pre-merge-checklist) below.
 
@@ -167,7 +167,7 @@ Read artifacts under `test-results/` ([e2e-artifacts.md](./e2e-artifacts.md)): s
 - [ ] `npm run test:e2e:dev` for the phase you touched (dev servers running)
 - [ ] `npm run test:e2e` before release or when changing seed, schema apply, or shared fixtures
 - [ ] [testing-guide.md](./testing-guide.md) updated when test IDs added
-- [ ] No secrets committed (`.env`, `.dev.vars`, `.cloudflare.env` stay local)
+- [ ] No secrets committed (`.env` stays local; remove legacy `worker/.dev.vars` / `worker/.cloudflare.env` if present)
 
 ---
 
@@ -205,4 +205,4 @@ Read artifacts under `test-results/` ([e2e-artifacts.md](./e2e-artifacts.md)): s
 | Security constraints to cover | [testing-plan.md](./testing-plan.md) |
 | Architecture & troubleshooting | [project-guide.md](./project-guide.md) |
 | CI later | [ci-e2e-recipe.md](./ci-e2e-recipe.md) |
-| Deploy (Worker + Pages, two-pass manual CLI) | [deploy-guide.md](./deploy-guide.md) — GitHub→Cloudflare CI planned alongside CLI |
+| Deploy (Worker + Pages) | [deploy-guide.md](./deploy-guide.md) — `deploy:all` or manual CLI |

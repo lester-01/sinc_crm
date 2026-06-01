@@ -48,6 +48,8 @@ There is no `SINC_*` flag — use the standard `CI` variable only.
 
 Implementation: `scripts/lib/load-stack-env.mjs` merges `.env` + overlay, then applies `STACK_ENV_KEYS` from `process.env`.
 
+**Legacy files (deprecated):** `worker/.dev.vars` and `worker/.cloudflare.env` — if present, `npm run verify:supabase` warns to remove them; credentials belong in root `.env` only.
+
 ## Isolated E2E environment split
 
 | File | Contents |

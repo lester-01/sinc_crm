@@ -33,10 +33,10 @@ export async function createE2eProject() {
   const token = merged.SUPABASE_ACCESS_TOKEN?.trim();
   const orgSlug = resolveSupabaseOrgSlug(merged);
   if (!token) {
-    fail("SUPABASE_ACCESS_TOKEN required in worker/.dev.vars for isolated E2E");
+    fail("SUPABASE_ACCESS_TOKEN required in root .env for isolated E2E");
   }
   if (!orgSlug) {
-    fail("SUPABASE_ORG_SLUG required in worker/.dev.vars (dashboard URL …/org/<slug>/…)");
+    fail("SUPABASE_ORG_SLUG required in root .env (dashboard URL …/org/<slug>/…)");
   }
 
   const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);

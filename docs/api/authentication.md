@@ -43,6 +43,8 @@ Only `GET /api/health` is public (no token required).
 
 Per-endpoint permission matrix: [openapi.yaml](./openapi.yaml) (`x-permissions` on each operation).
 
+**Role assignment:** Public signup defaults to `client`. `manager` and `sales` are set via Admin API `app_metadata.role` (seed) or Dashboard — not via user-editable signup metadata. See [security-architecture.md](../security-architecture.md).
+
 ## Error responses
 
 All errors use a JSON body:

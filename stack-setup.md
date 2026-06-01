@@ -1,1 +1,0 @@
-docs/stack-setup.md

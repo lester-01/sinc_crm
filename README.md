@@ -2,6 +2,30 @@
 
 A full-stack student CRM with role-based access, realtime chat, deal pipeline, and a manager dashboard. The SPA runs on Cloudflare Pages (Vite + React); the API runs on Cloudflare Workers (Hono); data and auth use hosted Supabase.
 
+## Screenshots
+
+Production demo (`demo1234` for all seeded accounts). See [Demo users](#demo-users).
+
+| Login | Demo accounts |
+|-------|---------------|
+| ![Login screen](images/sinc_login.png) | ![Demo account picker](images/sinc_demo_accounts.png) |
+
+**Manager** — dashboard, clients, client detail, pipeline:
+
+| Dashboard | Clients | Client detail | Pipeline |
+|-----------|---------|---------------|----------|
+| ![Manager dashboard](images/sinc_manager_dashboard.png) | ![Manager clients list](images/sinc_manager_clients.png) | ![Manager client detail](images/sinc_manager_client_info.png) | ![Manager pipeline](images/sinc_manager_pipeline.png) |
+
+**Sales** — conversation workspace:
+
+![Sales chat](images/sinc_sales_chat.png)
+
+**Client** — profile and chat:
+
+| Profile | Chat |
+|---------|------|
+| ![Client profile](images/sinc_client_profile.png) | ![Client chat](images/sinc_client_chat.png) |
+
 ## Quick start
 
 **Canonical guide:** [docs/quick-start.md](docs/quick-start.md) — automated setup (Linux/WSL), env files, hosted Supabase schema/seed, and local dev servers.
@@ -36,9 +60,23 @@ CRM-only row without auth login: `prospect.no.login@example.com` — see [databa
 
 ## Running tests
 
-Run **`npm run test:e2e`** for the full isolated Playwright suite (creates a temporary Supabase project, seeds, tests, deletes). For day-to-day dev against your existing `.env`, use **`npm run test:e2e:dev`**. Worker unit tests: **`npm run test:worker`**.
+Run **`npm run test:e2e`** for the full isolated Playwright suite (creates a temporary Supabase project, seeds, tests, deletes — **58 passed**, 2 deploy-only skipped). For day-to-day dev against your existing `.env`, use **`npm run test:e2e:dev`**. Worker unit tests: **`npm run test:worker`**.
 
 Full catalog, commands, and how to add tests: [docs/testing-guide.md](docs/testing-guide.md#back-to-readme). Tooling auth ladder: `npm run test:scripts`.
+
+## Releases
+
+| Tag | Notes |
+|-----|-------|
+| **v1.4.0** (latest) | Single root `.env`, RLS security hardening, isolated E2E, script/verify refactor, manager RBAC |
+| v1.3.0 | Pre–infra-overhaul baseline — use if v1.4.0 setup surprises you |
+
+```bash
+git checkout v1.4.0   # latest release (recommended)
+git checkout v1.3.0   # known-stable fallback if latest has issues
+```
+
+Lots of changes landed after v1.3.0; if something breaks on `main`, try v1.3.0 before debugging.
 
 ## Documentation
 
@@ -48,6 +86,7 @@ Full catalog, commands, and how to add tests: [docs/testing-guide.md](docs/testi
 | Quick start (install, env, scripts) | [docs/quick-start.md](docs/quick-start.md#back-to-readme) |
 | **Script reference (setup / verify)** | [docs/script-reference.md](docs/script-reference.md) |
 | Database schema & seed | [docs/database-setup.md](docs/database-setup.md#back-to-readme) |
+| **Security (RLS, keys, threat model)** | [docs/security-architecture.md](docs/security-architecture.md) |
 | Tooling auth (Cloudflare / Supabase / GitHub) | [docs/external-auth.md](docs/external-auth.md#back-to-readme) |
 | **How to work on the codebase** | [docs/development-guide.md](docs/development-guide.md#back-to-readme) |
 | Testing (all tests + how to add) | [docs/testing-guide.md](docs/testing-guide.md#back-to-readme) |
@@ -55,6 +94,10 @@ Full catalog, commands, and how to add tests: [docs/testing-guide.md](docs/testi
 | Roadmap & future work | [docs/roadmap.md](docs/roadmap.md#back-to-readme) |
 | Deployment | [docs/deploy-guide.md](docs/deploy-guide.md#back-to-readme) |
 | All docs index | [docs/README.md](docs/README.md) |
+
+### Documentation status
+
+Docs were audited for **v1.4.0** (June 2026). If something looks stale, prefer [docs/script-reference.md](docs/script-reference.md) and [docs/external-auth.md](docs/external-auth.md) for env and script behaviour. Evaluation criteria: [project_requirements/evaluation.md](project_requirements/evaluation.md).
 
 ## Requirements
 
@@ -66,6 +109,6 @@ Post-MVP improvements and deferred items: [docs/roadmap.md](docs/roadmap.md#back
 
 ## Deployment
 
-**Canonical guide:** [docs/deploy-guide.md](docs/deploy-guide.md) — two-pass manual deploy (Worker + Pages, CORS, Supabase Auth URLs).
+**Canonical guide:** [docs/deploy-guide.md](docs/deploy-guide.md) — `npm run deploy:all` (automated two-pass) or manual Worker + Pages steps.
 
 To reset Supabase data or schema **without deleting the project** (fast dev iteration), see [database-setup.md — Reset database](docs/database-setup.md#reset-database-without-deleting-the-project).

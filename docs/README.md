@@ -2,6 +2,8 @@
 
 **Onboarding:** start at the root [README.md](../README.md).
 
+**Last audited:** v1.4.0 (June 2026). Source of truth for env/scripts: [script-reference.md](./script-reference.md), [external-auth.md](./external-auth.md).
+
 | Doc | Purpose |
 |-----|---------|
 | [api/openapi.yaml](./api/openapi.yaml) | **API reference (OpenAPI 3.1)** — routes, schemas, role permissions, examples |
@@ -18,7 +20,7 @@
 | [cloudflare-auth.md](./cloudflare-auth.md) | Cloudflare token permissions, Pages hostname |
 | [testing-guide.md](./testing-guide.md) | Test catalog (60 E2E + Vitest), how to add tests |
 | [testing-plan.md](./testing-plan.md) | Security matrix, isolated E2E philosophy |
-| [deploy-guide.md](./deploy-guide.md) | Two-pass manual deploy (CLI) |
+| [deploy-guide.md](./deploy-guide.md) | Production deploy (`deploy:all` or manual CLI) |
 | [roadmap.md](./roadmap.md) | Post-MVP / deferred items |
 | [playwright-wsl-setup.md](./playwright-wsl-setup.md) | Playwright on WSL |
 | [e2e-artifacts.md](./e2e-artifacts.md) | Per-test artifacts under `test-results/` |

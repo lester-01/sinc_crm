@@ -38,7 +38,7 @@ main() {
 
   log ""
   log "Worker deployed. Copy the workers.dev URL from the line above (Published …)."
-  log "Pass 1: set VITE_API_BASE_URL in .env.production → npm run deploy:pages"
+  log "Pass 1: set VITE_API_BASE_URL in root .env → npm run deploy:pages"
   log "Pass 2: CORS_ORIGINS + Supabase Auth URLs = stable Pages URL (not the deployment preview URL)"
   log "Full steps: docs/deploy-guide.md"
 }

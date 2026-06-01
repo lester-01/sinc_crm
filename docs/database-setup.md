@@ -63,7 +63,7 @@ Scripts use **exactly** what you paste in `SUPABASE_DB_URL` — **no hardcoded r
 postgresql://postgres.<project-ref>:[YOUR-PASSWORD]@<pooler-host>:6543/postgres
 ```
 
-4. Paste into `worker/.dev.vars` as `SUPABASE_DB_URL=...`
+4. Paste into `.env` as `SUPABASE_DB_URL=...`
 
 Your project’s values come **only from the dashboard** (example shape — yours may differ):
 
@@ -101,9 +101,9 @@ SUPABASE_DB_PASSWORD=your-password-here
 
 1. **Project Settings** → **API** (or **API Keys**)  
 2. Copy the **secret** key (`sb_secret_...`) — not the publishable key  
-3. Paste as `SUPABASE_SECRET_KEY` in `worker/.dev.vars` only  
+3. Paste as `SUPABASE_SECRET_KEY` in `.env`
 
-Used for seeding (Auth Admin API) and the Worker at runtime. **Never** put it in `.env` or commit it.
+Used for seeding (Auth Admin API) and the Worker at runtime. **Never** commit `.env`.
 
 ---
 
@@ -121,19 +121,14 @@ Check out repo, create env files from secrets, then:
 ```yaml
 - run: npm ci
 - run: npm run setup:local
-- name: Write worker/.dev.vars
-  run: |
-    cat >> worker/.dev.vars <<EOF
-    SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-    SUPABASE_SECRET_KEY=${{ secrets.SUPABASE_SECRET_KEY }}
-    SUPABASE_DB_URL=${{ secrets.SUPABASE_DB_URL }}
-    SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }}
-    EOF
 - name: Write .env
   run: |
     cat > .env <<EOF
-    VITE_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-    VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+    SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+    SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+    SUPABASE_SECRET_KEY=${{ secrets.SUPABASE_SECRET_KEY }}
+    SUPABASE_DB_URL=${{ secrets.SUPABASE_DB_URL }}
+    SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }}
     VITE_API_BASE_URL=http://localhost:8787
     EOF
 - run: npm run db:schema
@@ -170,7 +165,7 @@ The core model matches [database.md](../project_requirements/database.md) and th
 |--------|-----------|
 | `clients.email` **UNIQUE** | Prevents duplicate CRM rows; supports client lookup and demo integrity. |
 | Index on `conversation_threads.last_message_at DESC` | Inbox/queue sorted by recent activity (common sales workflow). |
-| `handle_new_user` trigger | Inserts `profiles` on signup; role from **app_metadata** only (default `client`). See [security-architecture.md](../docs/security-architecture.md). |
+| `handle_new_user` + `handle_user_app_metadata_updated` triggers | Inserts `profiles` on signup; role from **app_metadata** (Admin API / seed) via UPDATE trigger. See [security-architecture.md](./security-architecture.md). |
 | RLS **SELECT** policies + **private** helpers | Browser Realtime uses publishable key + JWT; helpers not exposed as RPC. |
 | **RLS auto-enable** event trigger (`00`) | New tables in `public` get RLS automatically. |
 | Realtime publication | Tables listed in api.md are added to `supabase_realtime`. |
@@ -199,7 +194,7 @@ We are **not** using “create a second project and seed that” automation yet 
 
 ## Reset database without deleting the project
 
-Use this when you want a **fresh database on the same Supabase project** (same URL, same API keys in `.env` / `worker/.dev.vars`). Typical during development: re-seed demo users, or re-apply schema after editing `supabase/schema/*.sql`.
+Use this when you want a **fresh database on the same Supabase project** (same URL, same API keys in `.env`). Typical during development: re-seed demo users, or re-apply schema after editing `supabase/schema/*.sql`.
 
 **Do not delete** the Supabase project, Cloudflare Worker/Pages, or your env files unless you intend a full greenfield setup.
 
@@ -218,7 +213,7 @@ After a successful `npm run deploy:all:skip-db`, you usually **do not** need to 
 ### What to keep (always)
 
 - Supabase **project** (dashboard project, ref in `SUPABASE_URL`)
-- **Project Settings → API** keys (already in `.env` and `worker/.dev.vars`)
+- **Project Settings → API** keys (already in `.env`)
 - **Dashboard Auth settings** you configured once — e.g. [email confirmation off for demo](#4-email-confirmation-disabled-demo-only), OAuth providers, SMTP. Level B removes CRM tables and the `auth.users` rows you delete manually; it does **not** reset Auth provider configuration.
 - The **`public` schema itself** (ownership and grants) — Level B drops only objects this repo created inside `public`, not the schema shell.
 - Cloudflare deploy (Worker + Pages) — unrelated to DB reset
@@ -451,7 +446,7 @@ Confirm **Authentication → Users** shows **0 users**.
 
 #### Step 4 — Recreate from your machine
 
-From the repo root (Node 22+, `worker/.dev.vars` configured):
+From the repo root (Node 22+, `.env` configured):
 
 ```bash
 npm run db:schema
@@ -569,7 +564,7 @@ When you read up on migrations later, you can adopt `supabase/migrations/` and m
 ## Prerequisites
 
 - Phase 4 complete (`verify:all` passed).
-- `.env` and `worker/.dev.vars` filled per [Credentials](#credentials-what-to-get-where-to-paste) above.
+- `.env` filled per [Credentials](#credentials-what-to-get-where-to-paste) above.
 - Supabase CLI installed: `npm run setup:local`.
 
 ---

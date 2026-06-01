@@ -2,7 +2,7 @@
 
 Machine-oriented testing philosophy and **non-negotiable security constraints**. Full test ID catalog: [testing-guide.md](./testing-guide.md).
 
-Related: [e2e-artifacts.md](./e2e-artifacts.md), [ci-e2e-recipe.md](./ci-e2e-recipe.md), [evaluation.md](../project_requirements/evaluation.md)
+Related: [e2e-artifacts.md](./e2e-artifacts.md), [ci-e2e-recipe.md](./ci-e2e-recipe.md), [security-architecture.md](./security-architecture.md), [evaluation.md](../project_requirements/evaluation.md)
 
 ---
 
