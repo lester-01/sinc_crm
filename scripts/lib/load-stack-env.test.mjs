@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { buildPoolerDbUrl } from "./supabase-management.mjs";
 import {
+  getViteSupabaseBuildEnv,
   hasCloudflareStackKeys,
   hasFrontendStackKeys,
   hasWorkerStackKeys,
@@ -92,11 +93,11 @@ describe("load-stack-env (tooling auth ladder)", () => {
     });
 
     it("AUTH-LADDER-05: hasFrontendStackKeys and hasWorkerStackKeys", () => {
-      assert.equal(hasFrontendStackKeys({ VITE_SUPABASE_URL: FAKE_URL }), false);
+      assert.equal(hasFrontendStackKeys({ SUPABASE_URL: FAKE_URL }), false);
       assert.equal(
         hasFrontendStackKeys({
-          VITE_SUPABASE_URL: FAKE_URL,
-          VITE_SUPABASE_PUBLISHABLE_KEY: FAKE_PUB,
+          SUPABASE_URL: FAKE_URL,
+          SUPABASE_PUBLISHABLE_KEY: FAKE_PUB,
         }),
         true,
       );
@@ -110,6 +111,20 @@ describe("load-stack-env (tooling auth ladder)", () => {
     });
   });
 
+  describe("getViteSupabaseBuildEnv", () => {
+    it("AUTH-LADDER-13: maps SUPABASE_* to VITE_* for build", () => {
+      assert.deepEqual(getViteSupabaseBuildEnv({
+        SUPABASE_URL: FAKE_URL,
+        SUPABASE_PUBLISHABLE_KEY: FAKE_PUB,
+        VITE_API_BASE_URL: "http://localhost:8787",
+      }), {
+        VITE_SUPABASE_URL: FAKE_URL,
+        VITE_SUPABASE_PUBLISHABLE_KEY: FAKE_PUB,
+        VITE_API_BASE_URL: "http://localhost:8787",
+      });
+    });
+  });
+
   describe("E2E pooler DB URL", () => {
     it("AUTH-LADDER-11: buildPoolerDbUrl uses session pooler port 5432 for schema", () => {
       const url = buildPoolerDbUrl("abcdefgh", "pass-word-12345678", "eu-central-1");
@@ -120,7 +135,7 @@ describe("load-stack-env (tooling auth ladder)", () => {
   });
 
   describe("loadStackEnv env overrides files", () => {
-    const keys = ["CLOUDFLARE_API_TOKEN", "VITE_SUPABASE_URL"];
+    const keys = ["CLOUDFLARE_API_TOKEN", "SUPABASE_URL"];
 
     beforeEach(() => stashEnv(keys));
     afterEach(() => restoreEnv(keys));
@@ -130,15 +145,15 @@ describe("load-stack-env (tooling auth ladder)", () => {
       const overlay = join(dir, "overlay.env");
       writeFileSync(
         overlay,
-        `CLOUDFLARE_API_TOKEN=file-token-xxxxxxxx\nVITE_SUPABASE_URL=https://fileonly.supabase.co\n`,
+        `CLOUDFLARE_API_TOKEN=file-token-xxxxxxxx\nSUPABASE_URL=https://fileonly.supabase.co\n`,
         "utf8",
       );
       process.env.CLOUDFLARE_API_TOKEN = FAKE_CF;
-      process.env.VITE_SUPABASE_URL = FAKE_URL;
+      process.env.SUPABASE_URL = FAKE_URL;
 
       const { merged } = loadStackEnv({ overlayPath: overlay });
       assert.equal(merged.CLOUDFLARE_API_TOKEN, FAKE_CF);
-      assert.equal(merged.VITE_SUPABASE_URL, FAKE_URL);
+      assert.equal(merged.SUPABASE_URL, FAKE_URL);
       rmSync(dir, { recursive: true });
     });
   });

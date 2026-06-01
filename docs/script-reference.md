@@ -41,7 +41,7 @@ verify:linux  →  setup:node / verify:node  →  setup:cli / verify:cli
 | `db:schema` | Apply SQL to hosted Supabase |
 | `db:seed` | Demo users and sample data |
 
-**Files:** `.env` (frontend keys), `worker/.dev.vars` (worker secrets). See [quick-start.md](./quick-start.md).
+**File:** root `.env` (Supabase + Cloudflare keys). See [deploy-guide.md](./deploy-guide.md).
 
 **Internal modules (not npm scripts):**
 
@@ -72,7 +72,7 @@ Use `--strict` on either command to fail on warnings (future CI).
 | `deploy:worker` / `deploy:pages` / `deploy:all` | Publish Worker + Pages |
 | **`verify:deploy`** | Production API health (`VITE_API_BASE_URL`) |
 
-**File:** `worker/.cloudflare.env`. See [deploy-guide.md](./deploy-guide.md).
+**File:** root `.env` (`CLOUDFLARE_*`). See [deploy-guide.md](./deploy-guide.md).
 
 `deploy:all` calls `require-supabase` then `require-cloudflare` before deploy.
 

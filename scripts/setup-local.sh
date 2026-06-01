@@ -36,7 +36,7 @@ main() {
 
   log "=========================================="
   log "setup:local finished."
-  log "  Next: copy .env + worker/.dev.vars, then npm run setup:supabase"
+  log "  Next: copy .env.example → .env, then npm run setup:supabase"
   log "  docs/quick-start.md"
   log "=========================================="
 }

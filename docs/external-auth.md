@@ -8,7 +8,7 @@ Scripts, setup, and verification use a shared **auth ladder** for Cloudflare, Su
 
 1. **Already authenticated** — e.g. `wrangler whoami` succeeds, Supabase API reachable, `gh auth status` OK.
 2. **`process.env`** — injected keys/tokens (CI, shell export). **Overrides** dotenv file values when both are set.
-3. **Dotenv files** — `.env`, `worker/.dev.vars`, `worker/.cloudflare.env`, optional `E2E_ENV_FILE` overlay. Files are **not required** when every required key for that step is already in the environment.
+3. **Dotenv files** — root `.env`, optional `E2E_ENV_FILE` overlay (isolated E2E). Files are **not required** when every required key for that step is already in the environment.
 4. **Interactive OAuth** — `wrangler login`, `gh auth login` (desktop). Tool default timeouts; no custom repo timeout.
 
 ## Headless / CI (`CI=true`)
@@ -23,7 +23,7 @@ There is no `SINC_*` flag — use the standard `CI` variable only.
 | Service | Required in CI |
 |---------|----------------|
 | Cloudflare | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` |
-| Supabase (app + worker) | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (and `VITE_API_BASE_URL` for frontend verify) |
+| Supabase (app + worker) | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `VITE_API_BASE_URL` |
 | Supabase (E2E project create/delete) | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_ORG_SLUG` |
 | GitHub (optional verify) | `GITHUB_TOKEN` or `GH_TOKEN` |
 
@@ -33,31 +33,33 @@ There is no `SINC_*` flag — use the standard `CI` variable only.
 |----------|---------|
 | `CLOUDFLARE_API_TOKEN` | Wrangler, `ensure-cloudflare-auth.sh`, verify cloudflare |
 | `CLOUDFLARE_ACCOUNT_ID` | Wrangler (recommended with token) |
-| `VITE_SUPABASE_URL` | Vite, verify, db scripts |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Vite, verify |
+| `SUPABASE_URL` | Vite (via define), Worker, db scripts, verify |
+| `SUPABASE_PUBLISHABLE_KEY` | Vite (via define), verify |
+| `SUPABASE_SECRET_KEY` | Worker, db scripts |
 | `VITE_API_BASE_URL` | Vite (local worker URL) |
-| `SUPABASE_URL` | Worker, db scripts |
-| `SUPABASE_SECRET_KEY` | Worker, db scripts (never in `.env`) |
-| `SUPABASE_ACCESS_TOKEN` | E2E isolated project scripts |
+| `SUPABASE_ACCESS_TOKEN` | E2E isolated project scripts, deploy Auth URL sync |
 | `SUPABASE_ORG_SLUG` | E2E isolated project scripts |
 | `GITHUB_TOKEN` / `GH_TOKEN` | `verify-github-actions` |
 | `E2E_ENV_FILE` | Path to extra dotenv overlay for E2E |
+| `STACK_ENV_FILE` | Test-only override for `.env` path |
 | `CI` | When `true`, skip OAuth and fail fast |
 
-Implementation: `scripts/lib/load-stack-env.mjs` merges files then applies `STACK_ENV_KEYS` from `process.env`.
+**Deprecated (do not use in new `.env` files):** `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` — use `SUPABASE_*` instead. See [.env.example](../.env.example).
+
+Implementation: `scripts/lib/load-stack-env.mjs` merges `.env` + overlay, then applies `STACK_ENV_KEYS` from `process.env`.
 
 ## Per service
 
 ### Cloudflare
 
 - Script: `scripts/ensure-cloudflare-auth.sh`
-- Order: existing session → env token → `worker/.cloudflare.env` → `wrangler login` (desktop only; **blocked when `CI=true`**)
+- Order: existing session → env token → root `.env` → `wrangler login` (desktop only; **blocked when `CI=true`**)
 - Details: [cloudflare-auth.md](./cloudflare-auth.md)
 
 ### Supabase (tooling)
 
 - Scripts: `db:schema`, `db:seed`, E2E create/delete, `verify-setup` supabase phases
-- Keys from merged stack env (files + env). See [database-setup.md](./database-setup.md).
+- Keys from merged stack env (`.env` + env). See [database-setup.md](./database-setup.md).
 
 ### GitHub (optional)
 
@@ -77,7 +79,7 @@ See [testing-guide.md](./testing-guide.md#tooling-auth-ladder-auth-ladder--node-
 ```bash
 npm run test:scripts
 
-# Token only via env (no .cloudflare.env file on disk)
+# Token only via env (no .env file on disk)
 CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... npm run verify:cloudflare
 
 # CI simulation — OAuth must not run

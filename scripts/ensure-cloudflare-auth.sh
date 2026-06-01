@@ -2,7 +2,7 @@
 # Cloudflare tooling auth ladder:
 #   1) wrangler whoami (existing session)
 #   2) CLOUDFLARE_API_TOKEN (+ ACCOUNT_ID) from environment
-#   3) same keys from worker/.cloudflare.env (env wins over file)
+#   3) same keys from root .env (env wins over file)
 #   4) wrangler login (desktop OAuth) — skipped when CI=true (fail fast)
 #
 # Usage: bash scripts/ensure-cloudflare-auth.sh

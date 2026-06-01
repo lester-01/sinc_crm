@@ -92,7 +92,7 @@ test.describe("@phase9 Deals & pipeline", () => {
           env[t.slice(0, eq).trim()] = t.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
         }
       }
-      const sb = createClient(env.VITE_SUPABASE_URL!, env.VITE_SUPABASE_PUBLISHABLE_KEY!);
+      const sb = createClient(env.SUPABASE_URL!, env.SUPABASE_PUBLISHABLE_KEY!);
       const { data } = await sb.auth.signInWithPassword({
         email: "sales2@demo.local",
         password: "demo1234",

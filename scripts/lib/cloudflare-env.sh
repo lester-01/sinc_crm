@@ -40,7 +40,7 @@ _cf_merge_cloudflare_creds() {
   token_saved="${CLOUDFLARE_API_TOKEN:-}"
   account_saved="${CLOUDFLARE_ACCOUNT_ID:-}"
   unset CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID 2>/dev/null || true
-  _cf_parse_dotenv "$root/worker/.cloudflare.env"
+  _cf_parse_dotenv "$root/.env"
   local file_token="${CLOUDFLARE_API_TOKEN:-}"
   local file_account="${CLOUDFLARE_ACCOUNT_ID:-}"
   if [[ -n "$token_saved" ]]; then
@@ -58,7 +58,7 @@ _cf_merge_cloudflare_creds() {
 export_cloudflare_env() {
   _cf_merge_cloudflare_creds
   if [[ -z "${CLOUDFLARE_API_TOKEN:-}" || "${CLOUDFLARE_API_TOKEN}" == *"your-"* ]]; then
-    printf 'ERROR: CLOUDFLARE_API_TOKEN not set. Use worker/.cloudflare.env or env.\n' >&2
+    printf 'ERROR: CLOUDFLARE_API_TOKEN not set. Use .env or env.\n' >&2
     return 1
   fi
   if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then

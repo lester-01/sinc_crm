@@ -15,15 +15,16 @@ main() {
   # shellcheck disable=SC2046
   eval "$(
     node -e "
-      import { loadStackEnv } from './scripts/lib/load-stack-env.mjs';
+      import { getViteSupabaseBuildEnv, loadStackEnv } from './scripts/lib/load-stack-env.mjs';
       const { merged } = loadStackEnv();
-      for (const k of ['VITE_SUPABASE_URL','VITE_SUPABASE_PUBLISHABLE_KEY','VITE_API_BASE_URL','CLOUDFLARE_API_TOKEN','CLOUDFLARE_ACCOUNT_ID']) {
-        if (merged[k]) console.log('export '+k+'='+JSON.stringify(String(merged[k])));
+      const vite = getViteSupabaseBuildEnv(merged);
+      for (const [k, v] of Object.entries({ ...vite, CLOUDFLARE_API_TOKEN: merged.CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID: merged.CLOUDFLARE_ACCOUNT_ID })) {
+        if (v) console.log('export '+k+'='+JSON.stringify(String(v)));
       }
     "
   )"
   if [[ -z "${VITE_SUPABASE_URL:-}" ]]; then
-    err "Missing VITE_SUPABASE_URL — set in .env or use npm run deploy:all"
+    err "Missing SUPABASE_URL — set in .env or use npm run deploy:all"
     exit 1
   fi
 
@@ -51,7 +52,7 @@ main() {
     exit 1
   fi
 
-  log ">>> Build frontend (Vite production — VITE_* from environment)"
+  log ">>> Build frontend (Vite production — SUPABASE_* mapped to VITE_* at build)"
   (
     cd "$ROOT" && \
       VITE_SUPABASE_URL="${VITE_SUPABASE_URL:-}" \

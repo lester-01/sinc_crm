@@ -47,7 +47,7 @@ export function resolveDbUrlOrExplain(merged) {
     return {
       url: null,
       error:
-        "Missing SUPABASE_DB_URL in worker/.dev.vars.\n" +
+        "Missing SUPABASE_DB_URL in .env.\n" +
         "Copy the Transaction pooler URI from Supabase Dashboard → Connect\n" +
         "(port 6543). See docs/database-setup.md.",
     };
@@ -60,7 +60,7 @@ export function resolveDbUrlOrExplain(merged) {
         url: null,
         error:
           "SUPABASE_DB_URL contains [YOUR-PASSWORD] but SUPABASE_DB_PASSWORD is not set.\n" +
-          "Add the database password to worker/.dev.vars, or paste the full URI with password included.",
+          "Add the database password to .env, or paste the full URI with password included.",
       };
     }
   }

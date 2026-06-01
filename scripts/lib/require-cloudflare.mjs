@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Exit 0 when Cloudflare credentials are available via env and/or dotenv files.
+ * Exit 0 when Cloudflare credentials are available via env and/or .env.
  */
 
 import { existsSync } from "node:fs";
@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { hasCloudflareStackKeys, loadStackEnv } from "./load-stack-env.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
+const ENV_PATH = join(ROOT, ".env");
 
 function fail(message) {
   console.error(`ERROR: ${message}`);
@@ -17,13 +18,13 @@ function fail(message) {
 const { merged } = loadStackEnv();
 
 if (!hasCloudflareStackKeys(merged)) {
-  if (!existsSync(join(ROOT, "worker", ".cloudflare.env"))) {
+  if (!existsSync(ENV_PATH)) {
     fail(
-      "Missing Cloudflare token — copy worker/.cloudflare.env.example or set CLOUDFLARE_API_TOKEN (+ CLOUDFLARE_ACCOUNT_ID) in the environment.",
+      "Missing Cloudflare token — copy .env.example → .env or set CLOUDFLARE_API_TOKEN (+ CLOUDFLARE_ACCOUNT_ID) in the environment.",
     );
   } else {
     fail(
-      "Incomplete worker/.cloudflare.env — set CLOUDFLARE_API_TOKEN (or export it).",
+      "Incomplete .env — set CLOUDFLARE_API_TOKEN (or export it).",
     );
   }
   console.error("See docs/deploy-guide.md and docs/external-auth.md");

@@ -8,7 +8,7 @@
 import { managementFetch } from "./supabase-management.mjs";
 
 export const SUPABASE_AUTH_CONFIG_HINT =
-  "SUPABASE_ACCESS_TOKEN required in worker/.dev.vars (or env) with auth_config_write. " +
+  "SUPABASE_ACCESS_TOKEN required in .env (or env) with auth_config_write. " +
   "Create at https://supabase.com/dashboard/account/tokens — see docs/deploy-guide.md";
 
 /**

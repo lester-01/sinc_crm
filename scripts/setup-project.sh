@@ -65,7 +65,7 @@ main() {
   log "=========================================="
   log "setup:project finished."
   log "  npm run verify:scaffold  — backend/frontend structure"
-  log "  npm run setup:supabase   — after .env + worker/.dev.vars"
+  log "  npm run setup:supabase   — after .env"
   log "  docs/stack-setup.md"
   log "=========================================="
 }

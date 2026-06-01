@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deploy the Hono API to Cloudflare Workers.
-# Prerequisites: worker/.cloudflare.env or CLOUDFLARE_* env; Worker secrets set (see docs/deploy-guide.md).
+# Prerequisites: CLOUDFLARE_* in .env or environment; Worker secrets set (see docs/deploy-guide.md).
 #
 # Usage: npm run deploy:worker
 

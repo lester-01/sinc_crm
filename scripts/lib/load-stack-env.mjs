@@ -9,12 +9,12 @@ export const STACK_ENV_KEYS = [
   "CLOUDFLARE_API_TOKEN",
   "CLOUDFLARE_ACCOUNT_ID",
   "CORS_ORIGINS",
-  "VITE_SUPABASE_URL",
-  "VITE_SUPABASE_PUBLISHABLE_KEY",
   "VITE_API_BASE_URL",
   "SUPABASE_URL",
   "SUPABASE_SECRET_KEY",
   "SUPABASE_PUBLISHABLE_KEY",
+  "SUPABASE_DB_URL",
+  "SUPABASE_DB_PASSWORD",
   "SUPABASE_ACCESS_TOKEN",
   "SUPABASE_ORG_SLUG",
   "GITHUB_TOKEN",
@@ -68,43 +68,49 @@ export function parseEnvFile(path) {
 }
 
 /**
- * @param {{ overlayPath?: string }} [options]
+ * Vite build/dev env derived from canonical SUPABASE_* keys (not stored in .env).
+ * @param {Record<string, string>} merged
+ */
+export function getViteSupabaseBuildEnv(merged) {
+  return {
+    VITE_SUPABASE_URL: merged.SUPABASE_URL ?? "",
+    VITE_SUPABASE_PUBLISHABLE_KEY: merged.SUPABASE_PUBLISHABLE_KEY ?? "",
+    VITE_API_BASE_URL: merged.VITE_API_BASE_URL ?? "",
+  };
+}
+
+/**
+ * @param {{ overlayPath?: string, envPath?: string }} [options]
  */
 export function loadStackEnv(options = {}) {
-  const rootEnv = parseEnvFile(join(ROOT, ".env"));
-  const workerVars = parseEnvFile(join(ROOT, "worker", ".dev.vars"));
-  const cloudflareEnv = parseEnvFile(join(ROOT, "worker", ".cloudflare.env"));
+  const envPath =
+    options.envPath ??
+    (process.env.STACK_ENV_FILE ? process.env.STACK_ENV_FILE : join(ROOT, ".env"));
+  const rootEnv = parseEnvFile(envPath);
   const overlay = options.overlayPath
     ? parseEnvFile(options.overlayPath)
     : process.env.E2E_ENV_FILE
       ? parseEnvFile(process.env.E2E_ENV_FILE)
       : {};
-  const fromFiles = {
-    ...rootEnv,
-    ...workerVars,
-    ...cloudflareEnv,
-    ...overlay,
-  };
+  const fromFiles = { ...rootEnv, ...overlay };
   const merged = { ...fromFiles, ...pickProcessEnvOverrides() };
   return {
     rootEnv,
-    workerVars,
-    cloudflareEnv,
     overlay,
     merged,
     root: ROOT,
+    envPath,
   };
 }
 
 export function hasFrontendStackKeys(merged) {
-  const url = merged.VITE_SUPABASE_URL;
-  const publicKey =
-    merged.VITE_SUPABASE_PUBLISHABLE_KEY || merged.SUPABASE_PUBLISHABLE_KEY;
+  const url = merged.SUPABASE_URL;
+  const publicKey = merged.SUPABASE_PUBLISHABLE_KEY;
   return Boolean(url && !isPlaceholder(url) && publicKey && !isPlaceholder(publicKey));
 }
 
 export function hasWorkerStackKeys(merged) {
-  const url = merged.SUPABASE_URL || merged.VITE_SUPABASE_URL;
+  const url = merged.SUPABASE_URL;
   const secret = merged.SUPABASE_SECRET_KEY;
   return Boolean(url && !isPlaceholder(url) && secret && !isPlaceholder(secret));
 }
@@ -116,7 +122,7 @@ export function hasCloudflareStackKeys(merged) {
 }
 
 export function getSupabaseUrl(merged) {
-  return (merged.VITE_SUPABASE_URL || merged.SUPABASE_URL || "").replace(/\/$/, "");
+  return (merged.SUPABASE_URL || "").replace(/\/$/, "");
 }
 
 export function getSupabaseSecretKey(merged) {

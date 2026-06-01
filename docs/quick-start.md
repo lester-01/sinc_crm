@@ -18,9 +18,8 @@ cd /path/to/your-clone
 # 1. Machine bootstrap (Linux, Node 22, wrangler + supabase CLI)
 npm run setup:local
 
-# 2. Supabase credentials — copy examples, then paste keys
+# 2. Supabase credentials — copy template, then paste keys
 cp .env.example .env
-cp worker/.dev.vars.example worker/.dev.vars
 # paste Supabase URL, publishable key, secret key, DB URL (see below)
 
 npm run setup:supabase
@@ -67,28 +66,31 @@ npm run setup:node
 
 ---
 
-## Environment files (P1 — Supabase only)
+## Environment file (P1 — Supabase only)
 
-Installers **do not** copy env files. Never commit the copies.
+Installers **do not** copy `.env`. Never commit it.
 
-### Supabase keys
+### Single `.env` at repo root
+
+All credentials live in one file. The Vite frontend reads publishable Supabase values via `vite.config.ts` (`SUPABASE_*` → `import.meta.env.VITE_SUPABASE_*` at build/dev time). Wrangler dev loads the same file: `wrangler dev --env-file ../.env`.
 
 In [Supabase Dashboard](https://supabase.com/dashboard) → your project → **Project Settings → API**:
 
-| Dashboard field | File | Variable |
-|-----------------|------|----------|
-| Project URL | `.env` | `VITE_SUPABASE_URL` |
-| Project URL | `worker/.dev.vars` | `SUPABASE_URL` |
-| **Publishable** key | `.env` | `VITE_SUPABASE_PUBLISHABLE_KEY` |
-| **Secret** key | `worker/.dev.vars` only | `SUPABASE_SECRET_KEY` |
+| Dashboard field | Variable in `.env` |
+|-----------------|-------------------|
+| Project URL | `SUPABASE_URL` |
+| **Publishable** key | `SUPABASE_PUBLISHABLE_KEY` |
+| **Secret** key | `SUPABASE_SECRET_KEY` |
 
-Also in `.env`:
+Also set:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8787
 ```
 
-**Never** put the secret key in `.env`.
+Use `SUPABASE_*` for Supabase values — see [.env.example](../.env.example) for the full template.
+
+Database URI and optional E2E keys: see [.env.example](../.env.example) comments and [database-setup.md](./database-setup.md).
 
 While pasting keys: `SKIP_VERIFY=1 npm run setup:supabase`
 
@@ -96,11 +98,11 @@ Schema, seed, reset: [database-setup.md](./database-setup.md).
 
 ### Cloudflare (P3 — not required for local dev)
 
-See [deploy-guide.md](./deploy-guide.md). Do **not** need `worker/.cloudflare.env` to run locally.
+Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` to `.env` when deploying. See [deploy-guide.md](./deploy-guide.md).
 
 ### E2E-only keys (optional)
 
-For isolated Playwright (`npm run test:e2e`), add to `worker/.dev.vars`:
+For isolated Playwright (`npm run test:e2e`), add to `.env`:
 
 - `SUPABASE_ACCESS_TOKEN` — [account token](https://supabase.com/dashboard/account/tokens)
 - `SUPABASE_ORG_SLUG` — org slug from dashboard URL
@@ -119,7 +121,7 @@ Use **WSL** when possible. Otherwise install **Node.js 22+**, then:
 npm run setup:node
 npm run setup:cli
 npm run verify:local
-# copy + fill .env and worker/.dev.vars
+# copy + fill .env
 npm run setup:supabase
 npm run db:schema && npm run db:seed
 ```

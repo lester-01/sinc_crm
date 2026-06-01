@@ -30,21 +30,32 @@ function parseEnvFile(path: string): Record<string, string> {
   return env;
 }
 
-function getSupabaseAnonConfig() {
+function loadMergedEnv(): Record<string, string> {
   const root = process.cwd();
-  const env = parseEnvFile(join(root, ".env"));
-  const url = env.VITE_SUPABASE_URL;
-  const key = env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const merged = { ...parseEnvFile(join(root, ".env")) };
+  const overlayPath = process.env.E2E_ENV_FILE;
+  if (overlayPath) {
+    Object.assign(merged, parseEnvFile(overlayPath));
+  }
+  return merged;
+}
+
+function getSupabaseAnonConfig(): { url: string; key: string } {
+  const env = loadMergedEnv();
+  const url = env.SUPABASE_URL;
+  const key = env.SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) {
-    throw new Error("Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY in .env");
+    throw new Error("Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY in .env");
   }
   return { url, key };
 }
 
 export function getApiBase(): string {
-  const env = parseEnvFile(join(process.cwd(), ".env"));
+  const env = loadMergedEnv();
   return (env.VITE_API_BASE_URL ?? "http://127.0.0.1:8787").replace(/\/$/, "");
 }
+
+export { getSupabaseAnonConfig, loadMergedEnv };
 
 export async function getAccessToken(role: DemoRole): Promise<string> {
   const { url, key } = getSupabaseAnonConfig();

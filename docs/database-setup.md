@@ -35,16 +35,17 @@ Use a **dedicated dev/demo** Supabase project — not production.
 
 | Variable | Required for | How to get it | Paste into |
 |----------|--------------|---------------|------------|
-| `VITE_SUPABASE_URL` | Frontend, verify | Dashboard → **Project Settings** → **API** → Project URL | `.env` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Frontend, verify | Same page → **Publishable** key (public) | `.env` |
+| `SUPABASE_URL` | Frontend (via Vite define), Worker, scripts | Dashboard → **Project Settings** → **API** → Project URL | `.env` |
+| `SUPABASE_PUBLISHABLE_KEY` | Frontend (via Vite define), verify | Same page → **Publishable** key (public) | `.env` |
+| `SUPABASE_SECRET_KEY` | Worker, `db:seed`, verify | Same API page → **Secret** key (never commit) | `.env` |
 | `VITE_API_BASE_URL` | Frontend | Local: `http://localhost:8787` | `.env` |
-| `SUPABASE_URL` | Worker, scripts | Same Project URL as above | `worker/.dev.vars` |
-| `SUPABASE_SECRET_KEY` | Worker, `db:seed`, verify | Same API page → **Secret** key (never commit) | `worker/.dev.vars` |
-| `SUPABASE_DB_URL` | **`db:schema`**, CLI preflight | Dashboard → **Connect** → **Transaction pooler** (port **6543**) | `worker/.dev.vars` |
-| `SUPABASE_DB_PASSWORD` | Only if URL uses `[YOUR-PASSWORD]` | Dashboard → search **`password`** → database password | `worker/.dev.vars` |
+| `SUPABASE_DB_URL` | **`db:schema`**, CLI preflight | Dashboard → **Connect** → **Transaction pooler** (port **6543**) | `.env` |
+| `SUPABASE_DB_PASSWORD` | Only if URL uses `[YOUR-PASSWORD]` | Dashboard → search **`password`** → database password | `.env` |
 | `SEED_DEMO_PASSWORD` | `db:seed` only | You choose (default `demo1234`) | Shell env / CI secret (optional) |
-| `SUPABASE_ACCESS_TOKEN` | **E2E only** (`test:e2e`) | [Account tokens](https://supabase.com/dashboard/account/tokens) | `worker/.dev.vars` — **not** needed for dev or `db:seed` |
-| `SUPABASE_ORG_SLUG` | **E2E only** | Org slug in dashboard URL (`…/org/<slug>/…`) | `worker/.dev.vars` — **not** needed for dev |
+| `SUPABASE_ACCESS_TOKEN` | **E2E only** (`test:e2e`) | [Account tokens](https://supabase.com/dashboard/account/tokens) | `.env` — **not** needed for dev or `db:seed` |
+| `SUPABASE_ORG_SLUG` | **E2E only** | Org slug in dashboard URL (`…/org/<slug>/…`) | `.env` — **not** needed for dev |
+
+Use `SUPABASE_*` for Supabase values (not `VITE_SUPABASE_*`). See [.env.example](../.env.example).
 
 **Not required:** Cloudflare keys (Phase 4). **Cannot be auto-fetched:** pooler host/region (see below). **E2E tokens** are only for isolated Playwright runs that create `sinc-ci-e2e-*` projects — see [playwright-wsl-setup.md](./playwright-wsl-setup.md).
 

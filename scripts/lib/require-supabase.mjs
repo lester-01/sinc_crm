@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Exit 0 when Supabase credentials are available via env and/or dotenv files.
+ * Exit 0 when Supabase credentials are available via env and/or .env.
  */
 
 import { existsSync } from "node:fs";
@@ -13,6 +13,7 @@ import {
 } from "./load-stack-env.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
+const ENV_PATH = join(ROOT, ".env");
 
 function fail(message) {
   console.error(`ERROR: ${message}`);
@@ -22,31 +23,29 @@ const { merged } = loadStackEnv();
 let ok = true;
 
 if (!hasFrontendStackKeys(merged)) {
-  if (!existsSync(join(ROOT, ".env"))) {
+  if (!existsSync(ENV_PATH)) {
     fail(
-      "Missing frontend Supabase keys — copy .env.example → .env or set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in the environment.",
+      "Missing Supabase keys — copy .env.example → .env or export SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY.",
     );
-    ok = false;
   } else {
     fail(
-      "Incomplete .env — set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY (or export them).",
+      "Incomplete .env — set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY (or export them).",
     );
-    ok = false;
   }
+  ok = false;
 }
 
 if (!hasWorkerStackKeys(merged)) {
-  if (!existsSync(join(ROOT, "worker", ".dev.vars"))) {
+  if (!existsSync(ENV_PATH)) {
     fail(
-      "Missing worker Supabase secrets — copy worker/.dev.vars.example or set SUPABASE_URL and SUPABASE_SECRET_KEY in the environment.",
+      "Missing Supabase worker secrets — copy .env.example → .env or set SUPABASE_URL and SUPABASE_SECRET_KEY in the environment.",
     );
-    ok = false;
   } else {
     fail(
-      "Incomplete worker/.dev.vars — set SUPABASE_URL and SUPABASE_SECRET_KEY (or export them).",
+      "Incomplete .env — set SUPABASE_URL and SUPABASE_SECRET_KEY (or export them).",
     );
-    ok = false;
   }
+  ok = false;
 }
 
 if (!ok) {

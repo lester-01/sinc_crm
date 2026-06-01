@@ -55,7 +55,7 @@ async function tokenForEmail(email: string, password = "demo1234") {
       env[t.slice(0, eq).trim()] = t.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
     }
   }
-  const supabase = createClient(env.VITE_SUPABASE_URL!, env.VITE_SUPABASE_PUBLISHABLE_KEY!);
+  const supabase = createClient(env.SUPABASE_URL!, env.SUPABASE_PUBLISHABLE_KEY!);
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error || !data.session?.access_token) throw new Error(error?.message ?? "no session");
   return data.session.access_token;

@@ -10,7 +10,7 @@ const ENSURE_CF = join(ROOT, "scripts/ensure-cloudflare-auth.sh");
 const REQUIRE_SUPABASE = join(ROOT, "scripts/lib/require-supabase.mjs");
 const REQUIRE_CLOUDFLARE = join(ROOT, "scripts/lib/require-cloudflare.mjs");
 const VERIFY_GH = join(ROOT, "scripts/verify-github-actions.mjs");
-const CF_ENV = join(ROOT, "worker", ".cloudflare.env");
+const ENV_FILE = join(ROOT, ".env");
 
 function runNode(script, extraEnv = {}) {
   const env = { ...process.env, ...extraEnv };
@@ -35,18 +35,18 @@ function runBash(script, extraEnv = {}) {
 describe("auth ladder integration", () => {
   describe("ensure-cloudflare-auth.sh", () => {
     /** @type {string | null} */
-    let cfBackup = null;
+    let envBackup = null;
 
     before(() => {
-      if (existsSync(CF_ENV)) {
-        cfBackup = `${CF_ENV}.auth-ladder-test-bak`;
-        renameSync(CF_ENV, cfBackup);
+      if (existsSync(ENV_FILE)) {
+        envBackup = `${ENV_FILE}.auth-ladder-test-bak`;
+        renameSync(ENV_FILE, envBackup);
       }
     });
 
     after(() => {
-      if (cfBackup && existsSync(cfBackup)) {
-        renameSync(cfBackup, CF_ENV);
+      if (envBackup && existsSync(envBackup)) {
+        renameSync(envBackup, ENV_FILE);
       }
     });
 
@@ -70,17 +70,25 @@ describe("auth ladder integration", () => {
     const FAKE_SECRET = "eyJhbGciOiJIUzI1NiJ9.secretkey12";
 
     it("AUTH-LADDER-08: succeeds when Supabase keys are only in environment", () => {
-      const r = runNode(REQUIRE_SUPABASE, {
-        VITE_SUPABASE_URL: FAKE_URL,
-        VITE_SUPABASE_PUBLISHABLE_KEY: FAKE_PUB,
-        SUPABASE_URL: FAKE_URL,
-        SUPABASE_SECRET_KEY: FAKE_SECRET,
-      });
-      assert.equal(
-        r.status,
-        0,
-        r.stderr || r.stdout || "require-supabase failed",
-      );
+      let hideEnv = null;
+      if (existsSync(ENV_FILE)) {
+        hideEnv = `${ENV_FILE}.req-supabase-test-bak`;
+        renameSync(ENV_FILE, hideEnv);
+      }
+      try {
+        const r = runNode(REQUIRE_SUPABASE, {
+          SUPABASE_URL: FAKE_URL,
+          SUPABASE_PUBLISHABLE_KEY: FAKE_PUB,
+          SUPABASE_SECRET_KEY: FAKE_SECRET,
+        });
+        assert.equal(
+          r.status,
+          0,
+          r.stderr || r.stdout || "require-supabase failed",
+        );
+      } finally {
+        if (hideEnv && existsSync(hideEnv)) renameSync(hideEnv, ENV_FILE);
+      }
     });
   });
 
@@ -88,10 +96,10 @@ describe("auth ladder integration", () => {
     const FAKE_CF = "cf-token-abcdefghijklmnopqrst";
 
     it("AUTH-LADDER-09: fails when Cloudflare token missing from env and files", () => {
-      let hideCf = null;
-      if (existsSync(CF_ENV)) {
-        hideCf = `${CF_ENV}.req-creds-test-bak`;
-        renameSync(CF_ENV, hideCf);
+      let hideEnv = null;
+      if (existsSync(ENV_FILE)) {
+        hideEnv = `${ENV_FILE}.req-creds-test-bak`;
+        renameSync(ENV_FILE, hideEnv);
       }
       try {
         const env = { ...process.env };
@@ -105,7 +113,7 @@ describe("auth ladder integration", () => {
         assert.notEqual(r.status, 0);
         assert.match(`${r.stdout}${r.stderr}`, /Cloudflare/i);
       } finally {
-        if (hideCf && existsSync(hideCf)) renameSync(hideCf, CF_ENV);
+        if (hideEnv && existsSync(hideEnv)) renameSync(hideEnv, ENV_FILE);
       }
     });
 

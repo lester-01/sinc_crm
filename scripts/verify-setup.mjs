@@ -136,7 +136,7 @@ function wranglerWhoami(extraEnv = {}) {
 }
 
 function supabasePublicKey(env) {
-  return env.VITE_SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_PUBLISHABLE_KEY;
+  return env.SUPABASE_PUBLISHABLE_KEY;
 }
 
 function supabaseSecretKey(env) {
@@ -233,18 +233,19 @@ function verifyCloudflare() {
     return;
   }
 
-  const cloudflareEnvPath = join(ROOT, "worker", ".cloudflare.env");
   const merged = loadEnv();
   const hasCfKeys = hasCloudflareStackKeys(merged);
-  const cfFileExists = existsSync(cloudflareEnvPath);
+  const envPath = join(ROOT, ".env");
+  const envExists = existsSync(envPath);
+
   record(
-    "worker/.cloudflare.env exists (optional if env has token)",
-    cfFileExists || hasCfKeys,
-    cfFileExists
-      ? cloudflareEnvPath
+    ".env with Cloudflare keys (optional if env has token)",
+    envExists || hasCfKeys,
+    envExists
+      ? envPath
       : hasCfKeys
         ? "CLOUDFLARE_API_TOKEN from environment"
-        : "copy worker/.cloudflare.env.example or export CLOUDFLARE_API_TOKEN",
+        : "set CLOUDFLARE_API_TOKEN in .env or export — see docs/deploy-guide.md",
   );
 
   const token = merged.CLOUDFLARE_API_TOKEN;
@@ -252,8 +253,8 @@ function verifyCloudflare() {
     "Cloudflare: CLOUDFLARE_API_TOKEN configured",
     hasCfKeys,
     hasCfKeys
-      ? "set (env or file)"
-      : "export CLOUDFLARE_API_TOKEN or use worker/.cloudflare.env — see docs/deploy-guide.md",
+      ? "set (env or .env)"
+      : "export CLOUDFLARE_API_TOKEN or add to .env — see docs/deploy-guide.md",
   );
 
   if (!hasCfKeys) {
@@ -285,57 +286,37 @@ function verifyEnv() {
   const envExists = existsSync(envPath);
   const env = loadEnv();
   const hasFrontend = hasFrontendStackKeys(env);
+  const hasWorker = hasWorkerStackKeys(env);
 
   record(
-    ".env file exists (optional if env has frontend keys)",
+    ".env file exists (optional if env has keys)",
     envExists || hasFrontend,
     envExists
       ? envPath
       : hasFrontend
-        ? "VITE_SUPABASE_* from environment"
-        : "copy .env.example → .env or export frontend keys",
-  );
-
-  const workerVarsPath = join(ROOT, "worker", ".dev.vars");
-  const workerVarsExists = existsSync(workerVarsPath);
-  const hasWorker = hasWorkerStackKeys(env);
-  record(
-    "worker/.dev.vars exists (optional if env has worker keys)",
-    workerVarsExists || hasWorker,
-    workerVarsExists
-      ? workerVarsPath
-      : hasWorker
         ? "SUPABASE_* from environment"
-        : "copy worker/.dev.vars.example or export worker keys",
+        : "copy .env.example → .env or export keys",
   );
 
-  const cloudflareEnvPath = join(ROOT, "worker", ".cloudflare.env");
-  const hasCf = hasCloudflareStackKeys(env);
-  const cfPresent = existsSync(cloudflareEnvPath) || hasCf;
+  const supabaseUrl = env.SUPABASE_URL;
   record(
-    "worker/.cloudflare.env (optional for local dev)",
-    true,
-    cfPresent
-      ? cfPresent && existsSync(cloudflareEnvPath)
-        ? cloudflareEnvPath
-        : "CLOUDFLARE_API_TOKEN from environment"
-      : "not set — OK for P1 local dev; required for deploy (P3)",
-    { optional: true },
-  );
-
-  const rootEnvOnly = envExists ? parseEnvFile(envPath) : {};
-  const supabaseUrl = env.VITE_SUPABASE_URL;
-  record(
-    "env: VITE_SUPABASE_URL",
+    "env: SUPABASE_URL",
     Boolean(supabaseUrl && !isPlaceholder(supabaseUrl)),
     supabaseUrl ? "set" : "missing or placeholder",
   );
 
   const publicKey = supabasePublicKey(env);
   record(
-    "env: VITE_SUPABASE_PUBLISHABLE_KEY",
+    "env: SUPABASE_PUBLISHABLE_KEY",
     Boolean(publicKey && !isPlaceholder(publicKey)),
     publicKey ? "set" : "missing or placeholder",
+  );
+
+  const secret = supabaseSecretKey(env);
+  record(
+    "env: SUPABASE_SECRET_KEY",
+    Boolean(secret && !isPlaceholder(secret)),
+    secret ? "set" : "missing or placeholder",
   );
 
   const apiUrl = env.VITE_API_BASE_URL;
@@ -345,59 +326,54 @@ function verifyEnv() {
     apiUrl || "missing — use http://localhost:8787 for local dev",
   );
 
-  const secretInRoot = rootEnvOnly.SUPABASE_SECRET_KEY;
-  if (secretInRoot && !isPlaceholder(secretInRoot)) {
+  const legacyDevVars = join(ROOT, "worker", ".dev.vars");
+  if (existsSync(legacyDevVars)) {
     record(
-      "env: secret key not in .env (security)",
-      false,
-      "move SUPABASE_SECRET_KEY to worker/.dev.vars only",
+      "legacy worker/.dev.vars (remove after migration)",
+      true,
+      "credentials now belong in root .env only",
+      { optional: true },
     );
-  } else {
-    record("env: secret key not in .env (security)", true, "OK");
+  }
+
+  const legacyCfEnv = join(ROOT, "worker", ".cloudflare.env");
+  if (existsSync(legacyCfEnv)) {
+    record(
+      "legacy worker/.cloudflare.env (remove after migration)",
+      true,
+      "Cloudflare keys now belong in root .env only",
+      { optional: true },
+    );
   }
 
   record(
-    "worker secrets: SUPABASE_URL",
-    Boolean(
-      (env.SUPABASE_URL || env.VITE_SUPABASE_URL) &&
-        !isPlaceholder(env.SUPABASE_URL || env.VITE_SUPABASE_URL),
-    ),
-    env.SUPABASE_URL || env.VITE_SUPABASE_URL ? "set" : "missing or placeholder",
+    "Supabase frontend keys (SUPABASE_URL + publishable)",
+    hasFrontend,
+    hasFrontend ? "OK" : "set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY in .env",
   );
-  if (
-    env.SUPABASE_PUBLISHABLE_KEY &&
-    !isPlaceholder(env.SUPABASE_PUBLISHABLE_KEY)
-  ) {
-    record(
-      "worker/.dev.vars: SUPABASE_SECRET_KEY",
-      false,
-      "SUPABASE_PUBLISHABLE_KEY belongs in .env — use SUPABASE_SECRET_KEY here",
-    );
-  } else {
-    const secret = supabaseSecretKey(env);
-    record(
-      "worker/.dev.vars: SUPABASE_SECRET_KEY",
-      Boolean(secret && !isPlaceholder(secret)),
-      secret ? "set" : "missing or placeholder",
-    );
-  }
+
+  record(
+    "Supabase worker keys (SUPABASE_URL + secret)",
+    hasWorker,
+    hasWorker ? "OK" : "set SUPABASE_URL and SUPABASE_SECRET_KEY in .env",
+  );
 }
 
 // --- Phase: supabase-connect ---
 async function verifySupabaseConnect() {
   const env = loadEnv();
-  const url = (env.VITE_SUPABASE_URL || env.SUPABASE_URL || "").replace(/\/$/, "");
+  const url = (env.SUPABASE_URL || "").replace(/\/$/, "");
   const publicKey = supabasePublicKey(env);
 
   if (!url || isPlaceholder(url)) {
-    record("Supabase URL configured", false, "set VITE_SUPABASE_URL in .env");
+    record("Supabase URL configured", false, "set SUPABASE_URL in .env");
     return;
   }
   if (!publicKey || isPlaceholder(publicKey)) {
     record(
       "Supabase public key configured",
       false,
-      "set VITE_SUPABASE_PUBLISHABLE_KEY in .env",
+      "set SUPABASE_PUBLISHABLE_KEY in .env",
     );
     return;
   }
@@ -428,7 +404,7 @@ async function verifySupabaseConnect() {
     record(
       "Supabase secret key",
       false,
-      "set SUPABASE_SECRET_KEY in worker/.dev.vars",
+      "set SUPABASE_SECRET_KEY in .env",
     );
     return;
   }
@@ -463,15 +439,15 @@ async function verifySupabaseConnect() {
 // --- Phase: supabase ---
 async function verifySupabaseSchema() {
   const env = loadEnv();
-  const url = (env.VITE_SUPABASE_URL || env.SUPABASE_URL || "").replace(/\/$/, "");
+  const url = (env.SUPABASE_URL || "").replace(/\/$/, "");
   const publicKey = supabasePublicKey(env);
 
   if (!url || !publicKey) {
-    record("Supabase URL configured", false, "set VITE_SUPABASE_URL in .env");
+    record("Supabase URL configured", false, "set SUPABASE_URL in .env");
     record(
       "Supabase public key configured",
       false,
-      "set VITE_SUPABASE_PUBLISHABLE_KEY in .env",
+      "set SUPABASE_PUBLISHABLE_KEY in .env",
     );
     return;
   }
@@ -542,9 +518,9 @@ async function verifySupabaseSchema() {
     }
   } else {
     record(
-      "Supabase secret key (optional until worker/.dev.vars)",
+      "Supabase secret key (optional until .env)",
       true,
-      "SUPABASE_SECRET_KEY not in env — add to worker/.dev.vars later",
+      "SUPABASE_SECRET_KEY not in env — add to .env for db:seed and worker",
     );
   }
 }

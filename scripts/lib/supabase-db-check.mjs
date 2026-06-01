@@ -98,10 +98,7 @@ export async function getDbContext(merged, _projectRef, root) {
   } catch {
     dbUrl = null;
   }
-  const url = (merged.VITE_SUPABASE_URL || merged.SUPABASE_URL || "").replace(
-    /\/$/,
-    "",
-  );
+  const url = (merged.SUPABASE_URL || "").replace(/\/$/, "");
   const secret = merged.SUPABASE_SECRET_KEY || "";
   const admin =
     url && secret ? createAdminClient(url, secret) : null;

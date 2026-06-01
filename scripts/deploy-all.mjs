@@ -7,9 +7,7 @@
  * Supabase Auth URLs: Management API PATCH /config/auth (requires SUPABASE_ACCESS_TOKEN).
  *
  * Prerequisites (gitignored):
- *   worker/.cloudflare.env  — CLOUDFLARE_API_TOKEN (Pages Read+Edit, Workers Edit), CLOUDFLARE_ACCOUNT_ID
- *   worker/.dev.vars        — SUPABASE_* , SUPABASE_ACCESS_TOKEN , SUPABASE_DB_URL (db:schema)
- *   .env                    — VITE_*
+ *   .env — SUPABASE_*, CLOUDFLARE_*, VITE_API_BASE_URL, SUPABASE_ACCESS_TOKEN (deploy)
  *
  * Usage:
  *   npm run deploy:all
@@ -34,6 +32,7 @@ import {
 import {
   getProjectRef,
   getSupabaseUrl,
+  getViteSupabaseBuildEnv,
   isCiEnvironment,
   loadStackEnv,
 } from "./lib/load-stack-env.mjs";
@@ -207,11 +206,10 @@ async function main() {
   }
 
   log("\n=== Pass 1c — Build SPA with production API URL ===\n");
+  const viteEnv = getViteSupabaseBuildEnv(merged);
   const buildEnv = {
     ...process.env,
-    VITE_SUPABASE_URL: merged.VITE_SUPABASE_URL || merged.SUPABASE_URL,
-    VITE_SUPABASE_PUBLISHABLE_KEY:
-      merged.VITE_SUPABASE_PUBLISHABLE_KEY || merged.SUPABASE_PUBLISHABLE_KEY,
+    ...viteEnv,
     VITE_API_BASE_URL: workerUrl,
   };
   run("npm", ["run", "build"], { env: buildEnv, label: "npm run build" });
@@ -299,7 +297,7 @@ async function main() {
   log("\n=== Pass 2 — Worker secrets + Supabase Auth URLs ===\n");
   const corsHost = pagesOrigin.replace(/^https?:\/\//, "").replace(/\/$/, "");
   const lines = [
-    `SUPABASE_URL=${merged.SUPABASE_URL || merged.VITE_SUPABASE_URL}`,
+    `SUPABASE_URL=${merged.SUPABASE_URL}`,
     `SUPABASE_SECRET_KEY=${merged.SUPABASE_SECRET_KEY}`,
     `CORS_ORIGINS=https://${corsHost}`,
   ];

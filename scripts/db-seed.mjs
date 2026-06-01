@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Seed demo users (Auth Admin API) and CRM rows (Supabase REST).
- * Empty database only. No Cursor/MCP — uses SUPABASE_SECRET_KEY from worker/.dev.vars.
+ * Empty database only. Uses SUPABASE_SECRET_KEY from .env.
  *
  * Preflight checks use Supabase CLI when SUPABASE_DB_URL is set (transaction pooler).
  */
@@ -118,7 +118,7 @@ async function main() {
   const ref = getProjectRef(merged);
 
   if (!url || !secret) {
-    fail("Missing SUPABASE_URL and SUPABASE_SECRET_KEY in worker/.dev.vars");
+    fail("Missing SUPABASE_URL and SUPABASE_SECRET_KEY in .env");
   }
 
   const ctx = await getDbContext(merged, ref, root);
