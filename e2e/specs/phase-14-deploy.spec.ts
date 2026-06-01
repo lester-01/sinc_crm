@@ -28,13 +28,16 @@ test.describe("@deploy Production smoke", () => {
     testLog("DEPLOY-01", "API health OK", "PASS");
   });
 
-  test("DEPLOY-02 production manager login", async ({ page }) => {
+  test.describe("browser on production Pages", () => {
     test.use({ baseURL: pagesUrl });
-    await loginAs(page, "manager", "DEPLOY-02");
-    await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: "Dashboard", level: 2 })).toBeVisible({
-      timeout: 20_000,
+
+    test("DEPLOY-02 production manager login", async ({ page }) => {
+      await loginAs(page, "manager", "DEPLOY-02");
+      await page.goto("/dashboard");
+      await expect(page.getByRole("heading", { name: "Dashboard", level: 2 })).toBeVisible({
+        timeout: 20_000,
+      });
+      testLog("DEPLOY-02", "Manager dashboard visible on production", "PASS");
     });
-    testLog("DEPLOY-02", "Manager dashboard visible on production", "PASS");
   });
 });

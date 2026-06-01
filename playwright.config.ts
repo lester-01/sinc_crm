@@ -7,6 +7,11 @@ delete process.env.PLAYWRIGHT_BROWSERS_PATH;
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5173";
 const sessionDir = process.env.E2E_SESSION_DIR;
 const uiMode = process.env.E2E_UI_MODE === "1";
+const deployPagesUrl = (process.env.DEPLOY_PAGES_URL || "").replace(/\/$/, "");
+const isProductionDeployRun =
+  deployPagesUrl.length > 0 &&
+  !deployPagesUrl.includes("127.0.0.1") &&
+  !deployPagesUrl.includes("localhost");
 
 function parseEnvFile(path: string): Record<string, string> {
   if (!existsSync(path)) return {};
@@ -54,21 +59,23 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: [
-    {
-      command: "npm run dev",
-      url: baseURL,
-      // UI mode: prefer already-running dev servers (faster, avoids WSL startup stalls)
-      reuseExistingServer: uiMode ? true : !process.env.E2E_FORCE_SERVERS,
-      timeout: uiMode ? 180_000 : 120_000,
-    },
-    {
-      command: "npm run dev",
-      cwd: "worker",
-      url: "http://127.0.0.1:8787/api/health",
-      env: workerWebServerEnv(),
-      reuseExistingServer: uiMode ? true : !process.env.E2E_FORCE_SERVERS,
-      timeout: uiMode ? 180_000 : 120_000,
-    },
-  ],
+  webServer: isProductionDeployRun
+    ? undefined
+    : [
+        {
+          command: "npm run dev",
+          url: baseURL,
+          // UI mode: prefer already-running dev servers (faster, avoids WSL startup stalls)
+          reuseExistingServer: uiMode ? true : !process.env.E2E_FORCE_SERVERS,
+          timeout: uiMode ? 180_000 : 120_000,
+        },
+        {
+          command: "npm run dev",
+          cwd: "worker",
+          url: "http://127.0.0.1:8787/api/health",
+          env: workerWebServerEnv(),
+          reuseExistingServer: uiMode ? true : !process.env.E2E_FORCE_SERVERS,
+          timeout: uiMode ? 180_000 : 120_000,
+        },
+      ],
 });
