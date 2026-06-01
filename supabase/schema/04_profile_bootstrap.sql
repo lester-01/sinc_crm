@@ -1,5 +1,6 @@
 -- Auto-create profiles row when a new auth user registers (default role: client).
--- Seeded demo users pass role + full_name in user_metadata.
+-- Role comes from app_metadata only (Admin API / seed). Public signUp cannot forge app_metadata.
+-- Display name comes from user_metadata.full_name (user-editable; not used for authorization).
 -- Client-role signups also link an existing CRM prospect by email or insert a clients row.
 
 create or replace function public.handle_new_user()
@@ -12,7 +13,7 @@ declare
   meta_role text;
   meta_name text;
 begin
-  meta_role := coalesce(new.raw_user_meta_data ->> 'role', 'client');
+  meta_role := coalesce(new.raw_app_meta_data ->> 'role', 'client');
   meta_name := coalesce(
     new.raw_user_meta_data ->> 'full_name',
     split_part(coalesce(new.email, 'user'), '@', 1)
@@ -50,6 +51,10 @@ begin
   return new;
 end;
 $$;
+
+-- Trigger-only: block direct RPC calls via PostgREST.
+revoke all on function public.handle_new_user() from public;
+revoke all on function public.handle_new_user() from anon, authenticated;
 
 drop trigger if exists on_auth_user_created on auth.users;
 

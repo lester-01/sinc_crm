@@ -149,7 +149,7 @@ Use a **throwaway Supabase project** for CI — schema/seed abort if the databas
 
 | Piece | Location | Purpose |
 |-------|----------|---------|
-| Schema SQL (ordered) | `supabase/schema/01` … `06` | Types, tables, indexes, profile bootstrap, RLS + Realtime, client read tracking |
+| Schema SQL (ordered) | `supabase/schema/00` … `06` | RLS auto-enable, types, tables, indexes, profile bootstrap, RLS + Realtime, client read tracking |
 | Apply schema | `npm run db:schema` | Supabase CLI `db query` on **empty** DB only |
 | Seed data | `npm run db:seed` | Demo auth users + CRM rows on **empty** DB only |
 | Verify | `npm run verify:supabase` | Tables exist + secret key can read `profiles` |
@@ -170,8 +170,9 @@ The core model matches [database.md](../project_requirements/database.md) and th
 |--------|-----------|
 | `clients.email` **UNIQUE** | Prevents duplicate CRM rows; supports client lookup and demo integrity. |
 | Index on `conversation_threads.last_message_at DESC` | Inbox/queue sorted by recent activity (common sales workflow). |
-| `handle_new_user` trigger | Every `auth.users` row gets a `profiles` row; role from signup metadata (default `client`). |
-| RLS **SELECT** policies | Browser uses **publishable key + JWT** for Realtime; without RLS, chat/CDC is unsafe or broken. |
+| `handle_new_user` trigger | Inserts `profiles` on signup; role from **app_metadata** only (default `client`). See [security-architecture.md](../docs/security-architecture.md). |
+| RLS **SELECT** policies + **private** helpers | Browser Realtime uses publishable key + JWT; helpers not exposed as RPC. |
+| **RLS auto-enable** event trigger (`00`) | New tables in `public` get RLS automatically. |
 | Realtime publication | Tables listed in api.md are added to `supabase_realtime`. |
 
 **Writes** stay on the **Hono Worker** with `SUPABASE_SECRET_KEY` (bypasses RLS). RLS is not a substitute for Worker authorization; it secures **read/Realtime** paths and adds defense in depth.
@@ -273,16 +274,19 @@ Redeploy only if you also changed Worker/Pages code: `npm run deploy:all:skip-db
 
 Use this when you need a **completely fresh CRM** on the same Supabase project: demo recordings, test pollution, or after editing `supabase/schema/*.sql`. Everything is **manual in the Supabase Dashboard + npm** — this repo has **no** `db:reset` or auto-drop script.
 
-**Removes (reverse of `supabase/schema/01` … `06`):**
+**Removes (reverse of `supabase/schema/00` … `06`):**
 
 | Source | Objects removed |
 |--------|-----------------|
+| `00_rls_auto_enable.sql` | Event trigger `ensure_rls`, function `private.rls_auto_enable()` |
 | `01_types.sql` | Enums: `app_role`, `conversation_status`, `message_sender_type`, `deal_stage` |
 | `02_tables.sql` | Tables: `profiles`, `clients`, `conversation_threads`, `conversation_messages`, `deals`, `deal_stage_history`, `deal_notes` (+ all row data) |
 | `03_indexes.sql` | Indexes on those tables (dropped with tables) |
 | `04_profile_bootstrap.sql` | Function `handle_new_user()`, trigger `on_auth_user_created` on `auth.users` |
-| `05_rls_realtime.sql` | RLS policies, helper functions (`current_app_role`, …), Realtime publication entries |
+| `05_rls_realtime.sql` | RLS policies, helper functions in **`private`** (`current_app_role`, …), Realtime publication entries |
 | `06_client_read.sql` | Column `conversation_threads.client_last_read_at` (dropped with table) |
+
+After teardown, the `private` schema itself is dropped if empty (see SQL below).
 
 **Does not remove:** Auth provider settings (e.g. disabled email confirmation), extensions, `auth` / `storage` / other Supabase schemas, API keys, or the `public` schema shell.
 
@@ -291,11 +295,14 @@ Use this when you need a **completely fresh CRM** on the same Supabase project: 
 Dashboard → **SQL Editor** → **New query** → paste and **Run**:
 
 ```sql
--- WARNING: removes all CRM objects from this repo (supabase/schema/01 … 06).
+-- WARNING: removes all CRM objects from this repo (supabase/schema/00 … 06).
 -- Does NOT drop the public schema. Does NOT change Auth provider settings.
 -- Run only on a throwaway / dev project.
 
 BEGIN;
+
+-- RLS auto-enable (reverse of 00_rls_auto_enable.sql)
+DROP EVENT TRIGGER IF EXISTS ensure_rls;
 
 -- Realtime publication (reverse of 05_rls_realtime.sql)
 DO $$ BEGIN
@@ -344,10 +351,20 @@ CASCADE;
 
 -- Functions (reverse of 04 + 05)
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
-DROP FUNCTION IF EXISTS public.current_app_role() CASCADE;
-DROP FUNCTION IF EXISTS public.current_client_id() CASCADE;
-DROP FUNCTION IF EXISTS public.can_access_thread(public.conversation_threads) CASCADE;
+DROP FUNCTION IF EXISTS private.can_access_deal(public.deals) CASCADE;
+DROP FUNCTION IF EXISTS private.can_access_thread(public.conversation_threads) CASCADE;
+DROP FUNCTION IF EXISTS private.current_client_id() CASCADE;
+DROP FUNCTION IF EXISTS private.current_app_role() CASCADE;
+DROP FUNCTION IF EXISTS private.rls_auto_enable() CASCADE;
+
+-- Legacy public helpers (if present from older schema)
 DROP FUNCTION IF EXISTS public.can_access_deal(public.deals) CASCADE;
+DROP FUNCTION IF EXISTS public.can_access_thread(public.conversation_threads) CASCADE;
+DROP FUNCTION IF EXISTS public.current_client_id() CASCADE;
+DROP FUNCTION IF EXISTS public.current_app_role() CASCADE;
+
+-- Private schema (reverse of 00 + 05)
+DROP SCHEMA IF EXISTS private CASCADE;
 
 -- Enums (reverse of 01_types.sql)
 DROP TYPE IF EXISTS public.deal_stage CASCADE;
@@ -389,18 +406,34 @@ FROM pg_trigger
 WHERE NOT tgisinternal
   AND tgname = 'on_auth_user_created';
 
--- CRM helper functions must be gone
-SELECT p.proname
+-- CRM helper functions must be gone (public legacy + private)
+SELECT n.nspname AS schema_name, p.proname
 FROM pg_proc p
 JOIN pg_namespace n ON n.oid = p.pronamespace
-WHERE n.nspname = 'public'
-  AND p.proname IN (
+WHERE (n.nspname = 'public' AND p.proname IN (
     'handle_new_user',
     'current_app_role',
     'current_client_id',
     'can_access_thread',
     'can_access_deal'
-  );
+  ))
+  OR (n.nspname = 'private' AND p.proname IN (
+    'current_app_role',
+    'current_client_id',
+    'can_access_thread',
+    'can_access_deal',
+    'rls_auto_enable'
+  ));
+
+-- RLS auto-enable event trigger must be gone
+SELECT evtname
+FROM pg_event_trigger
+WHERE evtname = 'ensure_rls';
+
+-- Private schema must be gone (or empty)
+SELECT schema_name
+FROM information_schema.schemata
+WHERE schema_name = 'private';
 ```
 
 #### Step 3 — Delete Auth users (Dashboard, after SQL)
@@ -424,7 +457,7 @@ npm run db:seed
 npm run verify:supabase
 ```
 
-- `db:schema` applies `supabase/schema/01` … `06` on an empty CRM footprint (`profiles` must not exist).
+- `db:schema` applies `supabase/schema/00` … `06` on an empty CRM footprint (`profiles` must not exist).
 - `db:seed` creates 9 demo users + CRM rows (password **`demo1234`** for all accounts).
 
 Redeploy only if you also changed Worker/Pages code: `npm run deploy:all:skip-db`.
@@ -593,6 +626,7 @@ Confirm tables are in publication (`05`) and user is authenticated with a role t
 
 ```txt
 supabase/schema/
+  00_rls_auto_enable.sql
   01_types.sql
   02_tables.sql
   03_indexes.sql

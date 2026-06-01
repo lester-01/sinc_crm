@@ -103,7 +103,8 @@ async function createAuthUser(admin, { email, fullName, role }) {
     email,
     password: PASSWORD,
     email_confirm: true,
-    user_metadata: { full_name: fullName, role },
+    user_metadata: { full_name: fullName },
+    app_metadata: { role },
   });
   if (error) {
     throw new Error(`createUser ${email}: ${error.message}`);

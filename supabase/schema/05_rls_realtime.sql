@@ -1,7 +1,10 @@
 -- RLS for browser Realtime + defense in depth. Worker writes use SUPABASE_SECRET_KEY (bypasses RLS).
+-- Helpers live in private schema (not exposed to Data API / RPC).
+
+create schema if not exists private;
 
 -- Helper: current user's app role
-create or replace function public.current_app_role()
+create or replace function private.current_app_role()
 returns app_role
 language sql
 stable
@@ -12,7 +15,7 @@ as $$
 $$;
 
 -- Helper: CRM client row for logged-in client user
-create or replace function public.current_client_id()
+create or replace function private.current_client_id()
 returns uuid
 language sql
 stable
@@ -23,35 +26,40 @@ as $$
 $$;
 
 -- Helper: sales/manager can see thread in queue or assignment
-create or replace function public.can_access_thread(t public.conversation_threads)
+create or replace function private.can_access_thread(t public.conversation_threads)
 returns boolean
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select case public.current_app_role()
+  select case private.current_app_role()
     when 'manager' then true
     when 'sales' then t.assigned_to is null or t.assigned_to = auth.uid()
-    when 'client' then t.client_id = public.current_client_id()
+    when 'client' then t.client_id = private.current_client_id()
     else false
   end
 $$;
 
-create or replace function public.can_access_deal(d public.deals)
+create or replace function private.can_access_deal(d public.deals)
 returns boolean
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select case public.current_app_role()
+  select case private.current_app_role()
     when 'manager' then true
     when 'sales' then true
-    when 'client' then d.client_id = public.current_client_id()
+    when 'client' then d.client_id = private.current_client_id()
     else false
   end
 $$;
+
+-- RLS policies invoke these; authenticated role needs EXECUTE. Schema is not Data-API exposed.
+grant usage on schema private to authenticated;
+grant execute on all functions in schema private to authenticated;
+revoke all on schema private from anon, public;
 
 alter table public.profiles enable row level security;
 alter table public.clients enable row level security;
@@ -65,14 +73,14 @@ alter table public.deal_notes enable row level security;
 drop policy if exists profiles_select_own on public.profiles;
 create policy profiles_select_own on public.profiles
   for select to authenticated
-  using (id = auth.uid() or public.current_app_role() = 'manager');
+  using (id = auth.uid() or private.current_app_role() = 'manager');
 
 -- clients
 drop policy if exists clients_select_scoped on public.clients;
 create policy clients_select_scoped on public.clients
   for select to authenticated
   using (
-    public.current_app_role() in ('sales', 'manager')
+    private.current_app_role() in ('sales', 'manager')
     or profile_id = auth.uid()
   );
 
@@ -80,7 +88,7 @@ create policy clients_select_scoped on public.clients
 drop policy if exists conversation_threads_select_scoped on public.conversation_threads;
 create policy conversation_threads_select_scoped on public.conversation_threads
   for select to authenticated
-  using (public.can_access_thread(conversation_threads));
+  using (private.can_access_thread(conversation_threads));
 
 -- conversation_messages
 drop policy if exists conversation_messages_select_scoped on public.conversation_messages;
@@ -90,7 +98,7 @@ create policy conversation_messages_select_scoped on public.conversation_message
     exists (
       select 1 from public.conversation_threads t
       where t.id = conversation_messages.thread_id
-        and public.can_access_thread(t)
+        and private.can_access_thread(t)
     )
   );
 
@@ -98,7 +106,7 @@ create policy conversation_messages_select_scoped on public.conversation_message
 drop policy if exists deals_select_scoped on public.deals;
 create policy deals_select_scoped on public.deals
   for select to authenticated
-  using (public.can_access_deal(deals));
+  using (private.can_access_deal(deals));
 
 -- deal_stage_history
 drop policy if exists deal_stage_history_select_scoped on public.deal_stage_history;
@@ -108,7 +116,7 @@ create policy deal_stage_history_select_scoped on public.deal_stage_history
     exists (
       select 1 from public.deals d
       where d.id = deal_stage_history.deal_id
-        and public.can_access_deal(d)
+        and private.can_access_deal(d)
     )
   );
 
@@ -120,7 +128,7 @@ create policy deal_notes_select_scoped on public.deal_notes
     exists (
       select 1 from public.deals d
       where d.id = deal_notes.deal_id
-        and public.can_access_deal(d)
+        and private.can_access_deal(d)
     )
   );
 
@@ -154,3 +162,9 @@ begin
   alter publication supabase_realtime add table public.deal_notes;
 exception when duplicate_object then null;
 end $$;
+
+-- Remove legacy public helpers (if upgrading from earlier schema)
+drop function if exists public.can_access_deal(public.deals) cascade;
+drop function if exists public.can_access_thread(public.conversation_threads) cascade;
+drop function if exists public.current_client_id() cascade;
+drop function if exists public.current_app_role() cascade;
