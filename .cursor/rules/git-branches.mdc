@@ -1,0 +1,30 @@
+---
+description: Git branch policy — never commit on main; stable releases merge from development
+alwaysApply: true
+---
+
+# Git branch policy
+
+## Branches
+
+- **`development`** — all day-to-day work, features, fixes, tests, and docs updates.
+- **`main`** — stable releases only. No direct development on this branch.
+
+## Rules for agents and commits
+
+1. **Never commit on `main`.** Do not create commits, amend, or cherry-pick feature work while `main` is checked out.
+2. **Before any `git commit`**, confirm the current branch is `development`. If on `main`, stop and ask the user or switch to `development` first.
+3. **Updating `main`** — only by merging (or fast-forwarding) from `development` when cutting a stable release, then tagging if appropriate.
+4. **After merging to `main`**, switch back to `development` for the next task (`git checkout development`).
+5. **Do not push** to `origin` unless the user explicitly requests it.
+
+## Release flow (stable → main)
+
+```bash
+git checkout development
+# … work and commit on development …
+git checkout main
+git merge development    # fast-forward when development is ahead
+# tag if needed, e.g. git tag -a v1.x.x -m "…"
+git checkout development
+```

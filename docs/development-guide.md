@@ -40,6 +40,23 @@ Use `.env` + `worker/.dev.vars` (or env vars per [external-auth.md](./external-a
 
 ---
 
+## Branch policy
+
+| Branch | Purpose |
+|--------|---------|
+| **`development`** | All day-to-day work — features, fixes, tests, docs |
+| **`main`** | Stable releases only — **no direct commits** |
+
+**Rules:**
+
+1. Never commit on `main`. Always work on `development`.
+2. Promote stable work: `git checkout main` → `git merge development` (usually fast-forward) → tag if needed → **`git checkout development`** before the next task.
+3. Do not push to `origin` unless you intend to publish; coordinate before force-pushing `main`.
+
+Cursor agents also follow [`.cursor/rules/git-branches.mdc`](../.cursor/rules/git-branches.mdc).
+
+---
+
 ## Feature workflow (new or changed behavior)
 
 Use this for anything that affects users, APIs, or security — not for typo-only doc edits.
