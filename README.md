@@ -4,17 +4,31 @@ A full-stack student CRM with role-based access, realtime chat, deal pipeline, a
 
 ## Screenshots
 
-Production demo (`demo1234` for all seeded accounts). See [Demo users](#demo-users).
+| Login | 
+|-------|
+| ![Login screen](images/sinc_login.png) |  
 
-| Login | Demo accounts |
-|-------|---------------|
-| ![Login screen](images/sinc_login.png) | ![Demo account picker](images/sinc_demo_accounts.png) |
+| Demo accounts |  
+|---------------|  
+![Demo account picker](images/sinc_demo_accounts.png) |  
 
 **Manager** — dashboard, clients, client detail, pipeline:
 
-| Dashboard | Clients | Client detail | Pipeline |
-|-----------|---------|---------------|----------|
-| ![Manager dashboard](images/sinc_manager_dashboard.png) | ![Manager clients list](images/sinc_manager_clients.png) | ![Manager client detail](images/sinc_manager_client_info.png) | ![Manager pipeline](images/sinc_manager_pipeline.png) |
+| Dashboard |  
+|-----------|  
+| ![Manager dashboard](images/sinc_manager_dashboard.png) |  
+
+| Clients |  
+|---------|
+| ![Manager clients list](images/sinc_manager_clients.png) |  
+
+| Client detail |  
+|---------------|  
+| ![Manager client detail](images/sinc_manager_client_info.png) |  
+
+| Pipeline |  
+|----------|  
+| ![Manager pipeline](images/sinc_manager_pipeline.png) |  
 
 **Sales** — conversation workspace:
 
@@ -22,9 +36,13 @@ Production demo (`demo1234` for all seeded accounts). See [Demo users](#demo-use
 
 **Client** — profile and chat:
 
-| Profile | Chat |
-|---------|------|
-| ![Client profile](images/sinc_client_profile.png) | ![Client chat](images/sinc_client_chat.png) |
+| Profile |  
+|---------|  
+| ![Client profile](images/sinc_client_profile.png) |  
+
+| Chat |
+|------|
+![Client chat](images/sinc_client_chat.png) |
 
 ## Quick start
 
@@ -32,7 +50,8 @@ Production demo (`demo1234` for all seeded accounts). See [Demo users](#demo-use
 
 ## Live application
 
-The deployed instance is available for hands-on testing in production. Sign in with any [demo user](#demo-users) below (password **`demo1234`**).
+The deployed instance is available for hands-on testing in production. Sign in with any [demo user](#demo-users) below (password **`demo1234`**).  
+You can also use the signup form to create a demo account(email verification is disabled to ease running tests)
 
 | Service | URL |
 |---------|-----|
@@ -60,7 +79,7 @@ CRM-only row without auth login: `prospect.no.login@example.com` — see [databa
 
 ## Running tests
 
-Run **`npm run test:e2e`** for the full isolated Playwright suite (creates a temporary Supabase project, seeds, tests, deletes — **58 passed**, 2 deploy-only skipped). For day-to-day dev against your existing `.env`, use **`npm run test:e2e:dev`**. Worker unit tests: **`npm run test:worker`**.
+Run **`npm run test:e2e`** for the full isolated Playwright suite (creates a temporary Supabase project, seeds, tests, deletes — 60 tests total). For day-to-day dev against your existing `.env`, use **`npm run test:e2e:dev`**. Worker unit tests: **`npm run test:worker`**.
 
 Full catalog, commands, and how to add tests: [docs/testing-guide.md](docs/testing-guide.md#back-to-readme). Tooling auth ladder: `npm run test:scripts`.
 
@@ -73,10 +92,8 @@ Full catalog, commands, and how to add tests: [docs/testing-guide.md](docs/testi
 
 ```bash
 git checkout v1.4.0   # latest release (recommended)
-git checkout v1.3.0   # known-stable fallback if latest has issues
+git checkout v1.3.0   # known-stable fallback before major code overhaul
 ```
-
-Lots of changes landed after v1.3.0; if something breaks on `main`, try v1.3.0 before debugging.
 
 ## Documentation
 
@@ -95,10 +112,6 @@ Lots of changes landed after v1.3.0; if something breaks on `main`, try v1.3.0 b
 | Deployment | [docs/deploy-guide.md](docs/deploy-guide.md#back-to-readme) |
 | All docs index | [docs/README.md](docs/README.md) |
 
-### Documentation status
-
-Docs were audited for **v1.4.0** (June 2026). If something looks stale, prefer [docs/script-reference.md](docs/script-reference.md) and [docs/external-auth.md](docs/external-auth.md) for env and script behaviour. Evaluation criteria: [project_requirements/evaluation.md](project_requirements/evaluation.md).
-
 ## Requirements
 
 Product specs live in [`project_requirements/`](project_requirements/) (architecture, database, acceptance criteria).
@@ -111,4 +124,4 @@ Post-MVP improvements and deferred items: [docs/roadmap.md](docs/roadmap.md#back
 
 **Canonical guide:** [docs/deploy-guide.md](docs/deploy-guide.md) — `npm run deploy:all` (automated two-pass) or manual Worker + Pages steps.
 
-To reset Supabase data or schema **without deleting the project** (fast dev iteration), see [database-setup.md — Reset database](docs/database-setup.md#reset-database-without-deleting-the-project).
+To reset Supabase data or schema **without deleting the supabase project** (fast dev iteration), see [database-setup.md — Reset database](docs/database-setup.md#reset-database-without-deleting-the-project).
