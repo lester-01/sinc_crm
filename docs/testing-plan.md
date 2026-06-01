@@ -34,7 +34,7 @@ Orchestrator: `scripts/e2e-run.mjs`.
 
 ### E2E-only credentials
 
-Add to `worker/.dev.vars` when running `npm run test:e2e`:
+Add to root `.env` when running `npm run test:e2e`:
 
 - `SUPABASE_ACCESS_TOKEN` — create/delete isolated projects
 - `SUPABASE_ORG_SLUG` — org slug from dashboard URL

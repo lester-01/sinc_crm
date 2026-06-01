@@ -1,28 +1,9 @@
 import { expect } from "@playwright/test";
-import { getAccessToken, getApiBase } from "../fixtures/api-auth";
+import { getAccessToken, getApiBase, tokenForEmail } from "../fixtures/api-auth";
 
 const apiBase = () => getApiBase();
 
-export async function tokenForEmail(email: string, password = "demo1234") {
-  const { createClient } = await import("@supabase/supabase-js");
-  const { readFileSync, existsSync } = await import("node:fs");
-  const { join } = await import("node:path");
-  const envPath = join(process.cwd(), ".env");
-  const env: Record<string, string> = {};
-  if (existsSync(envPath)) {
-    for (const line of readFileSync(envPath, "utf8").split("\n")) {
-      const t = line.trim();
-      if (!t || t.startsWith("#")) continue;
-      const eq = t.indexOf("=");
-      if (eq === -1) continue;
-      env[t.slice(0, eq).trim()] = t.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
-    }
-  }
-  const supabase = createClient(env.SUPABASE_URL!, env.SUPABASE_PUBLISHABLE_KEY!);
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error || !data.session?.access_token) throw new Error(error?.message ?? "no session");
-  return data.session.access_token;
-}
+export { tokenForEmail };
 
 /** Ensures an unassigned thread exists for sales queue tests. */
 export async function ensureUnassignedThread(request: import("@playwright/test").APIRequestContext) {

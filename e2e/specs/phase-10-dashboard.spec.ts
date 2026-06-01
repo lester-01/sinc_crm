@@ -36,7 +36,9 @@ function countDealsByOwner(deals: { ownerId: string | null; ownerName: string | 
         count: 1,
       });
   }
-  return [...map.values()].sort((a, b) => b.count - a.count);
+  return [...map.values()].sort(
+    (a, b) => b.count - a.count || a.ownerName.localeCompare(b.ownerName),
+  );
 }
 
 test.describe("@phase10 Dashboard", () => {

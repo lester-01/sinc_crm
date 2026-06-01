@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { loginAs, loginExpectFailure } from "../fixtures/auth";
+import { getApiBase } from "../fixtures/api-auth";
 import { testLog } from "../helpers/log";
 
 test.describe("@phase6 Auth & navigation", () => {
@@ -36,14 +37,14 @@ test.describe("@phase6 Auth & navigation", () => {
   });
 
   test("AUTH-06 API no token returns 401", async ({ request }) => {
-    const apiBase = process.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8787";
+    const apiBase = getApiBase();
     const res = await request.get(`${apiBase}/api/clients`);
     testLog("AUTH-06", `GET /api/clients without token → ${res.status()}`, "ASSERT");
     expect(res.status()).toBe(401);
   });
 
   test("AUTH-07 API me no token returns 401", async ({ request }) => {
-    const apiBase = process.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8787";
+    const apiBase = getApiBase();
     const res = await request.get(`${apiBase}/api/me`);
     testLog("AUTH-07", `GET /api/me without token → ${res.status()}`, "ASSERT");
     expect(res.status()).toBe(401);

@@ -72,3 +72,13 @@ export async function authHeaders(role: DemoRole): Promise<Record<string, string
   const token = await getAccessToken(role);
   return { Authorization: `Bearer ${token}` };
 }
+
+export async function tokenForEmail(email: string, password = "demo1234"): Promise<string> {
+  const { url, key } = getSupabaseAnonConfig();
+  const supabase = createClient(url, key);
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.session?.access_token) {
+    throw new Error(error?.message ?? "no session");
+  }
+  return data.session.access_token;
+}

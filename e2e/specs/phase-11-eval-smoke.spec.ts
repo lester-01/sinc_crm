@@ -48,7 +48,7 @@ test.describe("@phase11 @smoke Core user paths", () => {
 
     await loginAs(page, "sales", "EVAL-02");
     await page.goto("/conversations");
-    await page.getByRole("button", { name: "Unassigned" }).click();
+    await page.getByRole("button", { name: "Unassigned queue" }).click();
     await page.getByRole("button", { name: thread.subject }).click();
     await page.getByRole("button", { name: "Assign to me" }).click();
     await expect(page.getByText(/Owner:.*Sales/i)).toBeVisible({ timeout: 10_000 });
@@ -61,7 +61,7 @@ test.describe("@phase11 @smoke Core user paths", () => {
   test("EVAL-03 manager reassigns conversation", async ({ page }) => {
     await loginAs(page, "manager", "EVAL-03");
     await page.goto("/conversations");
-    await page.getByRole("button", { name: "All" }).click();
+    await page.getByRole("button", { name: "All queue" }).click();
     await page.getByRole("button", { name: "UK foundation year" }).click();
 
     const sales1Token = await getAccessToken("sales");

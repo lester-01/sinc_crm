@@ -18,9 +18,9 @@ Related: [testing-guide.md](./testing-guide.md), [testing-plan.md](./testing-pla
 7. Cleanup                   delete Supabase project (always(), even on failure)
 ```
 
-**Dev project** (`.env` / `worker/.dev.vars`) is **not** used for default E2E runs.
+**Dev project credentials** in root `.env` are **not** used for runtime during default isolated E2E runs. The orchestrator reads `.env` only for `SUPABASE_ACCESS_TOKEN` and `SUPABASE_ORG_SLUG`, writes ephemeral keys to `.e2e-run.env`, and passes that file to schema/seed, Vite, Worker, and Playwright fixtures via `E2E_ENV_FILE`.
 
-Optional fast path: `npm run test:e2e:dev` — tests against existing dev Supabase (no create/delete).
+Optional fast path: `npm run test:e2e:dev` — tests against existing dev Supabase (no create/delete; uses root `.env` only).
 
 ---
 
@@ -60,16 +60,27 @@ Test IDs match [testing-guide.md](./testing-guide.md) (`AUTH-01`, `CHAT-07`, …
 
 ---
 
+## Environment files (isolated runs)
+
+| File | Purpose |
+|------|---------|
+| `.env` | **Orchestration only** — `SUPABASE_ACCESS_TOKEN`, `SUPABASE_ORG_SLUG` to create/delete ephemeral projects |
+| `.e2e-run.env` | **Runtime** — ephemeral `SUPABASE_*`, `VITE_API_BASE_URL`, etc. Written each run; deleted on cleanup |
+
+Vite, Wrangler, db scripts during the run, and `e2e/fixtures/api-auth.ts` merge `.env` + `E2E_ENV_FILE` (overlay wins). Specs must use `api-auth` helpers — do not parse `.env` directly in tests.
+
+---
+
 ## Credentials for isolated runs
 
 **E2E only** — not required for `npm run dev`.
 
-| Variable | Purpose |
-|----------|---------|
-| `SUPABASE_ACCESS_TOKEN` | Create/delete `sinc-ci-e2e-*` projects |
-| `SUPABASE_ORG_SLUG` | Org slug for new projects |
+| Variable | File | Purpose |
+|----------|------|---------|
+| `SUPABASE_ACCESS_TOKEN` | root `.env` | Create/delete `sinc-ci-e2e-*` projects |
+| `SUPABASE_ORG_SLUG` | root `.env` | Org slug for new projects |
 
-Add to `worker/.dev.vars`. See [playwright-wsl-setup.md](./playwright-wsl-setup.md).
+Runtime keys (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, …) are written to `.e2e-run.env` automatically. See [playwright-wsl-setup.md](./playwright-wsl-setup.md).
 
 ---
 

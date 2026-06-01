@@ -94,8 +94,7 @@ Run tests from the **WSL terminal** in the project folder (same environment as `
 
 | Item | File |
 |------|------|
-| Supabase URL + publishable key | `.env` |
-| Supabase URL + secret key (+ pooler URL for schema) | `worker/.dev.vars` |
+| Supabase URL, publishable key, secret key, pooler URL | root `.env` |
 
 Enough for `npm run dev`, `db:schema`, `db:seed`, and optional `npm run test:e2e:dev`.
 
@@ -105,10 +104,10 @@ These create/delete temporary `sinc-ci-e2e-*` Supabase projects. **Not required*
 
 | Item | File | Get from |
 |------|------|----------|
-| `SUPABASE_ACCESS_TOKEN` | `worker/.dev.vars` | [Account tokens](https://supabase.com/dashboard/account/tokens) |
-| `SUPABASE_ORG_SLUG` | `worker/.dev.vars` | Dashboard URL: `…/org/<slug>/…` (not a UUID) |
+| `SUPABASE_ACCESS_TOKEN` | root `.env` | [Account tokens](https://supabase.com/dashboard/account/tokens) |
+| `SUPABASE_ORG_SLUG` | root `.env` | Dashboard URL: `…/org/<slug>/…` (not a UUID) |
 
-Without them, isolated E2E cannot run; **dev and Worker still work.**
+Runtime keys for the ephemeral project are written to `.e2e-run.env` automatically — you do not paste them into `.env`.
 
 ---
 
@@ -200,7 +199,7 @@ npm run verify:github-actions
 | `Executable doesn't exist` / wrong chromium build | `unset PLAYWRIGHT_BROWSERS_PATH` then `npm run playwright:install` |
 | Browser won’t open in UI mode | Use `test:e2e` headless, or enable WSLg / update Windows |
 | Tests can’t reach app | Ensure orchestrator starts Vite `:5173` + Worker `:8787` (Phase 6 config) |
-| E2E fails at “create project” | Add `SUPABASE_ACCESS_TOKEN` + `SUPABASE_ORG_SLUG` to `worker/.dev.vars` |
+| E2E fails at “create project” | Add `SUPABASE_ACCESS_TOKEN` + `SUPABASE_ORG_SLUG` to root `.env` |
 | Slow first run | Creating a new Supabase project each isolated run takes a few minutes — expected |
 
 ---

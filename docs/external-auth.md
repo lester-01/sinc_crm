@@ -48,6 +48,17 @@ There is no `SINC_*` flag — use the standard `CI` variable only.
 
 Implementation: `scripts/lib/load-stack-env.mjs` merges `.env` + overlay, then applies `STACK_ENV_KEYS` from `process.env`.
 
+## Isolated E2E environment split
+
+| File | Contents |
+|------|----------|
+| Root `.env` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_ORG_SLUG` (orchestration — create/delete ephemeral projects) |
+| `.e2e-run.env` | Ephemeral project keys written by `scripts/e2e-create-project.mjs`; passed as `E2E_ENV_FILE` to Vite, Worker, db scripts, and Playwright |
+
+During `npm run test:e2e`, runtime credentials come from `.e2e-run.env`, not your dev project in `.env`. Playwright API tests use `e2e/fixtures/api-auth.ts`, which merges both files (overlay wins).
+
+For `npm run test:e2e:dev`, only root `.env` is used (no overlay).
+
 ## Per service
 
 ### Cloudflare

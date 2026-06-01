@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { loginAs } from "../fixtures/auth";
-import { authHeaders, getAccessToken, getApiBase } from "../fixtures/api-auth";
+import { authHeaders, getAccessToken, getApiBase, tokenForEmail } from "../fixtures/api-auth";
 import { ensureCanadaDealForSales1 } from "../helpers/deals-setup";
 import { testLog } from "../helpers/log";
 import {
@@ -77,28 +77,7 @@ test.describe("@phase9 Deals & pipeline", () => {
     expect(deal).toBeTruthy();
 
     await page.goto(`/deals/${deal!.id}`);
-    const sales2Token = await (async () => {
-      const { createClient } = await import("@supabase/supabase-js");
-      const { readFileSync, existsSync } = await import("node:fs");
-      const { join } = await import("node:path");
-      const env: Record<string, string> = {};
-      const p = join(process.cwd(), ".env");
-      if (existsSync(p)) {
-        for (const line of readFileSync(p, "utf8").split("\n")) {
-          const t = line.trim();
-          if (!t || t.startsWith("#")) continue;
-          const eq = t.indexOf("=");
-          if (eq === -1) continue;
-          env[t.slice(0, eq).trim()] = t.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
-        }
-      }
-      const sb = createClient(env.SUPABASE_URL!, env.SUPABASE_PUBLISHABLE_KEY!);
-      const { data } = await sb.auth.signInWithPassword({
-        email: "sales2@demo.local",
-        password: "demo1234",
-      });
-      return data.session!.access_token;
-    })();
+    const sales2Token = await tokenForEmail("sales2@demo.local");
     const meRes = await request.get(`${apiBase()}/api/me`, {
       headers: { Authorization: `Bearer ${sales2Token}` },
     });

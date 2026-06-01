@@ -65,6 +65,7 @@ export default defineConfig({
         {
           command: "npm run dev",
           url: baseURL,
+          env: workerWebServerEnv(),
           // UI mode: prefer already-running dev servers (faster, avoids WSL startup stalls)
           reuseExistingServer: uiMode ? true : !process.env.E2E_FORCE_SERVERS,
           timeout: uiMode ? 180_000 : 120_000,

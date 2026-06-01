@@ -36,7 +36,9 @@ Human-readable catalog of automated tests, how to run them, and how to add new o
 | `npm run test:tooling` | `test:scripts` + `test:worker` |
 | `npm run verify:supabase` | Schema + tables present |
 
-**E2E-only env** (isolated runs): `SUPABASE_ACCESS_TOKEN`, `SUPABASE_ORG_SLUG` in `worker/.dev.vars` or environment — see [external-auth.md](./external-auth.md).
+**E2E-only env** (isolated runs): `SUPABASE_ACCESS_TOKEN`, `SUPABASE_ORG_SLUG` in root `.env` or environment — see [external-auth.md](./external-auth.md).
+
+**E2E API helpers:** `e2e/fixtures/api-auth.ts` (`getAccessToken`, `tokenForEmail`, `getApiBase`) merges root `.env` with `E2E_ENV_FILE` (`.e2e-run.env` during isolated runs). Specs must not parse `.env` directly.
 
 **CI:** set `CI=true` and inject tokens; scripts fail fast before browser OAuth ([external-auth.md](./external-auth.md)).
 
@@ -80,8 +82,8 @@ Specs live under `e2e/specs/`. Tags: `@phase6` … `@phase11`, `@smoke` for core
 |----|----------------|
 | CHAT-01 | Client starts a conversation |
 | CHAT-02 | Client sends a message |
-| CHAT-03 | Sales sees unassigned queue |
-| CHAT-04 | Sales assigns thread to self |
+| CHAT-03 | Sales sees unassigned queue (tab: accessible name **Unassigned queue**) |
+| CHAT-04 | Sales assigns thread to self (tab: **Unassigned queue**) |
 | CHAT-05 | Sales reply visible in thread |
 | CHAT-06 | Manager reassigns conversation owner |
 | CHAT-07 | **Privacy:** client1 does not see client2’s thread in UI |

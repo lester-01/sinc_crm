@@ -17,6 +17,18 @@ const devMode = args.includes("--dev");
 const uiMode = args.includes("--ui");
 const pwArgs = args.filter((a) => a !== "--dev" && a !== "--ui");
 
+function freeDevPorts() {
+  const r = spawnSync("ss", ["-tlnp"], { encoding: "utf8" });
+  const pids = new Set();
+  for (const line of (r.stdout || "").split("\n")) {
+    if (!line.includes(":5173") && !line.includes(":8787")) continue;
+    for (const m of line.matchAll(/pid=(\d+)/g)) pids.add(m[1]);
+  }
+  for (const pid of pids) {
+    spawnSync("kill", ["-9", pid], { stdio: "ignore" });
+  }
+}
+
 function run(cmd, cmdArgs, env = process.env) {
   const r = spawnSync(cmd, cmdArgs, {
     cwd: ROOT,
@@ -90,11 +102,15 @@ async function main() {
 
   const playwrightEnv = {
     ...e2eEnv,
+    E2E_FORCE_SERVERS: "1",
     PLAYWRIGHT_BROWSERS_PATH: "",
     ...(uiMode ? { E2E_UI_MODE: "1" } : {}),
   };
 
   log(`[e2e] playwright ${playwrightArgs.slice(1).join(" ")}`);
+  if (playwrightEnv.E2E_FORCE_SERVERS === "1") {
+    freeDevPorts();
+  }
   try {
     exitCode = run("npx", playwrightArgs, playwrightEnv);
   } finally {

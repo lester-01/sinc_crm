@@ -32,10 +32,10 @@ import { StartConversationDialog } from "@/features/conversations/StartConversat
 import { formatRelativeTime } from "@/lib/relative-time";
 import { cn } from "@/lib/utils";
 
-const QUEUE_TABS: { id: ConversationQueue; label: string }[] = [
-  { id: "unassigned", label: "Unassigned" },
-  { id: "mine", label: "Mine" },
-  { id: "all", label: "All" },
+const QUEUE_TABS: { id: ConversationQueue; label: string; ariaLabel: string }[] = [
+  { id: "unassigned", label: "Unassigned", ariaLabel: "Unassigned queue" },
+  { id: "mine", label: "Mine", ariaLabel: "Mine queue" },
+  { id: "all", label: "All", ariaLabel: "All queue" },
 ];
 
 function initials(name: string): string {
@@ -165,6 +165,7 @@ export function ConversationPage() {
               type="button"
               size="sm"
               variant={queue === tab.id ? "default" : "outline"}
+              aria-label={tab.ariaLabel}
               onClick={() => setQueue(tab.id)}
             >
               {tab.label}

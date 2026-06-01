@@ -6,7 +6,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "dev": "wrangler dev --env-file ../.env",
+    "dev": "wrangler dev --env-file ${E2E_ENV_FILE:-../.env}",
     "deploy": "wrangler deploy",
     "whoami": "wrangler whoami",
     "typecheck": "tsc --noEmit",

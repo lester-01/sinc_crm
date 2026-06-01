@@ -1,65 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { loginAs } from "../fixtures/auth";
-import { authHeaders, getAccessToken, getApiBase } from "../fixtures/api-auth";
+import { authHeaders, getAccessToken, getApiBase, tokenForEmail } from "../fixtures/api-auth";
+import { ensureUnassignedThread } from "../helpers/conversations-setup";
 import { testLog } from "../helpers/log";
 import { selectConversationReassign } from "../helpers/ui";
 
 const apiBase = () => getApiBase();
-
-/** Ensures an unassigned thread exists (client4) for assign/queue tests. */
-async function ensureUnassignedThread(request: import("@playwright/test").APIRequestContext) {
-  const salesToken = await getAccessToken("sales");
-  const listRes = await request.get(`${apiBase()}/api/conversations?queue=unassigned`, {
-    headers: { Authorization: `Bearer ${salesToken}` },
-  });
-  const existing = (await listRes.json()) as { id: string; subject: string }[];
-  if (existing.length > 0) return existing[0];
-
-  const clientToken = await tokenForEmail("client4@demo.local");
-  const clientsRes = await request.get(`${apiBase()}/api/clients`, {
-    headers: { Authorization: `Bearer ${clientToken}` },
-  });
-  const clients = (await clientsRes.json()) as { id: string }[];
-  const clientId = clients[0]?.id;
-  if (!clientId) throw new Error("client4 has no CRM row");
-
-  const subject = `Unassigned E2E ${Date.now()}`;
-  const createRes = await request.post(`${apiBase()}/api/conversations`, {
-    headers: {
-      Authorization: `Bearer ${clientToken}`,
-      "Content-Type": "application/json",
-    },
-    data: {
-      clientId,
-      subject,
-      message: "Need help with admission.",
-    },
-  });
-  expect(createRes.status()).toBe(201);
-  const thread = await createRes.json();
-  return { id: thread.id as string, subject: thread.subject as string };
-}
-
-async function tokenForEmail(email: string, password = "demo1234") {
-  const { createClient } = await import("@supabase/supabase-js");
-  const { readFileSync, existsSync } = await import("node:fs");
-  const { join } = await import("node:path");
-  const envPath = join(process.cwd(), ".env");
-  const env: Record<string, string> = {};
-  if (existsSync(envPath)) {
-    for (const line of readFileSync(envPath, "utf8").split("\n")) {
-      const t = line.trim();
-      if (!t || t.startsWith("#")) continue;
-      const eq = t.indexOf("=");
-      if (eq === -1) continue;
-      env[t.slice(0, eq).trim()] = t.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
-    }
-  }
-  const supabase = createClient(env.SUPABASE_URL!, env.SUPABASE_PUBLISHABLE_KEY!);
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error || !data.session?.access_token) throw new Error(error?.message ?? "no session");
-  return data.session.access_token;
-}
 
 test.describe("@phase8 Conversations & chat", () => {
   test("CHAT-01 client starts conversation", async ({ page }) => {
@@ -90,7 +36,7 @@ test.describe("@phase8 Conversations & chat", () => {
     const thread = await ensureUnassignedThread(request);
     await loginAs(page, "sales", "CHAT-03");
     await page.goto("/conversations");
-    await page.getByRole("button", { name: "Unassigned" }).click();
+    await page.getByRole("button", { name: "Unassigned queue" }).click();
     await expect(page.getByRole("button", { name: thread.subject })).toBeVisible();
     testLog("CHAT-03", "Unassigned thread visible for sales", "PASS");
   });
@@ -99,7 +45,7 @@ test.describe("@phase8 Conversations & chat", () => {
     const thread = await ensureUnassignedThread(request);
     await loginAs(page, "sales", "CHAT-04");
     await page.goto("/conversations");
-    await page.getByRole("button", { name: "Unassigned" }).click();
+    await page.getByRole("button", { name: "Unassigned queue" }).click();
     await page.getByRole("button", { name: thread.subject }).click();
     await page.getByRole("button", { name: "Assign to me" }).click();
     await expect(page.getByText(/Owner:.*Sales/i)).toBeVisible({ timeout: 10_000 });
@@ -110,7 +56,7 @@ test.describe("@phase8 Conversations & chat", () => {
     const unique = `Sales reply ${Date.now()}`;
     await loginAs(page, "sales", "CHAT-05");
     await page.goto("/conversations");
-    await page.getByRole("button", { name: "Mine" }).click();
+    await page.getByRole("button", { name: "Mine queue" }).click();
     await page.getByRole("button", { name: "Canada business program" }).click();
     await page.getByLabel("Reply").fill(unique);
     await page.getByRole("button", { name: "Send" }).click();
@@ -179,7 +125,7 @@ test.describe("@phase8 Conversations & chat", () => {
   test("CHAT-06 manager reassign", async ({ page }) => {
     await loginAs(page, "manager", "CHAT-06");
     await page.goto("/conversations");
-    await page.getByRole("button", { name: "All" }).click();
+    await page.getByRole("button", { name: "All queue" }).click();
     await page.getByRole("button", { name: "UK foundation year" }).click();
     const sales1Token = await getAccessToken("sales");
     const meRes = await page.request.get(`${apiBase()}/api/me`, {
@@ -314,7 +260,7 @@ test.describe("@phase8 Conversations & chat", () => {
   test("CHAT-11 manager read-only conversation workspace", async ({ page }) => {
     await loginAs(page, "manager", "CHAT-11");
     await page.goto("/conversations");
-    await page.getByRole("button", { name: "All" }).click();
+    await page.getByRole("button", { name: "All queue" }).click();
     await page.getByRole("button", { name: "Canada business program" }).click();
     await expect(page.getByText("Reassign only — managers do not reply")).toBeVisible();
     await expect(page.getByLabel("Reply")).toHaveCount(0);

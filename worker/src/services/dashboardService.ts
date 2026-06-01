@@ -81,7 +81,7 @@ export async function getDashboard(supabase: SupabaseClient) {
       ownerName: ownerId ? (ownerNames.get(ownerId) ?? "Unknown") : "Unassigned",
       count,
     }))
-    .sort((a, b) => b.count - a.count);
+    .sort((a, b) => b.count - a.count || a.ownerName.localeCompare(b.ownerName));
 
   const recentActivity = [
     ...(history ?? []).map((h) => {

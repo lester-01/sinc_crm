@@ -51,8 +51,8 @@ jobs:
       # 1) Create Supabase project (Management API or documented script)
       #    name: sinc-ci-e2e-${{ github.run_id }}
 
-      # 2) Write secrets to .env + worker/.dev.vars for this job only
-      #    VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, SUPABASE_SECRET_KEY, SUPABASE_DB_URL
+      # 2) Write orchestration secrets to .env (SUPABASE_ACCESS_TOKEN, SUPABASE_ORG_SLUG)
+      #    Runtime keys go to .e2e-run.env via e2e-create-project.mjs (SUPABASE_URL, keys, pooler URL)
 
       # 3) Bootstrap database
       - run: npm run db:schema
@@ -99,9 +99,9 @@ Enabling **Actions** on the repo is a **Settings → Actions** toggle; a PAT alo
 | `SUPABASE_ORG_SLUG` | **E2E/CI only** — org slug for project creation |
 | Optional | `SEED_DEMO_PASSWORD` (default `demo1234`) |
 
-Per-run keys (`VITE_*`, `SUPABASE_SECRET_KEY`, `SUPABASE_DB_URL`) come from the **created** project API response — not stored long-term.
+Per-run keys (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_DB_URL`, `VITE_API_BASE_URL`) come from the **created** project API response — written to `.e2e-run.env`, not stored long-term.
 
-**Note:** `SUPABASE_ACCESS_TOKEN` / `SUPABASE_ORG_SLUG` in `worker/.dev.vars` are for **isolated E2E only**, not for `npm run dev`.
+**Note:** `SUPABASE_ACCESS_TOKEN` / `SUPABASE_ORG_SLUG` in root `.env` (or CI secrets) are for **isolated E2E orchestration only**, not for `npm run dev`.
 
 ---
 
