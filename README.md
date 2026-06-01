@@ -73,8 +73,8 @@ npm run deploy:all -- --skip-db    # use --skip-db if schema already exists
 # npm run verify:stack:deploy
 ```
 
-| Service | URL (fill in after you deploy) |
-|---------|--------------------------------|
-| App (Cloudflare Pages) | `https://________________.pages.dev` (stable project URL — see [deploy-guide](deploy-guide.md#pages-url-stable-vs-deployment-preview-read-before-pass-2)) |
-| API (Cloudflare Worker) | `https://________________.workers.dev` |
-| Supabase | `https://________________.supabase.co` |
+| Service | URL |
+|---------|-----|
+| App (Cloudflare Pages) | [https://sinc-crm-esg.pages.dev](https://sinc-crm-esg.pages.dev) (stable project domain — see [deploy-guide](deploy-guide.md#pages-url-stable-vs-deployment-preview-read-before-pass-2)) |
+| API (Cloudflare Worker) | [https://sinc-crm-api.prinxlexter.workers.dev](https://sinc-crm-api.prinxlexter.workers.dev) |
+| Supabase | [https://fgoqijltbhkrztxjebjm.supabase.co](https://fgoqijltbhkrztxjebjm.supabase.co) |
