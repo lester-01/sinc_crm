@@ -56,9 +56,47 @@ $$;
 revoke all on function public.handle_new_user() from public;
 revoke all on function public.handle_new_user() from anon, authenticated;
 
+-- GoTrue writes app_metadata in a follow-up UPDATE after INSERT (not visible on INSERT trigger).
+-- Sync profiles.role when Admin API or Dashboard sets raw_app_meta_data.role.
+create or replace function public.handle_user_app_metadata_updated()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  meta_role text;
+begin
+  if new.raw_app_meta_data is not distinct from old.raw_app_meta_data then
+    return new;
+  end if;
+
+  meta_role := new.raw_app_meta_data ->> 'role';
+  if meta_role is null then
+    return new;
+  end if;
+
+  update public.profiles
+  set role = meta_role::app_role
+  where id = new.id
+    and role is distinct from meta_role::app_role;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.handle_user_app_metadata_updated() from public;
+revoke all on function public.handle_user_app_metadata_updated() from anon, authenticated;
+
 drop trigger if exists on_auth_user_created on auth.users;
+drop trigger if exists on_auth_user_app_metadata_updated on auth.users;
 
 create trigger on_auth_user_created
   after insert on auth.users
   for each row
   execute function public.handle_new_user();
+
+create trigger on_auth_user_app_metadata_updated
+  after update on auth.users
+  for each row
+  execute function public.handle_user_app_metadata_updated();

@@ -115,7 +115,7 @@ New tables with RLS on but **no policies** are locked down (safe, but unusable u
   - Admin API seed (`npm run db:seed` passes `app_metadata.role`), or
   - Supabase Dashboard (Table Editor / SQL on `profiles`).
 
-Promoting users manually is acceptable for this demo; production would use an invite flow with Admin API.
+GoTrue persists `app_metadata` in a **follow-up UPDATE** after `auth.users` INSERT, so `handle_new_user` (INSERT trigger) defaults role to `client`. `handle_user_app_metadata_updated` (UPDATE trigger) applies `raw_app_meta_data.role` when Admin API or Dashboard sets it — this is the intended path for seed and invites.
 
 ---
 

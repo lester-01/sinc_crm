@@ -282,7 +282,7 @@ Use this when you need a **completely fresh CRM** on the same Supabase project: 
 | `01_types.sql` | Enums: `app_role`, `conversation_status`, `message_sender_type`, `deal_stage` |
 | `02_tables.sql` | Tables: `profiles`, `clients`, `conversation_threads`, `conversation_messages`, `deals`, `deal_stage_history`, `deal_notes` (+ all row data) |
 | `03_indexes.sql` | Indexes on those tables (dropped with tables) |
-| `04_profile_bootstrap.sql` | Function `handle_new_user()`, trigger `on_auth_user_created` on `auth.users` |
+| `04_profile_bootstrap.sql` | `handle_new_user()` + `on_auth_user_created`; `handle_user_app_metadata_updated` + UPDATE trigger (syncs `app_metadata.role`) |
 | `05_rls_realtime.sql` | RLS policies, helper functions in **`private`** (`current_app_role`, …), Realtime publication entries |
 | `06_client_read.sql` | Column `conversation_threads.client_last_read_at` (dropped with table) |
 
@@ -335,7 +335,8 @@ EXCEPTION WHEN undefined_table THEN NULL;
          WHEN undefined_object THEN NULL;
 END $$;
 
--- Auth trigger (reverse of 04_profile_bootstrap.sql)
+-- Auth triggers (reverse of 04_profile_bootstrap.sql)
+DROP TRIGGER IF EXISTS on_auth_user_app_metadata_updated ON auth.users;
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
 -- Tables + indexes + RLS policies (reverse of 02, 03, 05, 06)
@@ -350,6 +351,7 @@ DROP TABLE IF EXISTS
 CASCADE;
 
 -- Functions (reverse of 04 + 05)
+DROP FUNCTION IF EXISTS public.handle_user_app_metadata_updated() CASCADE;
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
 DROP FUNCTION IF EXISTS private.can_access_deal(public.deals) CASCADE;
 DROP FUNCTION IF EXISTS private.can_access_thread(public.conversation_threads) CASCADE;

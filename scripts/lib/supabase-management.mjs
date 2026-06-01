@@ -36,23 +36,21 @@ export async function listOrganizations(token) {
 }
 
 export async function createProject(token, { name, organizationSlug, dbPass }) {
-  const body = {
-    name,
-    organization_slug: organizationSlug,
-    db_pass: dbPass,
-    region_selection: {
-      type: "specific",
-      code: "eu-central-1",
-    },
-  };
+  const base = { name, organization_slug: organizationSlug, db_pass: dbPass };
   try {
-    return await managementFetch("/projects", { method: "POST", token, body });
-  } catch (e) {
-    const { region_selection: _rs, ...withoutRegion } = body;
+    return await managementFetch("/projects", {
+      method: "POST",
+      token,
+      body: {
+        ...base,
+        region_selection: { type: "specific", code: "eu-central-1" },
+      },
+    });
+  } catch (first) {
     return managementFetch("/projects", {
       method: "POST",
       token,
-      body: withoutRegion,
+      body: { ...base, region: "eu-central-1" },
     });
   }
 }
