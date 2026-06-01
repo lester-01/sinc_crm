@@ -7,24 +7,22 @@
 | [api/openapi.yaml](./api/openapi.yaml) | **API reference (OpenAPI 3.1)** — routes, schemas, role permissions, examples |
 | [api/index.html](./api/index.html) | Interactive API docs (Scalar viewer; serve `docs/api/` locally) |
 | [api/authentication.md](./api/authentication.md) | Auth flow, demo users, error codes |
-| [development-guide.md](./development-guide.md) | **How to work on the repo** — features, tests required, when to update tests |
-| [project-guide.md](./project-guide.md) | Comprehensive guide (architecture, phases, testing, troubleshooting) |
-| [quick-start.md](./quick-start.md) | Install, env files, Phase 4 cloud setup |
-| [stack-setup.md](./stack-setup.md) | Setup checklist + build todo (Phases 1–15) |
-| [infrastructure-phases.md](./infrastructure-phases.md) | Phases 1–5 infrastructure summary |
-| [build-plan.md](./build-plan.md) | Master build plan Phases 6–15 |
-| [testing-guide.md](./testing-guide.md) | Human test catalog (50 E2E + 8 Vitest), how to add tests |
-| [testing-plan.md](./testing-plan.md) | Machine-oriented test matrix & security table |
+| [quick-start.md](./quick-start.md) | **Canonical setup** — scripts, env files, cloud, database, dev servers |
+| [development-guide.md](./development-guide.md) | How to work on the repo — features, tests, branch policy |
+| [project-guide.md](./project-guide.md) | Architecture, roles, troubleshooting |
+| [stack-setup.md](./stack-setup.md) | Installers and `verify:stack:*` commands |
+| [infrastructure-phases.md](./infrastructure-phases.md) | How setup scripts map to phases 1–5 |
+| [database-setup.md](./database-setup.md) | Schema, seed, credentials, reset |
 | [external-auth.md](./external-auth.md) | Tooling auth ladder (env / files / CI) |
-| [database-setup.md](./database-setup.md) | Schema, seed, credentials |
-| [cloudflare-auth.md](./cloudflare-auth.md) | Cloudflare token vs OAuth |
-| [deploy-guide.md](./deploy-guide.md) | Two-pass manual deploy (CLI); GitHub→Cloudflare CI planned |
+| [cloudflare-auth.md](./cloudflare-auth.md) | Cloudflare token permissions, Pages hostname |
+| [testing-guide.md](./testing-guide.md) | Test catalog (60 E2E + Vitest), how to add tests |
+| [testing-plan.md](./testing-plan.md) | Security matrix, isolated E2E philosophy |
+| [deploy-guide.md](./deploy-guide.md) | Two-pass manual deploy (CLI) |
 | [roadmap.md](./roadmap.md) | Post-MVP / deferred items |
 | [playwright-wsl-setup.md](./playwright-wsl-setup.md) | Playwright on WSL |
 | [e2e-artifacts.md](./e2e-artifacts.md) | Per-test artifacts under `test-results/` |
 | [ci-e2e-recipe.md](./ci-e2e-recipe.md) | GitHub Actions E2E (deferred) |
-| [phases/README.md](./phases/README.md) | Per-phase implementation notes |
-
-**Current focus:** Phase 15 production launch (see [build-plan.md](./build-plan.md)).
+| [pipeline-stages.md](./pipeline-stages.md) | Deal stage rules and transitions |
+| [deal-lifecycle.md](./deal-lifecycle.md) | Won/lost/reopen, lost reason |
 
 Product requirements: [project_requirements/README.md](../project_requirements/README.md)

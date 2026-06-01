@@ -28,29 +28,24 @@ Detail: [project_requirements/architecture.md](../project_requirements/architect
 
 ---
 
-## 3. Infrastructure (Phases 1–5)
+## 3. Setup & infrastructure
 
-Install, worker/frontend scaffold, cloud env files, schema + seed:
+Install, env files, schema, and seed:
 
-- [infrastructure-phases.md](./infrastructure-phases.md) — summary table per phase
-- [quick-start.md](./quick-start.md) — install commands
-- [stack-setup.md](./stack-setup.md) — checklist through Phase 13+
+- [quick-start.md](./quick-start.md) — canonical scripted setup
+- [stack-setup.md](./stack-setup.md) — verify commands and installers
+- [infrastructure-phases.md](./infrastructure-phases.md) — phases 1–5 summary
 - [database-setup.md](./database-setup.md) — schema, seed, demo users
 
 ---
 
-## 4. Application features (Phases 6–11)
+## 4. Application features
 
-| Phase | Feature | Phase doc |
-|------:|---------|-----------|
-| 6 | Auth, roles, navigation | [phase-06-foundation.md](./phases/phase-06-foundation.md) |
-| 7 | Clients CRUD + isolation | [phase-07-clients.md](./phases/phase-07-clients.md) |
-| 8 | Conversations & chat | [phase-08-conversations.md](./phases/phase-08-conversations.md) |
-| 9 | Deals & pipeline | [phase-09-deals.md](./phases/phase-09-deals.md) |
-| 10 | Manager dashboard | [phase-10-dashboard.md](./phases/phase-10-dashboard.md) |
-| 11 | Polish, CORS, Vitest, eval smoke | [phase-11-polish.md](./phases/phase-11-polish.md) |
+Auth, clients, conversations, deals, pipeline, dashboard, and polish are implemented. Specs and behavior:
 
-Build order and verify commands: [build-plan.md](./build-plan.md).
+- Product requirements: [project_requirements/](../project_requirements/)
+- API: [api/openapi.yaml](./api/openapi.yaml)
+- Tests: [testing-guide.md](./testing-guide.md)
 
 ---
 
@@ -69,8 +64,8 @@ Full reference: [external-auth.md](./external-auth.md). Cloudflare-specific: [cl
 | Role | Capabilities (high level) |
 |------|---------------------------|
 | **client** | Own profile, own threads/messages, own deals (read) |
-| **sales** | Clients, conversations (assign/reply), own deals + pipeline |
-| **manager** | All of the above + reassign owners, dashboard, any deal stage |
+| **sales** | Reads all clients/conversations/deals; creates clients/deals; replies when assigned; updates own deal stages; adds notes |
+| **manager** | Read-all, dashboard, reassign owners/assignees, move any deal stage; no create/reply/note writes |
 
 Protected routes return `401` without JWT, `403` when role forbids action. Critical constraints are covered by `API-*` Playwright tests — see [testing-guide.md](./testing-guide.md).
 
@@ -102,7 +97,7 @@ Demo users: `manager1@demo.local` / `demo1234` (see [README](../README.md#demo-u
 | E2E artifacts | [e2e-artifacts.md](./e2e-artifacts.md) |
 | WSL Playwright | [playwright-wsl-setup.md](./playwright-wsl-setup.md) |
 
-**Counts:** 50 E2E/API Playwright tests + 8 Worker Vitest tests.
+**Counts:** 60 Playwright tests + Worker Vitest + tooling auth tests (`npm run test:scripts`).
 
 Commands: `npm run test:e2e`, `npm run test:e2e:dev`, `npm run test:worker`.
 

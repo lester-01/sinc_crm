@@ -4,7 +4,7 @@
 
 ## Recommended: scoped API token
 
-For local scripts, verification, and CI/CD, use **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`** in `worker/.cloudflare.env` or exported in the environment (env wins over file). See [quick-start.md](./quick-start.md) and [external-auth.md](./external-auth.md).
+For local scripts, verification, and CI/CD, use **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`** in `worker/.cloudflare.env` or exported in the environment (env wins over file). Auth ladder: [external-auth.md](./external-auth.md). Setup: [quick-start.md](./quick-start.md).
 
 `scripts/ensure-cloudflare-auth.sh` and `npm run verify:stack:cloudflare` use this token path by default.
 
@@ -37,7 +37,7 @@ Unable to get membership roles. Are you missing the User->Memberships->Read perm
 
 You can ignore these warnings if `whoami` still shows your **Account Name** and **Account ID**. Add the two User permissions only if you want a clean `whoami` line with no warnings.
 
-**Pages project name vs URL:** deploy uses project name `sinc-crm` (from `worker/wrangler.toml`: `sinc-crm-api` → `sinc-crm`). The browser URL may be different (e.g. `https://sinc-crm-esg.pages.dev`) — that comes from the API **subdomain** field, not from guessing `sinc-crm.pages.dev`. See [pages-naming-investigation.md](./pages-naming-investigation.md).
+**Pages project name vs URL:** deploy uses project name `sinc-crm` (from `worker/wrangler.toml`: `sinc-crm-api` → `sinc-crm`). The browser URL may differ (e.g. `https://sinc-crm-esg.pages.dev`) — that comes from the API **subdomain** field. See [deploy-guide.md](./deploy-guide.md#pages-url-stable-vs-deployment-preview-read-before-pass-2).
 
 Desktop **OAuth** (`wrangler login`) can work for Wrangler CLI alone, but **`deploy:all` requires a token with the permissions above** in `worker/.cloudflare.env` (or env) so URL resolution does not depend on OAuth.
 
@@ -47,19 +47,7 @@ On a **desktop** machine without a token, `ensure-cloudflare-auth.sh` can run **
 
 ## CI / headless
 
-When `CI=true`, scripts **do not** open a browser. Export:
-
-```bash
-CLOUDFLARE_API_TOKEN=...
-CLOUDFLARE_ACCOUNT_ID=...
-```
-
-## Auth order (script)
-
-1. `wrangler whoami` — already logged in
-2. Token from `process.env`
-3. Token from `worker/.cloudflare.env` (env overrides file)
-4. `wrangler login` — only if not `CI=true` and no valid token
+When `CI=true`, scripts **do not** open a browser. Export `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Full ladder: [external-auth.md](./external-auth.md).
 
 ## Production deploy
 

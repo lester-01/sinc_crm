@@ -4,7 +4,7 @@
 
 How to work on this codebase day to day: where code lives, what to run, and **when tests are required or must be updated**.
 
-Related: [testing-guide.md](./testing-guide.md) (catalog + how to add a test) · [build-plan.md](./build-plan.md) · [database-setup.md](./database-setup.md)
+Related: [testing-guide.md](./testing-guide.md) (catalog + how to add a test) · [database-setup.md](./database-setup.md)
 
 ---
 
@@ -102,8 +102,8 @@ npm run test:e2e
 
 ### 5. Document
 
-- Update [testing-plan.md](./testing-plan.md) implementation table when IDs are added.
-- Note non-obvious behavior in the relevant [phases/](./phases/) doc or [roadmap.md](./roadmap.md) if deferred.
+- Update [testing-guide.md](./testing-guide.md) when adding test IDs.
+- Note non-obvious deferred behavior in [roadmap.md](./roadmap.md).
 
 ---
 
@@ -166,7 +166,7 @@ Read artifacts under `test-results/` ([e2e-artifacts.md](./e2e-artifacts.md)): s
 - [ ] `npm run test:scripts` (if stack env / auth scripts changed)
 - [ ] `npm run test:e2e:dev` for the phase you touched (dev servers running)
 - [ ] `npm run test:e2e` before release or when changing seed, schema apply, or shared fixtures
-- [ ] [testing-plan.md](./testing-plan.md) IDs and implementation table updated
+- [ ] [testing-guide.md](./testing-guide.md) updated when test IDs added
 - [ ] No secrets committed (`.env`, `.dev.vars`, `.cloudflare.env` stay local)
 
 ---
@@ -203,6 +203,6 @@ Read artifacts under `test-results/` ([e2e-artifacts.md](./e2e-artifacts.md)): s
 |-------|-----|
 | Add / catalog tests | [testing-guide.md](./testing-guide.md) |
 | Security constraints to cover | [testing-plan.md](./testing-plan.md) |
-| Phase history & build order | [build-plan.md](./build-plan.md), [phases/README.md](./phases/README.md) |
+| Architecture & troubleshooting | [project-guide.md](./project-guide.md) |
 | CI later | [ci-e2e-recipe.md](./ci-e2e-recipe.md) |
 | Deploy (Worker + Pages, two-pass manual CLI) | [deploy-guide.md](./deploy-guide.md) — GitHub→Cloudflare CI planned alongside CLI |

@@ -14,7 +14,7 @@ This guide is for a **first manual deploy** using the existing npm scripts. A fu
 | Auth redirects | **Supabase Dashboard** | Authentication → URL configuration |
 | Browser → API CORS | **Worker code + secret** | `CORS_ORIGINS` secret (not Cloudflare Pages settings) |
 
-Related: [external-auth.md](./external-auth.md) · [cloudflare-auth.md](./cloudflare-auth.md) · [database-setup.md](./database-setup.md) · [phases/phase-14-deploy.md](./phases/phase-14-deploy.md) · [pages-naming-investigation.md](./pages-naming-investigation.md)
+Related: [external-auth.md](./external-auth.md) · [cloudflare-auth.md](./cloudflare-auth.md) · [database-setup.md](./database-setup.md)
 
 ---
 
@@ -420,5 +420,3 @@ Do not commit `.env.production`, `worker/.dev.vars`, or secret files.
 ## Automation vs manual steps
 
 **`npm run deploy:all`** runs Pass 1 + Pass 2: schema (optional), Worker, Pages, CORS secret bulk, and Supabase Auth URL sync via API. Use this guide for step-by-step detail, manual `deploy:worker` / `deploy:pages`, or when debugging a single pass.
-
-Phase handoff: [phases/phase-14-deploy.md](./phases/phase-14-deploy.md) · Next: [phase-15-submission.md](./phase-15-submission.md) (production launch checklist)

@@ -42,7 +42,7 @@ Human-readable catalog of automated tests, how to run them, and how to add new o
 
 ---
 
-## E2E catalog (50 tests)
+## E2E catalog (60 tests)
 
 Specs live under `e2e/specs/`. Tags: `@phase6` … `@phase11`, `@smoke` for core user paths.
 

@@ -1,172 +1,10 @@
 [← Back to README — Documentation](../README.md#documentation)
 
-# Stack Setup Guide — Student CRM
+# Stack setup & verification
 
-Setup checklist, **build-phase todo**, and verification commands. Use this file to track what is done and what is next.
+Verification commands and installer reference. **Onboarding:** start with [quick-start.md](./quick-start.md).
 
-**Build phases 6–15:** [build-plan.md](./build-plan.md)  
-**Automated tests (E2E + API):** [testing-plan.md](./testing-plan.md)  
-**Per-phase implementation notes:** [phases/README.md](./phases/README.md)
-
-Related: [project_requirements/README.md](../project_requirements/README.md), [project_requirements/architecture.md](../project_requirements/architecture.md), [quick-start.md](./quick-start.md)
-
----
-
-## Setup checklist — infrastructure (complete)
-
-### Phase 1 — Local tools (complete)
-
-- [x] **Node.js 22+** installed (`node -v` shows v22+)
-- [x] **npm** available (`npm -v`)
-- [x] **Git** installed (`git --version`)
-- [x] Run **`npm run install:linux`** (WSL/Linux) or [quick-start.md](./quick-start.md) on Windows
-- [x] Run: `npm run verify:stack:local` — all checks pass
-
-After `install:linux`, **restart the terminal** or run `source ~/.bashrc` — see [quick-start.md](./quick-start.md).
-
-### Phase 2 — Backend scaffold (`worker/`) (complete)
-
-- [x] Run **`npm run setup:worker`**
-- [x] Hono API per [architecture.md](../project_requirements/architecture.md)
-- [x] `cd worker && npm run dev` — `GET http://localhost:8787/api/health`
-- [x] `npm run verify:stack:scaffold` — worker checks pass
-
-### Phase 3 — Frontend scaffold (root `src/`) (complete)
-
-- [x] Run **`npm run setup:frontend`** — Vite, React, TypeScript, Router, TanStack Query, Tailwind, shadcn base
-- [x] Layout matches [architecture.md](../project_requirements/architecture.md) (`src/app`, `src/pages`, `src/lib`, `src/features`, `src/components`)
-- [x] Manual **`supabaseClient.ts`** + **`apiClient.ts`** (no Supabase shadcn registry)
-- [x] `npm run dev` — Vite on `http://localhost:5173`
-- [x] `npm run verify:stack:scaffold` — frontend checks pass
-
-### Phase 4 — Cloud accounts + credentials (complete)
-
-Merged former phases 4 and 5. **Installers do not copy env files** — you copy examples and paste keys first.
-
-- [x] **GitHub** public repo; remote `origin` configured
-- [x] **Supabase** project created ([dashboard](https://supabase.com/dashboard))
-- [x] **Cloudflare** account created; scoped API token in `worker/.cloudflare.env`
-- [x] Copy env examples (see [quick-start.md](./quick-start.md) — Environment files):
-  - [x] `.env.example` → `.env` (`VITE_SUPABASE_PUBLISHABLE_KEY`)
-  - [x] `worker/.dev.vars.example` → `worker/.dev.vars` (`SUPABASE_SECRET_KEY`)
-  - [x] `worker/.cloudflare.env.example` → `worker/.cloudflare.env`
-- [x] Paste Supabase + Cloudflare keys into those files
-- [x] Run **`npm run verify:stack:cloud`** — all checks pass
-
-Cloudflare: **scoped API token recommended** for prod/CI; optional `wrangler login` on desktop — see [cloudflare-auth.md](./cloudflare-auth.md) and Phase 12 [external-auth](./phases/phase-12-external-auth.md).
-
-### Phase 5 — Supabase database (complete)
-
-- [x] SQL schema + indexes — `supabase/schema/` ([database.md](../project_requirements/database.md))
-- [x] RLS + Realtime publication + profile bootstrap trigger
-- [x] Auth: disable email confirmation for demo ([database-setup.md](./database-setup.md))
-- [x] Seeds: 2 managers, 3 sales, 4 clients (`npm run db:seed`)
-- [x] Run: `npm run verify:stack:supabase`
-
-**Guide:** [database-setup.md](./database-setup.md) · **Future work:** [roadmap.md](./roadmap.md)
-
-```bash
-npm run db:schema    # empty DB only — needs SUPABASE_DB_URL (transaction pooler) in worker/.dev.vars
-npm run db:seed
-npm run verify:stack:supabase
-```
-
----
-
-## Build todo — application (Phases 6–15)
-
-**Approach:** Vertical slices per [build-plan.md](./build-plan.md) (wireframes + API + tests each phase).  
-**Tests (now):** Local Playwright **headless** (`npm run test:e2e` or `test:e2e:dev`) — see [testing-plan.md](./testing-plan.md).  
-**CI / GitHub Actions:** deferred until the CI stage — [ci-e2e-recipe.md](./ci-e2e-recipe.md) only.  
-**Docs:** Update the matching file under [phases/](./phases/) as you complete each phase.
-
-**Prerequisite:** Playwright browsers installed on your machine ([playwright-wsl-setup.md](./playwright-wsl-setup.md)). Phase 6 adds the repo harness (`e2e/`, npm scripts).
-
-### Phase 6 — App foundation (complete)
-
-- [x] Isolated E2E: `e2e-run.mjs` (create `sinc-ci-e2e-*` → seed → test → artifacts → delete)
-- [x] Playwright + `test:e2e` / `test:e2e:ui` / `test:e2e:dev` — [e2e-artifacts.md](./e2e-artifacts.md)
-- [x] **E2E only:** `SUPABASE_ACCESS_TOKEN` + `SUPABASE_ORG_SLUG` in `worker/.dev.vars`
-- [x] Playwright in repo (`@playwright/test`) — run `npm run verify:playwright`, then `sudo npx playwright install-deps chromium` if launch fails
-- [x] Login/sign-up, auth session, protected routes, role-aware shell
-- [x] shadcn: input, label, card, dropdown-menu
-- [x] Tests `AUTH-*`, `NAV-*` in `e2e/specs/phase-06-auth.spec.ts`
-- [x] Phase doc: [phases/phase-06-foundation.md](./phases/phase-06-foundation.md)
-
-### Phase 7 — Clients (complete)
-
-- [x] Worker clients routes + service + zod
-- [x] ClientsPage + ClientDetailPage + `src/features/clients/`
-- [x] Tests `CLI-*`, `API-CLI-*` in `e2e/specs/phase-07-clients.spec.ts`
-- [x] Phase doc: [phases/phase-07-clients.md](./phases/phase-07-clients.md)
-
-### Phase 8 — Conversations & chat (complete)
-
-- [x] Worker conversations/messages + assignment rules
-- [x] ConversationPage + Realtime in `realtime.ts`
-- [x] Tests `CHAT-*`, `API-CONV-*` in `e2e/specs/phase-08-conversations.spec.ts`
-- [x] Phase doc: [phases/phase-08-conversations.md](./phases/phase-08-conversations.md)
-
-### Phase 9 — Deals & pipeline (complete)
-
-- [x] Worker deals routes + stage history + notes
-- [x] PipelinePage + DealDetailPage (Select stage, no drag-drop)
-- [x] Tests `DEAL-*`, `PIPE-*`, `API-DEAL-*` in `e2e/specs/phase-09-deals.spec.ts`
-- [x] Phase doc: [phases/phase-09-deals.md](./phases/phase-09-deals.md)
-
-### Phase 10 — Dashboard (complete)
-
-- [x] Worker `GET /api/dashboard`
-- [x] DashboardPage (manager only)
-- [x] Tests `DASH-*` in `e2e/specs/phase-10-dashboard.spec.ts`
-- [x] Phase doc: [phases/phase-10-dashboard.md](./phases/phase-10-dashboard.md)
-
-### Phase 11 — Polish & full regression (complete)
-
-- [x] Loading / empty / error states
-- [x] Full E2E suite + core-flow smoke (`EVAL-*`) in `e2e/specs/phase-11-eval-smoke.spec.ts`
-- [x] Worker Vitest (`npm run test:worker`)
-- [x] Phase doc: [phases/phase-11-polish.md](./phases/phase-11-polish.md)
-
-### Phase 12 — External tooling auth
-
-- [x] Env-first auth ladder in scripts (`process.env` overrides files; files optional if env complete)
-- [x] Cloudflare, Supabase, GitHub (`CI=true` fail fast before OAuth)
-- [x] [external-auth.md](./external-auth.md); [cloudflare-auth.md](./cloudflare-auth.md) updated
-- [x] Phase doc: [phases/phase-12-external-auth.md](./phases/phase-12-external-auth.md)
-
-### Phase 13 — README & doc compile
-
-- [x] Root README + symlinks/backlinks, `testing-guide.md`, `infrastructure-phases.md`, `project-guide.md`
-- [x] `docs/deploy-guide.md` stub (filled in Phase 14)
-- [x] Phase doc: [phases/phase-13-readme.md](./phases/phase-13-readme.md)
-
-### Phase 14 — Deploy
-
-- [x] Cloudflare Worker + Pages scripts; [deploy-guide.md](./deploy-guide.md) (two-pass manual CLI)
-- [x] `npm run deploy:worker`, `deploy:pages`, `deploy`; `.env.production.example`
-- [x] `npm run verify:stack:deploy` (health on production API URL)
-- [x] Optional deploy smoke (`e2e/specs/phase-14-deploy.spec.ts`, `@deploy`)
-- [ ] **You:** manual deploy per guide; Pass 2 (CORS + Supabase Auth URLs); fill README URL table
-- [ ] **Later:** GitHub→Cloudflare CI deploy + two-pass `deploy-all` script (both valid; CLI first)
-
-### Phase 15 — Production launch (current)
-
-- [ ] README lists deployed URLs (live app + API)
-- [ ] Optional portfolio walkthrough / demo recording
-- [ ] Phase doc: [phases/phase-15-submission.md](./phases/phase-15-submission.md)
-
-### Optional — GitHub Actions readiness (anytime)
-
-- [ ] Run `npm run verify:github-actions` — checks if connected `origin` can likely run workflows (not required for dev)
-
-### Deferred — GitHub Actions CI (after local E2E stable)
-
-- [ ] `.github/workflows/e2e.yml` — calls same `e2e-run.mjs` as local (headless)
-- [ ] Upload `test-results/<session>/` artifact
-- [ ] Document CI secrets in [project-guide.md](./project-guide.md)
-
-Orchestrator + isolated DB runs are built in **Phase 6**; only the workflow file is deferred.
+Related: [database-setup.md](./database-setup.md), [external-auth.md](./external-auth.md), [testing-guide.md](./testing-guide.md)
 
 ---
 
@@ -174,60 +12,69 @@ Orchestrator + isolated DB runs are built in **Phase 6**; only the workflow file
 
 | Command | Purpose |
 |---------|---------|
-| `npm run install:linux` | Phase 1: nvm, Node 22, wrangler + supabase CLI |
-| `npm run setup:local` | Phase 1 CLIs only |
-| `npm run setup:worker` | Phase 2: Worker runtime packages |
-| `npm run setup:frontend` | Phase 3: Vite/React packages at repo root |
-| `npm run setup:cloud` | **Phase 4:** env check, Cloudflare auth, `verify:stack:cloud` |
-| `npm run db:schema` | **Phase 5:** apply schema SQL (empty DB) |
-| `npm run db:seed` | **Phase 5:** demo users + CRM data (empty DB) |
-| `npm run install:project` | Master — `local`, `worker`, `frontend` (default; no env copy) |
-| `npm run test:e2e` | **Phase 6+:** Playwright (added with harness) |
-| `npm run test:worker` | **Phase 6+:** Vitest in `worker/` (added with services) |
+| `npm run install:linux` | nvm, Node 22, wrangler + supabase CLI, project deps |
+| `npm run setup:local` | CLIs + deps only (Node 22+ already active) |
+| `npm run install:project` | Master — local + worker + frontend deps |
+| `npm run setup:worker` | Worker runtime packages |
+| `npm run setup:frontend` | Vite/React packages at repo root |
+| `npm run setup:cloud` | Env check, Cloudflare auth, cloud verify |
+| `npm run db:schema` | Apply schema SQL (empty Supabase project) |
+| `npm run db:seed` | Demo users + CRM sample data |
+| `npm run test:e2e` | Isolated Playwright suite |
+| `npm run test:worker` | Vitest in `worker/` |
 
-Override phases: `INSTALL_PROJECT_PHASES=local,worker npm run install:project`
+Override install phases: `INSTALL_PROJECT_PHASES=local,worker npm run install:project`
+
+Skip verify during install: `SKIP_VERIFY=1 npm run install:linux`
 
 Skip cloud verify while filling keys: `SKIP_CLOUD_VERIFY=1 npm run setup:cloud`
 
 ---
 
-## Architecture (repo layout)
+## Verification commands
 
-Per [architecture.md](../project_requirements/architecture.md) — **no `frontend/` wrapper**:
-
-```txt
-src/                       # Phase 3 — Vite + React SPA
-  app/                     router.tsx, queryClient.ts
-  components/              layout/, ui/
-  features/                auth/, clients/, conversations/, deals/, dashboard/
-  lib/                     apiClient.ts, supabaseClient.ts, realtime.ts
-  pages/                   LoginPage, DashboardPage, …
-
-worker/                    # Phase 2 — Hono API at /api
-  src/                     …
-
-e2e/                       # Phase 6+ — Playwright specs (planned)
+```bash
+npm run verify:stack:local       # Node 22, wrangler, supabase CLI
+npm run verify:stack:scaffold    # Worker + frontend scaffold
+npm run verify:stack:env         # Env files and keys
+npm run verify:stack:cloudflare  # Cloudflare token / whoami
+npm run verify:stack:github      # GitHub remote configured
+npm run verify:stack:supabase    # Schema + tables + secret key
+npm run verify:stack:cloud       # Phase 4 bundle (env + cloud + github)
+npm run verify:stack:full        # All phases
+npm run verify:stack:deploy      # Production API health (after deploy)
+npm run verify:github-actions    # Optional — Actions readiness on origin
 ```
 
-**Data flow:** CRM HTTP via **Worker** + TanStack Query; **Supabase client** for Auth + Realtime only.
+Dev servers:
+
+```bash
+npm run dev                   # frontend :5173
+cd worker && npm run dev      # API :8787
+```
 
 ---
 
-## Verification tests
+## Repo layout
 
-```bash
-npm run verify:stack:scaffold
-npm run verify:stack:local
-npm run verify:stack:cloud      # Phase 4 — env + GitHub + Cloudflare + Supabase keys
-npm run verify:stack:supabase   # Phase 5 — schema + tables
-npm run dev                   # frontend :5173
-cd worker && npm run dev      # API :8787
-npm run test:e2e              # Phase 6+ — isolated E2E (needs E2E-only Supabase token vars)
-npm run verify:github-actions # optional — GitHub Actions readiness on origin remote
+Per [architecture.md](../project_requirements/architecture.md):
+
+```txt
+src/          # Vite + React SPA
+worker/       # Hono API at /api
+e2e/          # Playwright specs
+supabase/     # Schema SQL
+scripts/      # Install, deploy, E2E orchestration
 ```
 
-**Infrastructure (Phases 1–5):** complete.  
-**Current focus:** Phase 15 — [build-plan.md](./build-plan.md) · production launch
+**Data flow:** CRM HTTP via **Worker** + TanStack Query; Supabase client for **Auth + Realtime** only.
+
+---
+
+## What's next
+
+- **Deploy:** [deploy-guide.md](./deploy-guide.md)
+- **Deferred CI:** [ci-e2e-recipe.md](./ci-e2e-recipe.md), [roadmap.md](./roadmap.md)
 
 ---
 
