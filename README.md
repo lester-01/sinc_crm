@@ -1,29 +1,38 @@
 # SINC Student CRM
 
-A full-stack student CRM with role-based access, realtime chat, deal pipeline, and a manager dashboard. The SPA runs on Vite + React; the API runs on Cloudflare Workers (Hono); data and auth use Supabase.
+A full-stack student CRM with role-based access, realtime chat, deal pipeline, and a manager dashboard. The SPA runs on Cloudflare Pages (Vite + React); the API runs on Cloudflare Workers (Hono); data and auth use hosted Supabase.
 
 ## Quick start
 
-**Canonical guide:** [docs/quick-start.md](docs/quick-start.md) — scripted setup (Linux/WSL), env files, cloud credentials, database, and dev servers.
+**Canonical guide:** [docs/quick-start.md](docs/quick-start.md) — automated setup (Linux/WSL), env files, hosted Supabase schema/seed, and local dev servers.
 
-At a glance:
+## Live application
 
-1. Clone → copy env examples (`.env`, `worker/.dev.vars`, `worker/.cloudflare.env`)
-2. `npm run install:linux` (or `npm run setup:local` if Node 22+ is already active)
-3. Paste keys → `npm run setup:cloud` → `npm run db:schema` → `npm run db:seed`
-4. `npm run dev` + `cd worker && npm run dev` → open [http://localhost:5173](http://localhost:5173)
+The deployed instance is available for hands-on testing in production. Sign in with any [demo user](#demo-users) below (password **`demo1234`**).
 
-Demo users and tests: sections below. Manual / Windows paths: [quick-start.md](docs/quick-start.md).
+| Service | URL |
+|---------|-----|
+| App (Cloudflare Pages) | [https://sinc-crm-esg.pages.dev](https://sinc-crm-esg.pages.dev) (stable project domain — see [deploy-guide](docs/deploy-guide.md#pages-url-stable-vs-deployment-preview-read-before-pass-2)) |
+| API (Cloudflare Worker) | [https://sinc-crm-api.prinxlexter.workers.dev](https://sinc-crm-api.prinxlexter.workers.dev) |
+| Supabase (dashboard) | [https://fgoqijltbhkrztxjebjm.supabase.co](https://fgoqijltbhkrztxjebjm.supabase.co) |
 
 ## Demo users
 
 Password for all seeded accounts: **`demo1234`** (override with `SEED_DEMO_PASSWORD` when seeding).
 
-| Role | Email | Notes |
-|------|-------|--------|
-| Manager | `manager1@demo.local` | Dashboard, full nav |
-| Sales | `sales1@demo.local`, `sales2@demo.local` | Clients, conversations, pipeline |
-| Client | `client1@demo.local`, `client2@demo.local` | Own profile and chat only |
+| Role | Email | Display name | Notes |
+|------|-------|--------------|-------|
+| Manager | `manager1@demo.local` | Morgan Manager | Dashboard, full nav |
+| Manager | `manager2@demo.local` | Alex Manager | Same role capabilities |
+| Sales | `sales1@demo.local` | Sam Sales | Clients, conversations, pipeline |
+| Sales | `sales2@demo.local` | Jordan Sales | Clients, conversations, pipeline |
+| Sales | `sales3@demo.local` | Riley Sales | Clients, conversations, pipeline |
+| Client | `client1@demo.local` | Aida Client | Assigned thread + deal (`new_lead`) |
+| Client | `client2@demo.local` | Bek Client | Assigned thread + deal (`contacted`) |
+| Client | `client3@demo.local` | Cara Client | Assigned thread + deal (`consultation_booked`) |
+| Client | `client4@demo.local` | Dana Client | Unassigned queue thread, no deal |
+
+CRM-only row without auth login: `prospect.no.login@example.com` — see [database-setup.md — Seed composition](docs/database-setup.md#6-seed-composition-your-requirements).
 
 ## Running tests
 
@@ -56,22 +65,6 @@ Post-MVP improvements and deferred items: [docs/roadmap.md](docs/roadmap.md#back
 
 ## Deployment
 
-**Production:** follow the two-pass guide — [docs/deploy-guide.md](docs/deploy-guide.md#back-to-readme) (manual CLI today; GitHub→Cloudflare CI is a valid alternative we will document later).
+**Canonical guide:** [docs/deploy-guide.md](docs/deploy-guide.md) — two-pass manual deploy (Worker + Pages, CORS, Supabase Auth URLs).
 
 To reset Supabase data or schema **without deleting the project** (fast dev iteration), see [database-setup.md — Reset database](docs/database-setup.md#reset-database-without-deleting-the-project).
-
-```bash
-# End-to-end (recommended) — see deploy-guide.md
-npm run deploy:all -- --skip-db    # use --skip-db if schema already exists
-
-# Or manual two-pass:
-# npm run db:schema              # empty Supabase project only (first time)
-# npm run deploy:worker && npm run deploy:pages
-# npm run verify:stack:deploy
-```
-
-| Service | URL |
-|---------|-----|
-| App (Cloudflare Pages) | [https://sinc-crm-esg.pages.dev](https://sinc-crm-esg.pages.dev) (stable project domain — see [deploy-guide](docs/deploy-guide.md#pages-url-stable-vs-deployment-preview-read-before-pass-2)) |
-| API (Cloudflare Worker) | [https://sinc-crm-api.prinxlexter.workers.dev](https://sinc-crm-api.prinxlexter.workers.dev) |
-| Supabase | [https://fgoqijltbhkrztxjebjm.supabase.co](https://fgoqijltbhkrztxjebjm.supabase.co) |

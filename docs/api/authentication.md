@@ -10,13 +10,19 @@ The SINC CRM Worker API does **not** handle login or sign-up. Clients obtain a S
 
 ### Demo users (seeded)
 
-Password for all demo accounts: **`demo1234`**
+Password for all demo accounts: **`demo1234`**. Full list with seed notes: [README § Demo users](../../README.md#demo-users).
 
-| Role | Email |
-|------|-------|
-| Manager | `manager1@demo.local` |
-| Sales | `sales1@demo.local`, `sales2@demo.local` |
-| Client | `client1@demo.local`, `client2@demo.local` |
+| Role | Email | Display name |
+|------|-------|--------------|
+| Manager | `manager1@demo.local` | Morgan Manager |
+| Manager | `manager2@demo.local` | Alex Manager |
+| Sales | `sales1@demo.local` | Sam Sales |
+| Sales | `sales2@demo.local` | Jordan Sales |
+| Sales | `sales3@demo.local` | Riley Sales |
+| Client | `client1@demo.local` | Aida Client |
+| Client | `client2@demo.local` | Bek Client |
+| Client | `client3@demo.local` | Cara Client |
+| Client | `client4@demo.local` | Dana Client |
 
 ## Request headers
 
