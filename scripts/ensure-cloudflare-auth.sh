@@ -53,13 +53,28 @@ main() {
     exit 1
   fi
 
+  _cf_merge_cloudflare_creds
+
+  if [[ "${CI:-}" == "true" ]]; then
+    if ! token_configured; then
+      ci_fail_fast
+    fi
+    log "Cloudflare auth: verifying scoped API token (CI)..."
+    if whoami_ok; then
+      log "Authenticated with scoped API token."
+      print_whoami
+      exit 0
+    fi
+    err "CLOUDFLARE_API_TOKEN is set but wrangler whoami failed."
+    err "Check token permissions and CLOUDFLARE_ACCOUNT_ID."
+    exit 1
+  fi
+
   if whoami_ok; then
     log "Already authenticated with Cloudflare."
     print_whoami
     exit 0
   fi
-
-  _cf_merge_cloudflare_creds
 
   if token_configured; then
     log "Cloudflare auth: verifying scoped API token..."
@@ -71,10 +86,6 @@ main() {
     err "CLOUDFLARE_API_TOKEN is set but wrangler whoami failed."
     err "Check token permissions and CLOUDFLARE_ACCOUNT_ID."
     exit 1
-  fi
-
-  if [[ "${CI:-}" == "true" ]]; then
-    ci_fail_fast
   fi
 
   log "No API token found. Starting wrangler login (desktop browser may open)..."

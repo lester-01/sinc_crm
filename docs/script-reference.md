@@ -37,7 +37,7 @@ verify:linux  →  setup:node / verify:node  →  setup:cli / verify:cli
 | Script | Purpose |
 |--------|---------|
 | **`setup:supabase`** | `require-supabase` → `verify:supabase` |
-| **`verify:supabase`** | Env files → live API ping → schema tables (internal steps: `env`, `supabase-connect`, `supabase`) |
+| **`verify:supabase`** | Env files → live API ping → schema tables (internal steps: `env`, `supabase`) |
 | `db:schema` | Apply SQL to hosted Supabase |
 | `db:seed` | Demo users and sample data |
 
@@ -106,7 +106,7 @@ Implementation: [`scripts/verify-setup.mjs`](../scripts/verify-setup.mjs)
 
 ```bash
 node scripts/verify-setup.mjs --phase=linux,node,cli
-node scripts/verify-setup.mjs --phase=env,supabase-connect,supabase
+node scripts/verify-setup.mjs --phase=env,supabase
 node scripts/verify-setup.mjs --phase=github --strict
 ```
 

@@ -57,13 +57,17 @@ function parseArgs(argv) {
       "node",
       "cli",
       "env",
-      "supabase-connect",
       "supabase",
       "cloudflare",
       "github",
     ]);
   }
   return out;
+}
+
+/** `supabase-connect` is a legacy alias for `supabase` (connectivity + schema). */
+function shouldRunSupabase() {
+  return phases.has("supabase") || phases.has("supabase-connect");
 }
 
 function shouldRun(phase) {
@@ -97,29 +101,14 @@ function localCli(binPath, args = ["--version"]) {
   return r.status === 0;
 }
 
-function parseEnvFile(path) {
-  if (!existsSync(path)) return {};
-  const env = {};
-  for (const line of readFileSync(path, "utf8").split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    let value = trimmed.slice(eq + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    env[key] = value;
-  }
-  return env;
-}
-
-function loadEnv() {
-  return loadStackEnv().merged;
+function resolveSupabaseConfig(env) {
+  const url = (env.SUPABASE_URL || "").replace(/\/$/, "");
+  const publicKey = supabasePublicKey(env);
+  const serviceKey = supabaseSecretKey(env);
+  const missing = [];
+  if (!url || isPlaceholder(url)) missing.push("url");
+  if (!publicKey || isPlaceholder(publicKey)) missing.push("publicKey");
+  return { url, publicKey, serviceKey, missing };
 }
 
 function wranglerWhoami(extraEnv = {}) {
@@ -227,14 +216,13 @@ function verifyCli() {
 }
 
 // --- Phase: cloudflare ---
-function verifyCloudflare() {
+function verifyCloudflare(env) {
   if (!localCli(WRANGLER_BIN)) {
     record("wrangler CLI available", false, "run: npm run setup:cli");
     return;
   }
 
-  const merged = loadEnv();
-  const hasCfKeys = hasCloudflareStackKeys(merged);
+  const hasCfKeys = hasCloudflareStackKeys(env);
   const envPath = join(ROOT, ".env");
   const envExists = existsSync(envPath);
 
@@ -248,7 +236,7 @@ function verifyCloudflare() {
         : "set CLOUDFLARE_API_TOKEN in .env or export — see docs/deploy-guide.md",
   );
 
-  const token = merged.CLOUDFLARE_API_TOKEN;
+  const token = env.CLOUDFLARE_API_TOKEN;
   record(
     "Cloudflare: CLOUDFLARE_API_TOKEN configured",
     hasCfKeys,
@@ -267,8 +255,8 @@ function verifyCloudflare() {
   }
 
   const tokenEnv = { CLOUDFLARE_API_TOKEN: token };
-  if (merged.CLOUDFLARE_ACCOUNT_ID && !isPlaceholder(merged.CLOUDFLARE_ACCOUNT_ID)) {
-    tokenEnv.CLOUDFLARE_ACCOUNT_ID = merged.CLOUDFLARE_ACCOUNT_ID;
+  if (env.CLOUDFLARE_ACCOUNT_ID && !isPlaceholder(env.CLOUDFLARE_ACCOUNT_ID)) {
+    tokenEnv.CLOUDFLARE_ACCOUNT_ID = env.CLOUDFLARE_ACCOUNT_ID;
   }
   const withToken = wranglerWhoami(tokenEnv);
   record(
@@ -281,10 +269,9 @@ function verifyCloudflare() {
 }
 
 // --- Phase: env ---
-function verifyEnv() {
+function verifyEnv(env) {
   const envPath = join(ROOT, ".env");
   const envExists = existsSync(envPath);
-  const env = loadEnv();
   const hasFrontend = hasFrontendStackKeys(env);
   const hasWorker = hasWorkerStackKeys(env);
 
@@ -359,27 +346,27 @@ function verifyEnv() {
   );
 }
 
-// --- Phase: supabase-connect ---
-async function verifySupabaseConnect() {
-  const env = loadEnv();
-  const url = (env.SUPABASE_URL || "").replace(/\/$/, "");
-  const publicKey = supabasePublicKey(env);
+// --- Phase: supabase (connectivity + schema; supabase-connect is legacy alias) ---
+async function verifySupabase(env) {
+  const { url, publicKey, serviceKey, missing } = resolveSupabaseConfig(env);
 
-  if (!url || isPlaceholder(url)) {
+  if (missing.includes("url")) {
     record("Supabase URL configured", false, "set SUPABASE_URL in .env");
-    return;
+  } else {
+    record("Supabase URL configured", true, url);
   }
-  if (!publicKey || isPlaceholder(publicKey)) {
+
+  if (missing.includes("publicKey")) {
     record(
       "Supabase public key configured",
       false,
       "set SUPABASE_PUBLISHABLE_KEY in .env",
     );
-    return;
+  } else if (!missing.includes("url")) {
+    record("Supabase public key configured", true);
   }
 
-  record("Supabase URL configured", true, url);
-  record("Supabase public key configured", true);
+  if (missing.length > 0) return;
 
   try {
     const authRes = await fetch(`${url}/auth/v1/health`, {
@@ -399,7 +386,6 @@ async function verifySupabaseConnect() {
     return;
   }
 
-  const serviceKey = supabaseSecretKey(env);
   if (!serviceKey || isPlaceholder(serviceKey)) {
     record(
       "Supabase secret key",
@@ -409,6 +395,7 @@ async function verifySupabaseConnect() {
     return;
   }
 
+  let schemaApplied = true;
   try {
     const res = await fetch(`${url}/rest/v1/profiles?select=id&limit=1`, {
       headers: {
@@ -417,55 +404,29 @@ async function verifySupabaseConnect() {
       },
     });
     const body = await res.text();
-    const missing = body.includes("PGRST205") || body.includes("does not exist");
-    if (missing) {
+    const missingTable =
+      body.includes("PGRST205") || body.includes("does not exist");
+    if (missingTable) {
+      schemaApplied = false;
       record(
         "Supabase secret key (API reachable)",
         true,
         "schema not applied yet — run npm run db:schema",
       );
-      return;
+    } else {
+      record(
+        "Supabase secret key (profiles read)",
+        res.ok,
+        res.ok ? "OK" : `HTTP ${res.status} — check SUPABASE_SECRET_KEY`,
+      );
+      if (!res.ok) return;
     }
-    record(
-      "Supabase secret key (profiles read)",
-      res.ok,
-      res.ok ? "OK" : `HTTP ${res.status} — check SUPABASE_SECRET_KEY`,
-    );
   } catch (e) {
     record("Supabase secret key (API reachable)", false, e.message);
-  }
-}
-
-// --- Phase: supabase ---
-async function verifySupabaseSchema() {
-  const env = loadEnv();
-  const url = (env.SUPABASE_URL || "").replace(/\/$/, "");
-  const publicKey = supabasePublicKey(env);
-
-  if (!url || !publicKey) {
-    record("Supabase URL configured", false, "set SUPABASE_URL in .env");
-    record(
-      "Supabase public key configured",
-      false,
-      "set SUPABASE_PUBLISHABLE_KEY in .env",
-    );
     return;
   }
 
-  record("Supabase URL configured", true, url);
-
-  try {
-    const authRes = await fetch(`${url}/auth/v1/health`, {
-      headers: { apikey: publicKey },
-    });
-    record(
-      "Supabase Auth reachable",
-      authRes.ok || authRes.status === 401,
-      `HTTP ${authRes.status}`,
-    );
-  } catch (e) {
-    record("Supabase Auth reachable", false, e.message);
-  }
+  if (!schemaApplied) return;
 
   for (const table of CORE_TABLES) {
     try {
@@ -479,16 +440,17 @@ async function verifySupabaseSchema() {
         },
       );
       const body = await res.text();
-      const missing = body.includes("PGRST205") || body.includes("does not exist");
+      const missingTable =
+        body.includes("PGRST205") || body.includes("does not exist");
       const rlsOnly =
         res.status === 401 ||
-        (res.status === 200 && !missing) ||
+        (res.status === 200 && !missingTable) ||
         res.status === 406;
-      const ok = res.ok || rlsOnly || (res.status === 200 && !missing);
+      const ok = res.ok || rlsOnly || (res.status === 200 && !missingTable);
       record(
         `Supabase table: ${table}`,
-        ok && !missing,
-        missing
+        ok && !missingTable,
+        missingTable
           ? "table missing — run npm run db:schema"
           : res.ok
             ? "OK"
@@ -497,31 +459,6 @@ async function verifySupabaseSchema() {
     } catch (e) {
       record(`Supabase table: ${table}`, false, e.message);
     }
-  }
-
-  const serviceKey = supabaseSecretKey(env);
-  if (serviceKey && !isPlaceholder(serviceKey)) {
-    try {
-      const res = await fetch(`${url}/rest/v1/profiles?select=id&limit=1`, {
-        headers: {
-          apikey: serviceKey,
-          Authorization: `Bearer ${serviceKey}`,
-        },
-      });
-      record(
-        "Supabase secret key (profiles read)",
-        res.ok,
-        res.ok ? "OK" : `HTTP ${res.status} — check SUPABASE_SECRET_KEY`,
-      );
-    } catch (e) {
-      record("Supabase secret key (profiles read)", false, e.message);
-    }
-  } else {
-    record(
-      "Supabase secret key (optional until .env)",
-      true,
-      "SUPABASE_SECRET_KEY not in env — add to .env for db:seed and worker",
-    );
   }
 }
 
@@ -665,8 +602,7 @@ function verifyScaffold() {
 }
 
 // --- Phase: deploy ---
-async function verifyDeploy() {
-  const env = loadEnv();
+async function verifyDeploy(env) {
   const apiUrl = (env.VITE_API_BASE_URL || "").replace(/\/$/, "");
   if (!apiUrl || apiUrl.includes("localhost") || apiUrl.includes("127.0.0.1")) {
     record(
@@ -718,18 +654,18 @@ function summarize() {
 }
 
 async function main() {
+  const { merged: stackEnv } = loadStackEnv();
   console.log(`Verifying setup (phases: ${[...phases].join(", ")})...\n`);
 
   if (shouldRun("linux")) verifyLinux();
   if (shouldRun("node")) verifyNode();
   if (shouldRun("cli")) verifyCli();
-  if (shouldRun("cloudflare")) verifyCloudflare();
-  if (shouldRun("env")) verifyEnv();
-  if (shouldRun("supabase-connect")) await verifySupabaseConnect();
-  if (shouldRun("supabase")) await verifySupabaseSchema();
+  if (shouldRun("cloudflare")) verifyCloudflare(stackEnv);
+  if (shouldRun("env")) verifyEnv(stackEnv);
+  if (shouldRunSupabase()) await verifySupabase(stackEnv);
   if (shouldRun("github")) verifyGithub();
   if (shouldRun("scaffold")) verifyScaffold();
-  if (shouldRun("deploy")) await verifyDeploy();
+  if (shouldRun("deploy")) await verifyDeploy(stackEnv);
 
   summarize();
 }

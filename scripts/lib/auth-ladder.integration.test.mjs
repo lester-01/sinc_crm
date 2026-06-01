@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, renameSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -10,7 +11,6 @@ const ENSURE_CF = join(ROOT, "scripts/ensure-cloudflare-auth.sh");
 const REQUIRE_SUPABASE = join(ROOT, "scripts/lib/require-supabase.mjs");
 const REQUIRE_CLOUDFLARE = join(ROOT, "scripts/lib/require-cloudflare.mjs");
 const VERIFY_GH = join(ROOT, "scripts/verify-github-actions.mjs");
-const ENV_FILE = join(ROOT, ".env");
 
 function runNode(script, extraEnv = {}) {
   const env = { ...process.env, ...extraEnv };
@@ -32,35 +32,44 @@ function runBash(script, extraEnv = {}) {
   });
 }
 
+/** Isolated empty env file — never rename the developer's root .env. */
+function withEmptyStackEnvFile(run) {
+  const dir = mkdtempSync(join(tmpdir(), "auth-ladder-env-"));
+  const envFile = join(dir, ".env");
+  writeFileSync(envFile, "# empty fixture\n", "utf8");
+  try {
+    run(envFile);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/** Isolated directory with no .env for bash scripts using CLOUDFLARE_ENV_ROOT. */
+function withEmptyCloudflareRoot(run) {
+  const dir = mkdtempSync(join(tmpdir(), "auth-ladder-cf-"));
+  try {
+    run(dir);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 describe("auth ladder integration", () => {
   describe("ensure-cloudflare-auth.sh", () => {
-    /** @type {string | null} */
-    let envBackup = null;
-
-    before(() => {
-      if (existsSync(ENV_FILE)) {
-        envBackup = `${ENV_FILE}.auth-ladder-test-bak`;
-        renameSync(ENV_FILE, envBackup);
-      }
-    });
-
-    after(() => {
-      if (envBackup && existsSync(envBackup)) {
-        renameSync(envBackup, ENV_FILE);
-      }
-    });
-
     it("AUTH-LADDER-07: CI=true fails fast before OAuth when no token", () => {
-      const r = runBash(ENSURE_CF, {
-        CI: "true",
-        CLOUDFLARE_API_TOKEN: "",
-        CLOUDFLARE_ACCOUNT_ID: "",
+      withEmptyCloudflareRoot((cfRoot) => {
+        const r = runBash(ENSURE_CF, {
+          CI: "true",
+          CLOUDFLARE_API_TOKEN: "",
+          CLOUDFLARE_ACCOUNT_ID: "",
+          CLOUDFLARE_ENV_ROOT: cfRoot,
+        });
+        assert.notEqual(r.status, 0);
+        const out = `${r.stdout}${r.stderr}`;
+        assert.match(out, /CI=true/);
+        assert.match(out, /headless/i);
+        assert.doesNotMatch(out, /wrangler login/i);
       });
-      assert.notEqual(r.status, 0);
-      const out = `${r.stdout}${r.stderr}`;
-      assert.match(out, /CI=true/);
-      assert.match(out, /headless/i);
-      assert.doesNotMatch(out, /wrangler login/i);
     });
   });
 
@@ -70,13 +79,9 @@ describe("auth ladder integration", () => {
     const FAKE_SECRET = "eyJhbGciOiJIUzI1NiJ9.secretkey12";
 
     it("AUTH-LADDER-08: succeeds when Supabase keys are only in environment", () => {
-      let hideEnv = null;
-      if (existsSync(ENV_FILE)) {
-        hideEnv = `${ENV_FILE}.req-supabase-test-bak`;
-        renameSync(ENV_FILE, hideEnv);
-      }
-      try {
+      withEmptyStackEnvFile((envFile) => {
         const r = runNode(REQUIRE_SUPABASE, {
+          STACK_ENV_FILE: envFile,
           SUPABASE_URL: FAKE_URL,
           SUPABASE_PUBLISHABLE_KEY: FAKE_PUB,
           SUPABASE_SECRET_KEY: FAKE_SECRET,
@@ -86,9 +91,7 @@ describe("auth ladder integration", () => {
           0,
           r.stderr || r.stdout || "require-supabase failed",
         );
-      } finally {
-        if (hideEnv && existsSync(hideEnv)) renameSync(hideEnv, ENV_FILE);
-      }
+      });
     });
   });
 
@@ -96,13 +99,8 @@ describe("auth ladder integration", () => {
     const FAKE_CF = "cf-token-abcdefghijklmnopqrst";
 
     it("AUTH-LADDER-09: fails when Cloudflare token missing from env and files", () => {
-      let hideEnv = null;
-      if (existsSync(ENV_FILE)) {
-        hideEnv = `${ENV_FILE}.req-creds-test-bak`;
-        renameSync(ENV_FILE, hideEnv);
-      }
-      try {
-        const env = { ...process.env };
+      withEmptyStackEnvFile((envFile) => {
+        const env = { ...process.env, STACK_ENV_FILE: envFile };
         delete env.CLOUDFLARE_API_TOKEN;
         delete env.CLOUDFLARE_ACCOUNT_ID;
         const r = spawnSync(process.execPath, [REQUIRE_CLOUDFLARE], {
@@ -112,9 +110,7 @@ describe("auth ladder integration", () => {
         });
         assert.notEqual(r.status, 0);
         assert.match(`${r.stdout}${r.stderr}`, /Cloudflare/i);
-      } finally {
-        if (hideEnv && existsSync(hideEnv)) renameSync(hideEnv, ENV_FILE);
-      }
+      });
     });
 
     it("AUTH-LADDER-09b: succeeds when Cloudflare token is in environment", () => {
