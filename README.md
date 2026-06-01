@@ -4,18 +4,16 @@ A full-stack student CRM with role-based access, realtime chat, deal pipeline, a
 
 ## Quick start
 
-1. **Clone** the repository and `cd` into it.
-2. **Environment** — copy examples and paste keys, or export the same variables (see [external-auth.md](external-auth.md)):
-   ```bash
-   cp .env.example .env
-   cp worker/.dev.vars.example worker/.dev.vars
-   cp worker/.cloudflare.env.example worker/.cloudflare.env
-   ```
-3. **Install** (Linux/WSL): `npm run install:linux` — or `npm run setup:local` if Node 22+ is already active.
-4. **Cloud credentials** (once): `npm run setup:cloud` — see [quick-start.md](quick-start.md#back-to-readme).
-5. **Database** (empty Supabase project): `npm run db:schema` then `npm run db:seed`.
-6. **Run** — terminal 1: `npm run dev` (frontend `:5173`); terminal 2: `cd worker && npm run dev` (API `:8787`).
-7. **Open** [http://localhost:5173](http://localhost:5173) and sign in with a demo user below.
+**Canonical guide:** [docs/quick-start.md](docs/quick-start.md) — scripted setup (Linux/WSL), env files, cloud credentials, database, and dev servers.
+
+At a glance:
+
+1. Clone → copy env examples (`.env`, `worker/.dev.vars`, `worker/.cloudflare.env`)
+2. `npm run install:linux` (or `npm run setup:local` if Node 22+ is already active)
+3. Paste keys → `npm run setup:cloud` → `npm run db:schema` → `npm run db:seed`
+4. `npm run dev` + `cd worker && npm run dev` → open [http://localhost:5173](http://localhost:5173)
+
+Demo users and tests: sections below. Manual / Windows paths: [quick-start.md](docs/quick-start.md).
 
 ## Demo users
 
@@ -31,22 +29,21 @@ Password for all seeded accounts: **`demo1234`** (override with `SEED_DEMO_PASSW
 
 Run **`npm run test:e2e`** for the full isolated Playwright suite (creates a temporary Supabase project, seeds, tests, deletes). For day-to-day dev against your existing `.env`, use **`npm run test:e2e:dev`**. Worker unit tests: **`npm run test:worker`**.
 
-Full catalog, commands, and how to add tests: [testing-guide.md](testing-guide.md#back-to-readme). Tooling auth ladder: `npm run test:scripts`.
+Full catalog, commands, and how to add tests: [docs/testing-guide.md](docs/testing-guide.md#back-to-readme). Tooling auth ladder: `npm run test:scripts`.
 
 ## Documentation
 
 | Topic | Quick link |
 |-------|------------|
 | **API reference (OpenAPI)** | [docs/api/openapi.yaml](docs/api/openapi.yaml) · [interactive viewer](docs/api/index.html) |
-| Quick start (install, env, Phase 4) | [quick-start.md](quick-start.md#back-to-readme) |
-| Stack setup & phase checklist | [stack-setup.md](stack-setup.md#back-to-readme) |
-| Database schema & seed | [database-setup.md](database-setup.md#back-to-readme) |
-| Tooling auth (Cloudflare / Supabase / GitHub) | [external-auth.md](external-auth.md#back-to-readme) |
-| **How to work on the codebase** | [development-guide.md](development-guide.md#back-to-readme) |
-| Testing (all tests + how to add) | [testing-guide.md](testing-guide.md#back-to-readme) |
-| Full project guide | [project-guide.md](project-guide.md#back-to-readme) |
-| Roadmap & future work | [roadmap.md](roadmap.md#back-to-readme) |
-| Deployment (Phase 14) | [deploy-guide.md](deploy-guide.md#back-to-readme) |
+| Quick start (install, env, scripts) | [docs/quick-start.md](docs/quick-start.md#back-to-readme) |
+| Database schema & seed | [docs/database-setup.md](docs/database-setup.md#back-to-readme) |
+| Tooling auth (Cloudflare / Supabase / GitHub) | [docs/external-auth.md](docs/external-auth.md#back-to-readme) |
+| **How to work on the codebase** | [docs/development-guide.md](docs/development-guide.md#back-to-readme) |
+| Testing (all tests + how to add) | [docs/testing-guide.md](docs/testing-guide.md#back-to-readme) |
+| Full project guide | [docs/project-guide.md](docs/project-guide.md#back-to-readme) |
+| Roadmap & future work | [docs/roadmap.md](docs/roadmap.md#back-to-readme) |
+| Deployment | [docs/deploy-guide.md](docs/deploy-guide.md#back-to-readme) |
 | All docs index | [docs/README.md](docs/README.md) |
 
 ## Requirements
@@ -55,11 +52,11 @@ Product specs live in [`project_requirements/`](project_requirements/) (architec
 
 ## Future work
 
-Post-MVP improvements and deferred items: [roadmap.md](roadmap.md#back-to-readme).
+Post-MVP improvements and deferred items: [docs/roadmap.md](docs/roadmap.md#back-to-readme).
 
 ## Deployment
 
-**Production:** follow the two-pass guide — [deploy-guide.md](deploy-guide.md#back-to-readme) (manual CLI today; GitHub→Cloudflare CI is a valid alternative we will document later).
+**Production:** follow the two-pass guide — [docs/deploy-guide.md](docs/deploy-guide.md#back-to-readme) (manual CLI today; GitHub→Cloudflare CI is a valid alternative we will document later).
 
 To reset Supabase data or schema **without deleting the project** (fast dev iteration), see [database-setup.md — Reset database](docs/database-setup.md#reset-database-without-deleting-the-project).
 
@@ -75,6 +72,6 @@ npm run deploy:all -- --skip-db    # use --skip-db if schema already exists
 
 | Service | URL |
 |---------|-----|
-| App (Cloudflare Pages) | [https://sinc-crm-esg.pages.dev](https://sinc-crm-esg.pages.dev) (stable project domain — see [deploy-guide](deploy-guide.md#pages-url-stable-vs-deployment-preview-read-before-pass-2)) |
+| App (Cloudflare Pages) | [https://sinc-crm-esg.pages.dev](https://sinc-crm-esg.pages.dev) (stable project domain — see [deploy-guide](docs/deploy-guide.md#pages-url-stable-vs-deployment-preview-read-before-pass-2)) |
 | API (Cloudflare Worker) | [https://sinc-crm-api.prinxlexter.workers.dev](https://sinc-crm-api.prinxlexter.workers.dev) |
 | Supabase | [https://fgoqijltbhkrztxjebjm.supabase.co](https://fgoqijltbhkrztxjebjm.supabase.co) |

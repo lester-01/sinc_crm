@@ -2,150 +2,84 @@
 
 # Quick Start
 
-## Linux / WSL (automated)
+Canonical setup guide for the SINC Student CRM. Use the **automated path** on Linux/WSL; fall back to manual steps when needed.
 
-After cloning the repository:
+---
+
+## Automated path (recommended)
+
+Linux or WSL, from a fresh clone:
 
 ```bash
 cd /path/to/your-clone
+
+# 1. Local tools + deps (nvm, Node 22, wrangler, supabase CLI, project deps)
 npm run install:linux
+
+# 2. Environment files — copy examples, then paste keys from dashboards
+cp .env.example .env
+cp worker/.dev.vars.example worker/.dev.vars
+cp worker/.cloudflare.env.example worker/.cloudflare.env
+# See "Environment files" below for what goes where
+
+# 3. Cloud credentials (after keys are pasted)
+npm run setup:cloud
+npm run verify:stack:cloud
+
+# 4. Database (empty Supabase project only — first time)
+npm run db:schema
+npm run db:seed
+
+# 5. Run dev servers (two terminals)
+npm run dev                              # frontend :5173
+cd worker && npm run dev                 # API :8787
 ```
 
-Or:
+Open [http://localhost:5173](http://localhost:5173) and sign in with a [demo user](../README.md#demo-users) (`demo1234`).
 
-```bash
-bash scripts/install.sh
-```
+**Optional sanity check:** `npm run verify:stack:full`
 
-This script will:
+### What `install:linux` does
 
-1. Confirm you are on Linux or WSL
-2. Install **nvm** if missing (bash/zsh config updated automatically)
-3. Install and activate **Node 22** (from `.nvmrc`)
-4. Install **wrangler** in `worker/` and **supabase** CLI at repo root
-5. Run `npm run verify:stack:local`
+1. Confirms Linux or WSL
+2. Installs **nvm** if missing (updates `~/.bashrc` or `~/.zshrc`)
+3. Installs and activates **Node 22** (from `.nvmrc`)
+4. Installs **wrangler** in `worker/` and **supabase** CLI at repo root
+5. Runs `npm run verify:stack:local`
 
-Skip verification only:
-
-```bash
-SKIP_VERIFY=1 npm run install:linux
-```
-
-Re-running `npm run install:linux` is safe: it skips when Node 22+, wrangler, and supabase are already installed (still runs verify unless `SKIP_VERIFY=1`).
+Re-running is safe: skips steps already complete. Skip verification: `SKIP_VERIFY=1 npm run install:linux`.
 
 ### After install: restart your terminal
 
-The installer may install **nvm** and update `~/.bashrc` (or `~/.zshrc`). **Already-open terminals do not load those changes** until you:
-
-- **Option A (quick):** `source ~/.bashrc` (or `source ~/.zshrc`)
-- **Option B (recommended):** Close the terminal, open a **new** one, then `cd` back to the project
-
-Then confirm:
+Already-open terminals do not load nvm changes until you `source ~/.bashrc` (or `~/.zshrc`) or open a new terminal. Then confirm:
 
 ```bash
-node -v    # must show v22.x.x
+node -v    # v22.x.x
 npm run verify:stack:local
 ```
 
 ### Troubleshooting: `npm_config_prefix`
 
-If install fails immediately with:
-
-```text
-nvm is not compatible with the "npm_config_prefix" environment variable
-```
-
-Your shell still has a system npm prefix (common on WSL). Fix for **this** session:
+If install fails with `nvm is not compatible with the "npm_config_prefix" environment variable`:
 
 ```bash
 unset npm_config_prefix
 npm run install:linux
 ```
 
-After a successful install, **restart the terminal** (or `source ~/.bashrc`) so nvm and Node 22 load automatically. The installer adds an `unset` for this variable to your shell config when it configures nvm.
-
-### Requirements
-
-- `curl`, `git`, and `bash`
-- Internet access for nvm and npm
+Requirements: `curl`, `git`, `bash`, and internet access.
 
 ---
 
-## Windows (manual — no WSL)
+## Environment files
 
-This repository does not ship a Windows installer. Use **WSL** (recommended) and follow the Linux section above, or install tools manually:
+Installers **do not** copy env files — you create them and paste keys. Never commit the copies.
 
-### 1. Node.js 22+
+**Do not run `npm run setup:cloud` until required keys are set** (files and/or environment — see [external-auth.md](./external-auth.md)).
 
-Download and install from [https://nodejs.org/](https://nodejs.org/) (22.x LTS).
+### Supabase keys
 
-Verify in PowerShell or CMD:
-
-```cmd
-node -v
-npm -v
-```
-
-Must show `v22.x.x` or higher (Wrangler 4.95 requires Node 22+).
-
-### 2. Clone and open the project
-
-```cmd
-cd C:\path\to\your-clone
-```
-
-### 3. Install project dependencies
-
-```cmd
-npm run setup:local
-```
-
-If `setup:local` fails on Node version, upgrade Node to 22+ first.
-
-### 4. Verify local stack
-
-```cmd
-npm run verify:stack:local
-```
-
-### 5. Continue setup
-
-Follow [stack-setup.md](./stack-setup.md) — Phase 4 (env files + `npm run setup:cloud`).
-
----
-
-## Master installer (all phases available)
-
-```bash
-npm run install:project
-```
-
-Runs Phase 1 local CLIs, Phase 2 worker deps, and Phase 3 frontend deps (with progress output).
-
-Individual phases:
-
-```bash
-npm run setup:worker
-npm run setup:frontend
-```
-
----
-
-## Phase 4 — Environment files (you copy; installer does not)
-
-After Phases 1–3, create cloud projects and copy these files **yourself** (never commit the copies):
-
-```bash
-cp .env.example .env
-cp worker/.dev.vars.example worker/.dev.vars
-cp worker/.cloudflare.env.example worker/.cloudflare.env
-```
-
-Then paste keys from each provider dashboard (tables below), **or** export the same variables in your shell / CI. **Do not run `npm run setup:cloud` until required keys are set** (files and/or environment — see [external-auth.md](./external-auth.md)).
-
-### Supabase keys → where to paste
-
-In [Supabase Dashboard](https://supabase.com/dashboard) → your project → **Project Settings → API** (or **API Keys**):
+In [Supabase Dashboard](https://supabase.com/dashboard) → your project → **Project Settings → API**:
 
 | Dashboard field | File | Variable |
 |-----------------|------|----------|
@@ -162,37 +96,11 @@ VITE_API_BASE_URL=http://localhost:8787
 
 **Never** put the secret key in `.env` (Vite must not see it).
 
-To wipe demo data or re-apply schema on the **same** project (without creating a new Supabase project), see [database-setup.md — Reset database](./database-setup.md#reset-database-without-deleting-the-project).
+Schema, seed, and reset without deleting the project: [database-setup.md](./database-setup.md).
 
-### E2E-only keys (optional — not needed for `npm run dev`)
+### Cloudflare scoped API token
 
-Only when you run isolated Playwright tests (`npm run test:e2e` / `test:e2e:ui`), add to `worker/.dev.vars`:
-
-- `SUPABASE_ACCESS_TOKEN` — [account token](https://supabase.com/dashboard/account/tokens)
-- `SUPABASE_ORG_SLUG` — org slug from dashboard URL (`…/org/<slug>/…`)
-
-Playwright on WSL: [playwright-wsl-setup.md](./playwright-wsl-setup.md) (npm in repo — **not** a Cursor plugin).
-
-Optional: `npm run verify:github-actions` — checks if GitHub Actions can run on `origin` (nice-to-have).
-
-### Cloudflare scoped API token (required)
-
-We do **not** use the legacy Global API Key + email. Use a **scoped API token** in `worker/.cloudflare.env` or in the environment (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`).
-
-For **CI** (`CI=true`), export those variables — browser OAuth is not used. Optional desktop **`wrangler login`** is only for local quick start without a token. See [cloudflare-auth.md](./cloudflare-auth.md) and [external-auth.md](./external-auth.md).
-
-1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/).
-2. **My Profile → API Tokens → Create Token**.
-3. Use **Create Custom Token** (or a template that includes Workers + Account read).
-4. Suggested permissions (minimum for local wrangler + deploy):
-   - **Account** — Account Settings: **Read**
-   - **Account** — Workers Scripts: **Edit**
-   - **Account** — Cloudflare Pages: **Read** (API: stable `pages.dev` URL — required for `deploy:all`)
-   - **Account** — Cloudflare Pages: **Edit** (deploy frontend)
-   See [cloudflare-auth.md](./cloudflare-auth.md) if deploy fails with `Authentication error` / code `10000`.
-5. **Optional (not required):** **User** → User Details → **Read** — removes `Unable to retrieve email` noise in `wrangler whoami` only; deploy does not need it. See [cloudflare-auth.md](./cloudflare-auth.md#optional-user-permissions-not-required-for-deploy).
-6. **Account Resources** — include your account.
-7. Create token and copy it once (shown only once).
+Use a **scoped API token** in `worker/.cloudflare.env` or environment (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`). See [cloudflare-auth.md](./cloudflare-auth.md) for permissions and [external-auth.md](./external-auth.md) for the auth ladder.
 
 Paste into `worker/.cloudflare.env`:
 
@@ -201,65 +109,89 @@ CLOUDFLARE_API_TOKEN=your-token-here
 CLOUDFLARE_ACCOUNT_ID=your-account-id
 ```
 
-**Account ID:** Fastest path — open the Cloudflare dashboard **search bar** (top), type **account id**, and use the **Copy account ID** action. Alternatively: any zone or Workers overview → right sidebar **Account ID**.
-
-Both `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are required for `npm run setup:cloud` and `npm run verify:stack:cloud`.
-
-**Production deploy (Phase 14):** same token powers `npm run deploy:worker` and `deploy:pages`. Follow the two-pass guide in [deploy-guide.md](./deploy-guide.md) (manual CLI today; GitHub→Cloudflare CI is a valid future option).
-
-### Cloudflare authentication
-
-`npm run setup:cloud` and `scripts/ensure-cloudflare-auth.sh`:
-
-1. Use existing Wrangler session if already authenticated
-2. Prefer `CLOUDFLARE_API_TOKEN` from the environment, else `worker/.cloudflare.env`
-3. Run `wrangler whoami` with the token
-4. On desktop only (not `CI=true`): optional `wrangler login` if no token
-
-`npm run verify:stack:cloudflare` checks the token path (env or file); it does not run OAuth.
-
-### Phase 4 commands
-
-```bash
-# After env files exist and keys are pasted:
-npm run setup:cloud
-
-npm run verify:stack:cloud
-```
-
-Individual checks:
-
-```bash
-npm run verify:stack:env
-npm run verify:stack:cloudflare
-npm run verify:stack:github
-npm run db:schema               # Phase 5 — empty DB only (see database-setup.md)
-npm run db:seed                 # Phase 5 — demo users (see database-setup.md)
-# Re-seed or re-apply schema on same project: database-setup.md#reset-database-without-deleting-the-project
-npm run verify:stack:supabase   # Phase 5 — tables + secret key
-```
-
-While still copying keys (files exist but values empty):
+While keys are still empty:
 
 ```bash
 SKIP_CLOUD_VERIFY=1 npm run setup:cloud   # Cloudflare auth only
 ```
 
+### E2E-only keys (optional)
+
+For isolated Playwright (`npm run test:e2e`), add to `worker/.dev.vars`:
+
+- `SUPABASE_ACCESS_TOKEN` — [account token](https://supabase.com/dashboard/account/tokens)
+- `SUPABASE_ORG_SLUG` — org slug from dashboard URL
+
+Playwright on WSL: [playwright-wsl-setup.md](./playwright-wsl-setup.md).
+
 ---
 
-## After install
+## npm scripts reference
 
-| Task | Command |
-|------|---------|
-| Full stack checklist | [stack-setup.md](./stack-setup.md) |
-| Master installer | `npm run install:project` |
-| Phase 4 cloud + env | `npm run setup:cloud` |
-| Worker API deps | `npm run setup:worker` |
-| Frontend deps | `npm run setup:frontend` |
-| Frontend dev | `npm run dev` (port 5173) |
-| Worker dev server | `cd worker && npm run dev` (port 8787) |
-| Verify scaffold | `npm run verify:stack:scaffold` |
-| Verify local tools | `npm run verify:stack:local` |
-| Verify Phase 4 cloud | `npm run verify:stack:cloud` |
-| Wrangler (project-local) | `cd worker && npx wrangler --version` |
-| Supabase CLI | `npx supabase --version` |
+| Script | Purpose |
+|--------|---------|
+| `npm run install:linux` | Full local bootstrap (nvm, Node 22, CLIs, deps, verify) |
+| `npm run install:project` | Worker + frontend deps only (no nvm) |
+| `npm run setup:local` | Same as install:project — use when Node 22+ already active |
+| `npm run setup:worker` | Worker npm deps + wrangler |
+| `npm run setup:frontend` | Root npm deps (Vite/React) |
+| `npm run setup:cloud` | Cloudflare auth + stack cloud checks |
+| `npm run db:schema` | Apply SQL schema (empty Supabase project) |
+| `npm run db:seed` | Seed demo users and sample data |
+| `npm run verify:stack:local` | Node, wrangler, supabase CLI |
+| `npm run verify:stack:cloud` | Env files + Cloudflare + GitHub remote |
+| `npm run verify:stack:supabase` | Tables exist + secret key works |
+| `npm run verify:stack:full` | All verify phases |
+| `npm run verify:stack:env` | Env file presence and keys |
+| `npm run verify:stack:cloudflare` | Cloudflare token / whoami |
+| `npm run verify:stack:github` | GitHub remote configured |
+| `npm run verify:stack:scaffold` | Worker + frontend scaffold checks |
+| `SKIP_VERIFY=1 npm run install:linux` | Install without verify |
+| `SKIP_CLOUD_VERIFY=1 npm run setup:cloud` | Cloudflare auth only (keys incomplete) |
+
+Production deploy: [deploy-guide.md](./deploy-guide.md) (`npm run deploy:all`).
+
+---
+
+## Manual fallback
+
+### Windows (no WSL)
+
+Use **WSL** and the automated path above when possible. Otherwise:
+
+1. Install **Node.js 22+** from [nodejs.org](https://nodejs.org/)
+2. Clone and `cd` into the project
+3. `npm run setup:local`
+4. `npm run verify:stack:local`
+5. Copy env files and paste keys (see [Environment files](#environment-files))
+6. `npm run setup:cloud` → `npm run db:schema` → `npm run db:seed`
+7. Run dev servers (see automated path step 5)
+
+### Step-by-step without `install:linux`
+
+When nvm/install.sh is not an option but Node 22+ is available:
+
+```bash
+npm run setup:local          # or: setup:worker + setup:frontend
+npm run verify:stack:local
+
+# Copy and fill env files (see Environment files)
+npm run setup:cloud
+npm run verify:stack:cloud
+
+npm run db:schema
+npm run db:seed
+```
+
+If `db:schema` fails, apply SQL manually via Supabase SQL Editor — see [database-setup.md](./database-setup.md).
+
+Install wrangler and supabase CLI yourself if missing:
+
+```bash
+cd worker && npm install
+cd .. && npm install
+npx supabase --version
+cd worker && npx wrangler --version
+```
+
+Further verification commands: [stack-setup.md](./stack-setup.md).
