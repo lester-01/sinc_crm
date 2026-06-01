@@ -32,10 +32,10 @@ Only `GET /api/health` is public (no token required).
 | Role | Description |
 |------|-------------|
 | `client` | Student/client portal — own profile, conversations, and deals only |
-| `sales` | CRM team member — clients, conversations, own deals |
-| `manager` | Full access — dashboard, reassign deal owners, all conversations |
+| `sales` | CRM team member — reads all clients, conversations, and deals; creates clients and deals; replies when a conversation is assigned to self; updates **own** deal stages; adds notes on any deal |
+| `manager` | Oversight — read-all access, dashboard, reassign deal owners and conversation assignees, move any deal stage; **cannot** create clients/deals, post chat messages, or add deal notes |
 
-Role is stored in `profiles.role` and enforced in Worker services (not only at route middleware).
+Per-endpoint permission matrix: [openapi.yaml](./openapi.yaml) (`x-permissions` on each operation).
 
 ## Error responses
 

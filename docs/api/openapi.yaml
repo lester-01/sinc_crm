@@ -122,23 +122,29 @@ paths:
         | Role | Access |
         |------|--------|
         | client | Scoped — own client record only |
-        | sales | Allow — all clients; filter by `ownerId` (deals owned by user) |
+        | sales | Allow — all clients; optional `filter` and `ownerId` |
         | manager | Allow — all clients |
       operationId: listClients
       x-permissions:
         auth: bearer
         roles:
           client: { access: scoped, note: own client record only }
-          sales: { access: allow, note: all clients; ownerId filter via deals }
+          sales: { access: allow, note: "filter: mine | unassigned | all; ownerId for mine filter" }
           manager: { access: allow }
       parameters:
         - $ref: "#/components/parameters/QueryQ"
+        - name: filter
+          in: query
+          schema:
+            type: string
+            enum: [mine, unassigned, all]
+          description: Sales-only list filter (`mine` requires `ownerId`; `unassigned` = no deal owner)
         - name: ownerId
           in: query
           schema:
             type: string
             format: uuid
-          description: Filter to clients with deals owned by this user (sales/manager only)
+          description: Filter to clients with deals owned by this user (sales/manager; used with `filter=mine`)
       responses:
         "200":
           description: Client list
@@ -191,14 +197,14 @@ paths:
         |------|--------|
         | client | Deny |
         | sales | Allow |
-        | manager | Allow |
+        | manager | Deny |
       operationId: createClient
       x-permissions:
         auth: bearer
         roles:
           client: { access: deny }
           sales: { access: allow }
-          manager: { access: allow }
+          manager: { access: deny }
       requestBody:
         required: true
         content:
@@ -234,13 +240,20 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
-          description: Client role forbidden
+          description: Forbidden
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
-              example:
-                error: Forbidden
+              examples:
+                clientRole:
+                  summary: Client cannot create clients
+                  value:
+                    error: Forbidden
+                managerRole:
+                  summary: Manager cannot create clients
+                  value:
+                    error: Forbidden
         "409":
           description: Duplicate email
           content:
@@ -341,14 +354,7 @@ paths:
         roles:
           client: { access: scoped, note: own threads only }
           sales: { access: scoped, note: "queue: unassigned | mine | all (default: unassigned+mine)" }
-          manager: { access: allow }
-      parameters:
-        - name: queue
-          in: query
-          schema:
-            type: string
-            enum: [unassigned, mine, all]
-          description: Sales queue filter (ignored for client/manager)
+          manager: { access: allow, note: "queue: unassigned | mine | all (optional filter)" }
       responses:
         "200":
           description: Conversation list
@@ -381,14 +387,14 @@ paths:
         |------|--------|
         | client | Scoped — `clientId` must be own client |
         | sales | Allow |
-        | manager | Allow |
+        | manager | Deny |
       operationId: createConversation
       x-permissions:
         auth: bearer
         roles:
           client: { access: scoped, note: clientId must match own client record }
           sales: { access: allow }
-          manager: { access: allow }
+          manager: { access: deny }
       requestBody:
         required: true
         content:
@@ -400,7 +406,7 @@ paths:
               subject: Document upload help
               message: Hi, I need help uploading my transcript.
       responses:
-        "200":
+        "201":
           description: Conversation created
           content:
             application/json:
@@ -418,13 +424,20 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
-          description: Client cannot create for another client
+          description: Forbidden
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
-              example:
-                error: Forbidden
+              examples:
+                wrongClient:
+                  summary: Client cannot create for another client
+                  value:
+                    error: Forbidden
+                managerRole:
+                  summary: Manager cannot create conversations
+                  value:
+                    error: Forbidden
         "404":
           description: Client not found
           content:
@@ -629,14 +642,14 @@ paths:
         |------|--------|
         | client | Deny |
         | sales | Scoped — may only assign to self; unassigned or own threads |
-        | manager | Allow — assign to any sales/manager member |
+        | manager | Allow — assign to any sales rep |
       operationId: assignConversation
       x-permissions:
         auth: bearer
         roles:
           client: { access: deny }
           sales: { access: scoped, note: assign to self only }
-          manager: { access: allow, note: assignee must be sales or manager }
+          manager: { access: allow, note: assignee must be sales rep }
       parameters:
         - $ref: "#/components/parameters/ThreadId"
       requestBody:
@@ -673,9 +686,9 @@ paths:
                   value:
                     error: Sales can only assign conversations to themselves
                 wrongRole:
-                  summary: Assignee not a team member
+                  summary: Assignee not a sales rep
                   value:
-                    error: Assignee must be a team member
+                    error: Assignee must be a sales rep
         "404":
           description: Conversation not found
           content:
@@ -697,15 +710,15 @@ paths:
         | Role | Access |
         |------|--------|
         | client | Scoped — own threads |
-        | sales | Scoped — accessible threads |
-        | manager | Scoped — all threads |
+        | sales | Scoped — assigned to self only |
+        | manager | Deny |
       operationId: postMessage
       x-permissions:
         auth: bearer
         roles:
           client: { access: scoped, note: own threads; senderType client }
-          sales: { access: scoped, note: accessible threads; senderType team }
-          manager: { access: allow, note: senderType team }
+          sales: { access: scoped, note: thread assigned to self; senderType team }
+          manager: { access: deny }
       parameters:
         - $ref: "#/components/parameters/ThreadId"
       requestBody:
@@ -817,14 +830,14 @@ paths:
         |------|--------|
         | client | Deny |
         | sales | Scoped — owner must be self |
-        | manager | Allow — any owner |
+        | manager | Deny |
       operationId: createDeal
       x-permissions:
         auth: bearer
         roles:
           client: { access: deny }
           sales: { access: scoped, note: ownerId must be self if provided }
-          manager: { access: allow }
+          manager: { access: deny }
       requestBody:
         required: true
         content:
@@ -838,7 +851,7 @@ paths:
               valueAmount: 1800
               valueCurrency: USD
       responses:
-        "200":
+        "201":
           description: Deal created
           content:
             application/json:
@@ -864,6 +877,10 @@ paths:
               examples:
                 clientRole:
                   summary: Client cannot create deals
+                  value:
+                    error: Forbidden
+                managerRole:
+                  summary: Manager cannot create deals
                   value:
                     error: Forbidden
                 salesWrongOwner:
@@ -1030,20 +1047,20 @@ paths:
       tags: [Deals]
       summary: Reassign deal owner
       description: |
-        Change deal owner to a sales or manager team member.
+        Change deal owner to a sales rep.
 
         | Role | Access |
         |------|--------|
         | client | Deny |
         | sales | Deny |
-        | manager | Allow |
+        | manager | Allow — ownerId must be sales |
       operationId: patchDealOwner
       x-permissions:
         auth: bearer
         roles:
           client: { access: deny }
           sales: { access: deny }
-          manager: { access: allow, note: ownerId must be sales or manager }
+          manager: { access: allow, note: ownerId must be sales rep }
       parameters:
         - $ref: "#/components/parameters/DealId"
       requestBody:
@@ -1080,7 +1097,7 @@ paths:
                     error: Forbidden
                 invalidOwner:
                   value:
-                    error: Owner must be a team member
+                    error: Owner must be a sales rep
         "404":
           description: Deal not found
           content:
@@ -1102,15 +1119,15 @@ paths:
         | Role | Access |
         |------|--------|
         | client | Deny |
-        | sales | Scoped — accessible deals |
-        | manager | Allow |
+        | sales | Allow — any deal |
+        | manager | Deny |
       operationId: postDealNote
       x-permissions:
         auth: bearer
         roles:
           client: { access: deny }
-          sales: { access: scoped, note: accessible deals }
-          manager: { access: allow }
+          sales: { access: allow, note: any deal visible to sales }
+          manager: { access: deny }
       parameters:
         - $ref: "#/components/parameters/DealId"
       requestBody:
@@ -1122,7 +1139,7 @@ paths:
             example:
               body: Follow up on document checklist next week.
       responses:
-        "200":
+        "201":
           description: Note created
           content:
             application/json:
@@ -1138,7 +1155,19 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              examples:
+                clientRole:
+                  value:
+                    error: Forbidden
+                managerRole:
+                  summary: Manager cannot add deal notes
+                  value:
+                    error: Forbidden
         "404":
           description: Deal not found
           content:
@@ -1228,7 +1257,7 @@ paths:
       tags: [Users]
       summary: List team members
       description: |
-        List sales and manager profiles (for assignment UIs). **Manager only** (enforced in service).
+        List sales rep profiles (for assignment UIs). **Manager only** (enforced in service).
 
         | Role | Access |
         |------|--------|
@@ -1258,9 +1287,6 @@ paths:
                 - id: a7b8c9d0-e1f2-3456-0123-567890123456
                   fullName: Sam Sales
                   role: sales
-                - id: b8c9d0e1-f2a3-4567-1234-678901234567
-                  fullName: Morgan Manager
-                  role: manager
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
