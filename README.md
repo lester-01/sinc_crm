@@ -13,7 +13,7 @@ Visit [https://sinc-crm-esg.pages.dev](https://sinc-crm-esg.pages.dev) to test t
 Sign in with any demo account below (password: `demo1234`):
 ## Demo users
 
-Password for all seeded accounts: **`demo1234`** (override with `SEED_DEMO_PASSWORD` when seeding).
+Password for all seeded accounts: **`demo1234`**.
 
 | Role | Email | Display name | Notes |
 |------|-------|--------------|-------|
