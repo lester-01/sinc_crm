@@ -11,11 +11,23 @@ Role-based access for managers and sales teams. Real-time chat between students 
 Visit [https://sinc-crm-esg.pages.dev](https://sinc-crm-esg.pages.dev) to test the application.
 
 Sign in with any demo account below (password: `demo1234`):
-- **Manager view:** manager1@demo.local
-- **Sales view:** sales1@demo.local
-- **Client view:** client1@demo.local
+## Demo users
 
-See the full [Demo Users](#demo-users) table below for more test accounts and detailed role descriptions.
+Password for all seeded accounts: **`demo1234`** (override with `SEED_DEMO_PASSWORD` when seeding).
+
+| Role | Email | Display name | Notes |
+|------|-------|--------------|-------|
+| Manager | `manager1@demo.local` | Morgan Manager | Dashboard, full nav |
+| Manager | `manager2@demo.local` | Alex Manager | Same role capabilities |
+| Sales | `sales1@demo.local` | Sam Sales | Clients, conversations, pipeline |
+| Sales | `sales2@demo.local` | Jordan Sales | Clients, conversations, pipeline |
+| Sales | `sales3@demo.local` | Riley Sales | Clients, conversations, pipeline |
+| Client | `client1@demo.local` | Aida Client | Assigned thread + deal (`new_lead`) |
+| Client | `client2@demo.local` | Bek Client | Assigned thread + deal (`contacted`) |
+| Client | `client3@demo.local` | Cara Client | Assigned thread + deal (`consultation_booked`) |
+| Client | `client4@demo.local` | Dana Client | Unassigned queue thread, no deal |
+
+CRM-only row without auth login: `prospect.no.login@example.com` — see [database-setup.md — Seed composition](docs/database-setup.md#6-seed-composition-your-requirements).
 
 ## Screenshots
 
