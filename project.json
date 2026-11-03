@@ -2,10 +2,12 @@
   "schema_version": 1,
   "status": "idea",
   "tags": [],
+  "languages": null,
   "public": {
     "listed": true,
     "featured": true,
     "rank": 1300,
-    "website": "https://sinc-crm.benlester.me"
-  }
+    "website": null
+  },
+  "reviewed_at": "2026-11-03"
 }
