@@ -29,6 +29,7 @@ import {
   resolvePagesProjectName,
   resolveWorkerUrlViaApi,
 } from "./lib/cloudflare-api.mjs";
+import { buildCorsOrigins, parseExtraOrigins } from "./lib/custom-domains.mjs";
 import {
   getProjectRef,
   getSupabaseUrl,
@@ -295,12 +296,15 @@ async function main() {
   log(`Stable Pages URL (use this, not the preview hash URL): ${pagesOrigin}`);
 
   log("\n=== Pass 2 — Worker secrets + Supabase Auth URLs ===\n");
-  const corsHost = pagesOrigin.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  // Stable Pages origin first, then custom domains from EXTRA_CORS_ORIGINS (see docs/custom-domains.md).
+  const extraOrigins = parseExtraOrigins(merged.EXTRA_CORS_ORIGINS);
+  const corsOrigins = buildCorsOrigins(pagesOrigin, merged.EXTRA_CORS_ORIGINS);
   const lines = [
     `SUPABASE_URL=${merged.SUPABASE_URL}`,
     `SUPABASE_SECRET_KEY=${merged.SUPABASE_SECRET_KEY}`,
-    `CORS_ORIGINS=https://${corsHost}`,
+    `CORS_ORIGINS=${corsOrigins}`,
   ];
+  log(`CORS_ORIGINS will be: ${corsOrigins}`);
   log(">>> Upload Worker secrets (wrangler secret bulk)");
   if (DRY_RUN) {
     log(`    Would upload: ${lines.map((l) => l.split("=")[0]).join(", ")}`);
@@ -320,10 +324,12 @@ async function main() {
   if (DRY_RUN) {
     log(`    Would PATCH /v1/projects/${projectRef}/config/auth`);
     log(`      site_url: ${pagesOrigin}`);
-    log(`      uri_allow_list: ${pagesOrigin}, http://localhost:5173, http://localhost:5173/**`);
+    log(
+      `      uri_allow_list: ${[pagesOrigin, ...extraOrigins, "http://localhost:5173", "http://localhost:5173/**"].join(", ")}`,
+    );
   } else {
     try {
-      const auth = await syncProductionAuthUrls(accessToken, projectRef, pagesOrigin);
+      const auth = await syncProductionAuthUrls(accessToken, projectRef, pagesOrigin, extraOrigins);
       log(`Supabase site_url: ${auth.site_url}`);
       log(`Supabase redirect URLs updated (includes localhost for dev).`);
     } catch (err) {

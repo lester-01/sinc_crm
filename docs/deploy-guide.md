@@ -230,7 +230,7 @@ List what is set (names only):
 cd worker && npx wrangler secret list
 ```
 
-**CORS behaviour:** `localhost:5173` is always allowed in code. Production Pages origin must appear in `CORS_ORIGINS`. This is implemented in `worker/src/index.ts` (Hono `cors` middleware), **not** in the Cloudflare Pages dashboard “CORS” UI.
+**CORS behaviour:** `localhost:5173` is always allowed in code. Production Pages origin must appear in `CORS_ORIGINS` (serving the app from a custom domain? See [custom-domains.md](./custom-domains.md)). This is implemented in `worker/src/index.ts` (Hono `cors` middleware), **not** in the Cloudflare Pages dashboard “CORS” UI.
 
 ---
 
@@ -402,6 +402,7 @@ Do not commit `.env`, legacy `worker/.dev.vars`, or secret files.
 |-------|-----|
 | CORS error calling `/api/*` from the app | Open the **stable** Pages URL (`wrangler pages project list` → Project Domains), not the deployment preview (`https://<hash>.….pages.dev`). Set `CORS_ORIGINS` to that **exact** origin (no trailing `/`). |
 | Used preview URL by mistake | Browse `https://<project-domains>` instead; update `CORS_ORIGINS` and Supabase Auth to match — do not add a new preview hash each deploy. |
+| CORS error on `/api/me` only on your **custom domain** | Add the domain to `CORS_ORIGINS` (set `EXTRA_CORS_ORIGINS` in `.env` for `deploy:all`) — see [custom-domains.md](./custom-domains.md) |
 | Secret name typo | Must be `CORS_ORIGINS`, not `CROSS_ORIGINS` |
 | `/api/me` returns 503 “Supabase is not configured” | Set Worker secrets `SUPABASE_URL` and `SUPABASE_SECRET_KEY` (`wrangler secret list` must show all three) |
 | Login works but stay on login page | Session exists but `/api/me` failed (CORS or 503) — `role` never loads; fix Worker secrets + stable origin |

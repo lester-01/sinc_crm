@@ -37,7 +37,7 @@
     "test:e2e:ui:dev": "node scripts/e2e-run.mjs --dev --ui",
     "test:e2e:dev": "playwright test",
     "test:worker": "npm run test --prefix worker",
-    "test:scripts": "node --test scripts/lib/load-stack-env.test.mjs scripts/lib/auth-ladder.integration.test.mjs",
+    "test:scripts": "node --test scripts/lib/load-stack-env.test.mjs scripts/lib/auth-ladder.integration.test.mjs scripts/lib/custom-domains.test.mjs",
     "test:tooling": "npm run test:scripts && npm run test:worker",
     "deploy:worker": "bash scripts/deploy-worker.sh",
     "deploy:pages": "bash scripts/deploy-pages.sh",
