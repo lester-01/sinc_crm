@@ -35,7 +35,7 @@ name: E2E
 on:
   pull_request:
   push:
-    branches: [main, development]
+    branches: [development]
 
 jobs:
   e2e:

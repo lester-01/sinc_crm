@@ -42,7 +42,7 @@ Sign in with any demo user below (password **`demo1234`**), or use the signup fo
 
 | Service | URL |
 |---------|-----|
-| App (Cloudflare Pages) | [https://sinc-crm-esg.pages.dev](https://sinc-crm-esg.pages.dev) |
+| App (Cloudflare Pages) | [https://sinc-crm.benlester.me](https://sinc-crm.benlester.me) |
 | API (Cloudflare Worker) | [https://sinc-crm-api.prinxlexter.workers.dev](https://sinc-crm-api.prinxlexter.workers.dev) |
 
 ## Demo users
