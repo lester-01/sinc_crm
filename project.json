@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "status": "live",
+  "tags": [
+    "crm",
+    "education",
+    "cloudflare",
+    "supabase"
+  ],
+  "languages": [
+    "TypeScript",
+    "JavaScript",
+    "Shell",
+    "PLpgSQL",
+    "CSS",
+    "HTML"
+  ],
+  "public": {
+    "listed": true,
+    "featured": true,
+    "rank": 1300,
+    "website": "https://sinc-crm.benlester.me"
+  },
+  "reviewed_at": "2026-11-03"
+}
