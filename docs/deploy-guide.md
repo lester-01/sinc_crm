@@ -390,6 +390,8 @@ Do not commit secrets or `.env`.
 - **GitHub Actions:** `CI=true`, inject secrets into root `.env`, `wrangler deploy` + `wrangler pages deploy`, Worker secrets via `wrangler secret bulk` or dashboard.
 - **Cloudflare Git integration:** connect the repo in the Cloudflare dashboard so **pushes build Pages**; Worker still needs a workflow or manual deploy unless you add Actions.
 
+Keeping the free-tier Supabase project awake (scheduled uptime check): [keepalive.md](./keepalive.md).
+
 E2E in CI is documented separately ([ci-e2e-recipe.md](./ci-e2e-recipe.md)) — that is **testing**, not production deploy.
 
 Do not commit `.env`, legacy `worker/.dev.vars`, or secret files.
