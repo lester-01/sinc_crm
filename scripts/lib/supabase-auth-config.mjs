@@ -53,16 +53,19 @@ export async function patchAuthConfig(token, ref, patch) {
 
 /**
  * Set Site URL + Redirect URLs for production Pages origin (keeps localhost for dev).
+ * Extra origins (custom domains) are added to the redirect allow list; Site URL stays the Pages origin.
  *
  * @param {string} token SUPABASE_ACCESS_TOKEN
  * @param {string} ref project ref
  * @param {string} pagesOrigin e.g. https://sinc-crm-esg.pages.dev
+ * @param {string[]} [extraOrigins] e.g. ["https://crm.example.com"]
  */
-export async function syncProductionAuthUrls(token, ref, pagesOrigin) {
+export async function syncProductionAuthUrls(token, ref, pagesOrigin, extraOrigins = []) {
   const siteUrl = pagesOrigin.replace(/\/$/, "");
   const current = await getAuthConfig(token, ref);
   const uriAllowList = mergeUriAllowList(current.uri_allow_list, [
     siteUrl,
+    ...extraOrigins,
     "http://localhost:5173",
     "http://localhost:5173/**",
   ]);

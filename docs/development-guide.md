@@ -42,16 +42,13 @@ Use root `.env` only (or env vars per [external-auth.md](./external-auth.md)). D
 
 ## Branch policy
 
-| Branch | Purpose |
-|--------|---------|
-| **`development`** | All day-to-day work — features, fixes, tests, docs |
-| **`main`** | Stable releases only — **no direct commits** |
+`development` is the only long-lived branch and the repository's default branch. Everything — features, fixes, tests, docs — lands there.
 
 **Rules:**
 
-1. Never commit on `main`. Always work on `development`.
-2. Promote stable work: `git checkout main` → `git merge development` (usually fast-forward) → tag if needed → **`git checkout development`** before the next task.
-3. Do not push to `origin` unless you intend to publish; coordinate before force-pushing `main`.
+1. Open pull requests against `development` (or commit to it directly for small changes).
+2. Tag releases on `development` when needed, e.g. `git tag -a v1.x.x -m "…"`.
+3. Do not push to `origin` unless you intend to publish, and avoid force-pushing `development`.
 
 Cursor agents also follow [`.cursor/rules/git-branches.mdc`](../.cursor/rules/git-branches.mdc).
 
