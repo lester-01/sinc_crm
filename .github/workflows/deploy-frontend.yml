@@ -1,8 +1,20 @@
 name: Deploy frontend to Cloudflare Pages
 
-# Manual for now. "preview" publishes to a preview URL and leaves the live
-# site alone; "production" publishes to sinc-crm.benlester.me.
+# A push to development that changes the app publishes to production
+# (sinc-crm.benlester.me). Run it by hand to choose: "preview" publishes to a
+# preview URL and leaves the live site alone.
 on:
+  push:
+    branches: [development]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.ts"
+      - "tsconfig*.json"
+      - ".github/workflows/deploy-frontend.yml"
   workflow_dispatch:
     inputs:
       target:
@@ -49,4 +61,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4"
-          command: pages deploy dist --project-name=sinc-crm --branch=${{ inputs.target == 'production' && 'development' || 'preview' }}
+          command: pages deploy dist --project-name=sinc-crm --branch=${{ (github.event_name == 'push' || inputs.target == 'production') && 'development' || 'preview' }}
