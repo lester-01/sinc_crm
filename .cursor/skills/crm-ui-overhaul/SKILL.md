@@ -8,7 +8,7 @@ description: Polish SINC CRM UI with bold distinctive design using shadcn + Tail
 ## Non-negotiables
 - Preserve all existing behavior: hooks, mutations, role checks, routes, data-testid attributes
 - Stay in shadcn/ui + Tailwind; use semantic tokens (bg-primary, text-muted-foreground)
-- Match wireframe structure in project_requirements/ui-wireframes.md
+- Match the existing page structure and layout patterns in src/pages/
 - Use npx shadcn@latest add for missing components — do not hand-roll equivalents
 
 ## Aesthetic direction

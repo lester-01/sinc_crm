@@ -1,6 +1,7 @@
 {
   "name": "sinc-student-crm",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Student CRM + Chat + Deal Pipeline",
   "engines": {

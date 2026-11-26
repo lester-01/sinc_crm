@@ -83,7 +83,7 @@ Our CRM tables have **SELECT-only** policies for the `authenticated` role. There
 | `deals` | `deals_select_scoped` | Via `private.can_access_deal()` |
 | `deal_stage_history`, `deal_notes` | scoped variants | Parent deal must be accessible |
 
-Access rules mirror the Worker services (`worker/src/services/*`) and [project_requirements/database.md](../project_requirements/database.md).
+Access rules mirror the Worker services (`worker/src/services/*`) and [docs/database-setup.md](./database-setup.md).
 
 ### Private schema helpers (RPC hardening)
 
@@ -186,5 +186,5 @@ Manual spot-checks:
 
 - [database-setup.md](./database-setup.md) — apply schema, seed, reset levels A/B
 - [api/authentication.md](./api/authentication.md) — Bearer token flow
-- [project_requirements/database.md](../project_requirements/database.md) — entity model and access rules
+- [docs/database-setup.md](./database-setup.md) — entity model and access rules
 - [Supabase: Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security)

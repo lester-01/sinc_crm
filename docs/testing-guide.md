@@ -220,4 +220,4 @@ Pre-filled gaps from early testing; extend as you explore.
 | Manager dashboard? | DASH-01–05, EVAL-05 |
 | Full happy path? | EVAL-01–05 (`@smoke`) |
 
-See [project_requirements/evaluation.md](../project_requirements/evaluation.md).
+See [testing-plan.md](./testing-plan.md) for the full test matrix.

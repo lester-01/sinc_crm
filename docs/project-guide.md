@@ -10,7 +10,7 @@ Long-form reference for contributors and maintainers. Short onboarding: [README.
 
 **SINC Student CRM** — multi-role CRM with conversations (chat), deal pipeline, and manager analytics. Stack: React SPA (Vite), Cloudflare Worker API (Hono), Supabase (Postgres + Auth + Realtime).
 
-Product goals and acceptance criteria: [project_requirements/](../project_requirements/) especially [evaluation.md](../project_requirements/evaluation.md).
+Test strategy and acceptance checks: [testing-guide.md](./testing-guide.md) and [testing-plan.md](./testing-plan.md).
 
 ---
 
@@ -24,7 +24,7 @@ Product goals and acceptance criteria: [project_requirements/](../project_requir
 
 **Rule:** CRM mutations and reads go through the **Worker**. The browser Supabase client is for **login session** and **realtime subscriptions**, not direct table writes for CRM entities.
 
-Detail: [project_requirements/architecture.md](../project_requirements/architecture.md).
+Detail: [docs/project-guide.md](./project-guide.md).
 
 ---
 
@@ -44,7 +44,7 @@ Install, env files, schema, and seed:
 
 Auth, clients, conversations, deals, pipeline, dashboard, and polish are implemented. Specs and behavior:
 
-- Product requirements: [project_requirements/](../project_requirements/)
+- Test strategy: [testing-guide.md](./testing-guide.md)
 - API: [api/openapi.yaml](./api/openapi.yaml)
 - Tests: [testing-guide.md](./testing-guide.md)
 

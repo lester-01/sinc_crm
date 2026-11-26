@@ -1,4 +1,4 @@
--- Phase 5: core tables per project_requirements/database.md
+-- Phase 5: core tables per docs/database-setup.md
 
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,

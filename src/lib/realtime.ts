@@ -1,7 +1,7 @@
 import { supabase } from "./supabaseClient";
 
 /**
- * Supabase Realtime subscriptions for query invalidation (per project_requirements/api.md).
+ * Supabase Realtime subscriptions for query invalidation (per docs/api/openapi.yaml).
  */
 export function subscribeToTable(
   table: string,

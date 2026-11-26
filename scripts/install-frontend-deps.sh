@@ -41,7 +41,7 @@ main() {
 
   if ! scaffold_present; then
     err "Frontend scaffold missing (expected src/main.tsx, vite.config.ts)."
-    err "Pull latest commits or scaffold per project_requirements/architecture.md"
+    err "Pull latest commits or scaffold per docs/project-guide.md"
     exit 1
   fi
 

@@ -74,3 +74,7 @@ Password for all seeded accounts: **`demo1234`**. You can also use the signup fo
 |---------|-----|
 | App | https://sinc-crm.benlester.me |
 | API (Cloudflare Worker) | https://sinc-crm-api.prinxlexter.workers.dev |
+
+## License
+
+[MIT](LICENSE) © 2026 Ben Lester.

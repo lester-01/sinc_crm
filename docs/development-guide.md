@@ -60,7 +60,7 @@ Use this for anything that affects users, APIs, or security — not for typo-onl
 
 ### 1. Plan
 
-- Skim [project_requirements/](../project_requirements/) if the feature touches acceptance criteria.
+- Skim [project-guide.md](./project-guide.md) if the feature touches product behavior.
 - Add or update a row in [testing-plan.md](./testing-plan.md) with a test ID (`FEATURE-NN` or next ID in the phase), layer (E2E / API / Vitest), and expected outcome.
 - If the feature needs new schema or seed data, plan [database-setup.md](./database-setup.md) steps (`db:schema` on empty DB only; `db:seed` for demo rows).
 

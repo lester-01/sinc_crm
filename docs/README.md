@@ -28,4 +28,4 @@
 | [pipeline-stages.md](./pipeline-stages.md) | Deal stage rules and transitions |
 | [deal-lifecycle.md](./deal-lifecycle.md) | Won/lost/reopen, lost reason |
 
-Product requirements: [project_requirements/README.md](../project_requirements/README.md)
+Project overview: [project-guide.md](./project-guide.md)

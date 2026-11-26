@@ -4,7 +4,7 @@
 
 This guide explains **what we built**, **why**, and **how to run it safely** on an **empty** Supabase project.
 
-Related: [project_requirements/database.md](../project_requirements/database.md), [stack-setup.md](./stack-setup.md), [external-auth.md](./external-auth.md) (env vs files for scripts), [roadmap.md](./roadmap.md)
+Related: [docs/database-setup.md](./database-setup.md), [stack-setup.md](./stack-setup.md), [external-auth.md](./external-auth.md) (env vs files for scripts), [roadmap.md](./roadmap.md)
 
 ---
 
@@ -157,7 +157,7 @@ We **do not** use Supabase CLI migration history (`supabase/migrations/`) in thi
 
 ### 1. Spec tables + small, justified additions
 
-The core model matches [database.md](../project_requirements/database.md) and the API in [api.md](../project_requirements/api.md): profiles, clients (nullable `profile_id`), conversations, messages, deals, stage history, notes.
+The core model matches [database.md](./database-setup.md) and the API in [api.md](./api/openapi.yaml): profiles, clients (nullable `profile_id`), conversations, messages, deals, stage history, notes.
 
 **Additions on top of the spec:**
 
