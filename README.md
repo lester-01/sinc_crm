@@ -1,10 +1,26 @@
 # SINC Student CRM
 
-Full-stack CRM for education agencies placing students abroad. Role-based access, realtime chat, a deal pipeline, and a manager dashboard.
+Full-stack CRM for education agencies placing students abroad. Clients chat with the sales team, sales staff move deals through a pipeline, and managers see the whole picture on a dashboard.
 
-- **SPA:** Cloudflare Pages (Vite + React)
-- **API:** Cloudflare Workers (Hono)
-- **Data & auth:** hosted Supabase
+**Live demo:** [sinc-crm.benlester.me](https://sinc-crm.benlester.me) (sign in with a demo account below)
+
+Built by [Ben Lester](https://benlester.me), a software and systems engineer. More of my work: [projects.benlester.me](https://projects.benlester.me).
+
+## What it does
+
+- **Three roles:** manager, sales and client, each with their own screens.
+- **Realtime chat** between clients and the sales team.
+- **Deal pipeline** with stages, a lost-reason prompt, and an append-only stage history.
+- **Manager dashboard** and reassigning of conversations and deals.
+
+## Stack
+
+| Part | Technology |
+|------|------------|
+| App | Vite, React, TypeScript, shadcn/ui, Tailwind CSS on Cloudflare Pages |
+| API | Hono on Cloudflare Workers |
+| Data and auth | Supabase (Postgres, Auth, Realtime) |
+| Tests | Playwright end-to-end tests, Worker unit tests |
 
 ## Screenshots
 
@@ -34,20 +50,11 @@ Full-stack CRM for education agencies placing students abroad. Role-based access
 
 ## Quick start
 
-Canonical guide: [docs/quick-start.md](docs/quick-start.md) — automated setup (Linux/WSL), env files, hosted Supabase schema/seed, and local dev servers.
+Full guide: [docs/quick-start.md](docs/quick-start.md): automated setup (Linux/WSL), env files, hosted Supabase schema and seed, and local dev servers. More in [docs/](docs/): deploy, database setup, deal lifecycle, security notes, testing.
 
-## Live application
+## Demo accounts
 
-Sign in with any demo user below (password **`demo1234`**), or use the signup form (email verification is disabled for demos).
-
-| Service | URL |
-|---------|-----|
-| App (Cloudflare Pages) | [https://sinc-crm.benlester.me](https://sinc-crm.benlester.me) |
-| API (Cloudflare Worker) | [https://sinc-crm-api.prinxlexter.workers.dev](https://sinc-crm-api.prinxlexter.workers.dev) |
-
-## Demo users
-
-Password for all seeded accounts: **`demo1234`**.
+Password for all seeded accounts: **`demo1234`**. You can also use the signup form (email verification is off for the demo).
 
 | Role | Email | Display name |
 |------|-------|--------------|
@@ -61,4 +68,9 @@ Password for all seeded accounts: **`demo1234`**.
 | Client | `client3@demo.local` | Cara Client |
 | Client | `client4@demo.local` | Dana Client |
 
-See [docs/](docs/) for deploy, database setup, and test notes.
+## Direct links
+
+| Service | URL |
+|---------|-----|
+| App | https://sinc-crm.benlester.me |
+| API (Cloudflare Worker) | https://sinc-crm-api.prinxlexter.workers.dev |
