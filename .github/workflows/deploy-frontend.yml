@@ -1,0 +1,52 @@
+name: Deploy frontend to Cloudflare Pages
+
+# Manual for now. "preview" publishes to a preview URL and leaves the live
+# site alone; "production" publishes to sinc-crm.benlester.me.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Where to publish"
+        type: choice
+        options: [preview, production]
+        default: preview
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      # Public values, the same ones baked into the live bundle.
+      SUPABASE_URL: https://fgoqijltbhkrztxjebjm.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_3lUk_Nx9Ev01e10yqTsr7w_agF_x8ju
+      VITE_API_BASE_URL: https://sinc-crm-api.prinxlexter.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Check build output
+        run: test -f dist/index.html
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: pages deploy dist --project-name=sinc-crm --branch=${{ inputs.target == 'production' && 'development' || 'preview' }}
