@@ -1,0 +1,21 @@
+# SINC CRM
+
+> A full-stack, open-source CRM for education agencies placing students abroad. Clients chat with the sales team, sales staff move deals through a pipeline, and managers see the whole picture on a dashboard.
+
+- Live demo: https://sinc-crm.benlester.me/ (sign in with one of the demo accounts shown on the login page; the data is fictional)
+- Source code (MIT license): https://github.com/lester-01/sinc_crm
+- Built by Ben Lester, a software and systems engineer: https://benlester.me
+- More projects: https://projects.benlester.me
+
+## What it does
+
+- Three roles, each with its own screens: manager, sales and client.
+- Realtime chat between clients and the sales team.
+- A deal pipeline with stages, a lost-reason prompt and an append-only stage history.
+- A manager dashboard, and reassigning of conversations and deals.
+
+## How it is built
+
+- React single-page app, hosted on Cloudflare Pages.
+- Hono API running on Cloudflare Workers.
+- Supabase for authentication and data.
