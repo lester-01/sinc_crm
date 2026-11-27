@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useAuth } from "@/features/auth/AuthContext";
 import { navItemsForRole } from "@/features/auth/nav";
 import { cn } from "@/lib/utils";
+import { AuthorCredit } from "@/components/layout/AuthorCredit";
 
 function initials(name: string | undefined): string {
   if (!name) return "?";
@@ -166,6 +167,10 @@ export function AppShell() {
       <main className="mx-auto max-w-7xl animate-fade-up px-4 py-8 sm:px-6">
         <Outlet />
       </main>
+
+      <footer className="mx-auto max-w-7xl px-4 pb-8 sm:px-6">
+        <AuthorCredit />
+      </footer>
     </div>
   );
 }

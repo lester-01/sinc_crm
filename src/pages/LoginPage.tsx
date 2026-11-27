@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/features/auth/AuthContext";
 import { defaultPathForRole } from "@/features/auth/nav";
 import { cn } from "@/lib/utils";
+import { AuthorCredit } from "@/components/layout/AuthorCredit";
 
 const DEMO_ACCOUNTS = [
   { role: "Manager", email: "manager1@demo.local" },
@@ -186,6 +187,7 @@ export function LoginPage() {
             </button>
           </CardContent>
         </Card>
+        <AuthorCredit />
       </div>
     </div>
   );
